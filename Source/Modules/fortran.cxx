@@ -186,7 +186,7 @@ void FORTRAN::write_module_interface()
     Printf(out, " use, intrinsic :: ISO_C_BINDING\n");
     Printf(out, " interface\n");
 
-    Dump(out, f_interfaces);
+    Printv(out, f_interfaces, NULL);
 
     Printf(out, " end interface\n");
     Printf(out, "end module %s_I\n", d_module);
@@ -267,6 +267,8 @@ int FORTRAN::functionWrapper(Node *n)
     Swig_typemap_attach_parms("fftype", parmlist, f);
 
     /* Get return types */
+
+    // Get C type
     String *tm = Swig_typemap_lookup("fctype", n, "", 0);
     String *c_return_type = NewString("");
     if (tm)
@@ -278,7 +280,9 @@ int FORTRAN::functionWrapper(Node *n)
         Swig_warning(WARN_JAVA_TYPEMAP_JNI_UNDEF,
                 input_file, line_number, "No fctype typemap defined for %s\n", SwigType_str(type, 0));
     }
+    bool is_subroutine = (Cmp(c_return_type, "void") == 0);
 
+    // Get corresponding Fortran type
     tm = Swig_typemap_lookup("fftype", n, "", 0);
     String *f_return_type = NewString("");
     if (tm)
@@ -291,10 +295,10 @@ int FORTRAN::functionWrapper(Node *n)
                 input_file, line_number, "No fftype typemap defined for %s\n", SwigType_str(type, 0));
     }
 
-    bool is_void_return = (Cmp(c_return_type, "void") == 0);
-    if (!is_void_return)
+    if (!is_subroutine)
+    {
         Wrapper_add_localv(f, "fresult", c_return_type, "fresult = 0", NULL);
-
+    }
     Printv(f->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
 
     // SWIG: Emit all of the local variables for holding arguments.
@@ -317,12 +321,29 @@ int FORTRAN::functionWrapper(Node *n)
         }
     }
 
-    Printf(f_interfaces, " %s function %s &\n", f_return_type, overloaded_name);
+    String* fortran_declaration = NewString("");
+    String* fortran_end_declaration = NewString("");
+    if (is_subroutine)
+    {
+        Printf(fortran_declaration, " subroutine %s &\n", overloaded_name);
+        Printf(fortran_end_declaration, " end subroutine\n", overloaded_name);
+    }
+    else
+    {
+        Printf(fortran_declaration, " %s function %s &\n", f_return_type, overloaded_name);
+        Printf(fortran_end_declaration, " end function\n", overloaded_name);
+    }
+    Printf(fortran_declaration, " (");
 
     // Now walk the function parameter list and generate code to get arguments
-    int gencomma = 0;
     Parm* p = parmlist;
     String* nondir_args = NewString("");
+
+    // Parameter output inside the subroutine/function
+    String* fortran_parameters = NewString("");
+    Printf(fortran_parameters, "  use,intrinsic :: ISO_C_BINDING\n");
+    Printf(fortran_parameters, "  implicit none\n");
+
     int num_arguments = emit_num_arguments(parmlist);
     for (int i = 0; i < num_arguments; ++i)
     {
@@ -331,45 +352,47 @@ int FORTRAN::functionWrapper(Node *n)
             p = Getattr(p, "tmap:in:next");
         }
 
-        SwigType *pt = Getattr(p, "type");
-        String *ln = Getattr(p, "lname");
-        String *im_param_type = NewString("");
-        String *c_param_type = NewString("");
+        const char* prepend_comma = (i == 0 ? "" : ", ");
+
+        // Construct conversion argument name
         String *arg = NewString("");
+        String *lname = Getattr(p, "lname");
+        Printf(arg, "f%s", lname);
 
-        Printf(arg, "f%s", ln);
-
-        /* Get the fctype C types of the parameter */
-        if ((tm = Getattr(p, "tmap:fctype")))
+        /* Get the C types of the parameter */
+        String *c_param_type = NewString("");
+        tm = Getattr(p, "tmap:fctype");
+        if (tm)
         {
             Printv(c_param_type, tm, NULL);
         }
         else
         {
+            SwigType *param_type = Getattr(p, "type");
             Swig_warning(WARN_JAVA_TYPEMAP_JNI_UNDEF, input_file, line_number,
-                    "No fctype typemap defined for %s\n", SwigType_str(pt, 0));
+                    "No fctype typemap defined for %s\n", SwigType_str(param_type, 0));
         }
+        Printv(f->def, prepend_comma, c_param_type, " ", arg, NULL);
 
-        /* Get the intermediary class parameter types of the parameter */
-        if ((tm = Getattr(p, "tmap:fftype")))
+        /* Add parameter to intermediary class declarations */
+        String *f_param_type = NewString("");
+        tm = Getattr(p, "tmap:fftype");
+        if (tm)
         {
-            Printv(im_param_type, tm, NULL);
+            Printv(f_param_type, tm, NULL);
         }
         else
         {
+            SwigType *param_type = Getattr(p, "type");
             Swig_warning(WARN_JAVA_TYPEMAP_JTYPE_UNDEF, input_file, line_number,
-                    "No fftype typemap defined for %s\n", SwigType_str(pt, 0));
+                    "No fftype typemap defined for %s\n", SwigType_str(param_type, 0));
         }
+        // Add parameter name to declaration list
+        Printv(fortran_declaration, prepend_comma, arg, NULL);
+        // Add parameter type to the parameters list
+        Printv(fortran_parameters, "  ", f_param_type, " :: ", arg, ";\n", NULL);
 
-        /* Add parameter to intermediary class method */
-        // if (gencomma)
-        //     Printf(imclass_class_code, ", ");
-        // Printf(imclass_class_code, "%s %s", im_param_type, arg);
-
-        // Add parameter to C function
-        Printv(f->def, ", ", c_param_type, " ", arg, NULL);
-
-        ++gencomma;
+        /* Add parameter to C function */
 
         // Get typemap for this argument
         if ((tm = Getattr(p, "tmap:in")))
@@ -383,15 +406,18 @@ int FORTRAN::functionWrapper(Node *n)
         }
         else
         {
+            SwigType *param_type = Getattr(p, "type");
             Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
-                         "Unable to use type %s as a function argument.\n", SwigType_str(pt, 0));
+                         "Unable to use type %s as a function argument.\n", SwigType_str(param_type, 0));
             p = nextSibling(p);
         }
 
-        Delete(im_param_type);
+        Delete(f_param_type);
         Delete(c_param_type);
         Delete(arg);
     }
+    Printf(fortran_declaration, ") &\n");
+    Printf(fortran_declaration, " BIND(C,name=\"%s\")\n", wname);
 
     Printv(f->code, nondir_args, NULL);
     Delete(nondir_args);
@@ -486,7 +512,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     Printf(f->def, ") {");
 
-    if (!is_void_return)
+    if (!is_subroutine)
         Printv(f->code, "    return fresult;\n", NULL);
     Printf(f->code, "}\n");
 
@@ -499,55 +525,31 @@ int FORTRAN::functionWrapper(Node *n)
     /* Contract macro modification */
     Replaceall(f->code, "SWIG_contract_assert(", "SWIG_contract_assert($null, ");
 
-    if (!is_void_return)
-        Replaceall(f->code, "$null", "0");
-    else
+    if (!is_subroutine)
+    {
         Replaceall(f->code, "$null", "");
+    }
+    else
+    {
+        Replaceall(f->code, "$null", "0");
+    }
 
-    /* Dump the function out */
+    /* Write the C++ function */
     Wrapper_print(f, f_wrappers);
 
-    if (!(true && is_wrapping_class()) && !is_wrapping_enum())
-    {
-        // moduleClassFunctionHandler(n);
-    }
-
-#if 0
-    /*
-     * Generate the proxy class getters/setters for public member variables.
-     * Not for enums and constants.
-     */
-    if (true && is_wrapping_member() && !is_wrapping_enum())
-    {
-        // Capitalize the first letter in the variable to create a JavaBean type getter/setter function name
-        bool getter_flag = (Cmp(symname,
-                                Swig_name_set(getNSpace(),
-                                              Swig_name_member(0,
-                                                               getClassPrefix(),
-                                                               variable_name)))
-                            != 0);
-
-        String *getter_setter_name = NewString("");
-        if (!getter_flag)
-            Printf(getter_setter_name, "set");
-        else
-            Printf(getter_setter_name, "get");
-        Putc(toupper((int) *Char(variable_name)), getter_setter_name);
-        Printf(getter_setter_name, "%s", Char(variable_name) + 1);
-
-        Setattr(n, "proxyfuncname", getter_setter_name);
-        Setattr(n, "imfuncname", symname);
-
-        proxyClassFunctionHandler(n);
-        Delete(getter_setter_name);
-    }
-#endif
+    /* Write the Fortran interface file */
+    Printv(f_interfaces,
+           fortran_declaration, fortran_parameters, fortran_end_declaration,
+           NULL);
 
     Delete(c_return_type);
     Delete(f_return_type);
     Delete(cleanup);
     Delete(outarg);
     Delete(overloaded_name);
+    Delete(fortran_declaration);
+    Delete(fortran_parameters);
+    Delete(fortran_end_declaration);
     DelWrapper(f);
     return SWIG_OK;
 }
