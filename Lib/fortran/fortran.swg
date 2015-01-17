@@ -31,3 +31,20 @@
 %typemap(fftype) float,              const float &              "real(C_FLOAT)"
 %typemap(fftype) double,             const double &             "real(C_DOUBLE)"
 %typemap(fftype) void                                           "void"
+
+/* Input conversions */
+%typemap(in) char,
+             signed char,
+             unsigned char,
+             short,
+             unsigned short,
+             int,
+             unsigned int,
+             long,
+             unsigned long,
+             long long,
+             unsigned long long,
+             float,
+             double
+%{ $1 = ($1_ltype)$input; %}
+

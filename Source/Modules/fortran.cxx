@@ -234,25 +234,15 @@ void FORTRAN::write_module_code()
  */
 int FORTRAN::functionWrapper(Node *n)
 {
+    //bool is_destructor = (Cmp(Getattr(n, "nodeType"), "destructor") == 0);
+
+    // Basic attributes
     String *symname = Getattr(n, "sym:name");
-    SwigType *t = Getattr(n, "type");
-    ParmList *l = Getattr(n, "parms");
-    String *tm;
-    Parm *p;
-    int i;
-    String *c_return_type = NewString("");
-    String *im_return_type = NewString("");
-    String *cleanup = NewString("");
-    String *outarg = NewString("");
-    String *body = NewString("");
-    int num_arguments = 0;
-    int gencomma = 0;
-    bool is_void_return = false;
-    String *nondir_args = NewString("");
-    String *overloaded_name = 0;
-    bool is_destructor = (Cmp(Getattr(n, "nodeType"), "destructor") == 0);
+    SwigType *type = Getattr(n, "type");
+    ParmList *parmlist = Getattr(n, "parms");
 
     // Overloaded name
+    String *overloaded_name = 0;
     if (Getattr(n, "sym:overloaded"))
     {
         overloaded_name = Getattr(n, "sym:overloaded_name");
@@ -273,42 +263,52 @@ int FORTRAN::functionWrapper(Node *n)
     String *wname = Swig_name_wrapper(overloaded_name);
 
     /* Attach the non-standard typemaps to the parameter list. */
-    Swig_typemap_attach_parms("fctype", l, f);
-    Swig_typemap_attach_parms("fftype", l, f);
+    Swig_typemap_attach_parms("fctype", parmlist, f);
+    Swig_typemap_attach_parms("fftype", parmlist, f);
 
     /* Get return types */
-    if ((tm = Swig_typemap_lookup("fctype", n, "", 0))) {
+    String *tm = Swig_typemap_lookup("fctype", n, "", 0);
+    String *c_return_type = NewString("");
+    if (tm)
+    {
         Printf(c_return_type, "%s", tm);
-    } else {
+    }
+    else
+    {
         Swig_warning(WARN_JAVA_TYPEMAP_JNI_UNDEF,
-                input_file, line_number, "No fctype typemap defined for %s\n", SwigType_str(t, 0));
+                input_file, line_number, "No fctype typemap defined for %s\n", SwigType_str(type, 0));
     }
 
-    if ((tm = Swig_typemap_lookup("fftype", n, "", 0))) {
-        Printf(im_return_type, "%s", tm);
-    } else {
+    tm = Swig_typemap_lookup("fftype", n, "", 0);
+    String *f_return_type = NewString("");
+    if (tm)
+    {
+        Printf(f_return_type, "%s", tm);
+    }
+    else
+    {
         Swig_warning(WARN_JAVA_TYPEMAP_JTYPE_UNDEF,
-                input_file, line_number, "No fftype typemap defined for %s\n", SwigType_str(t, 0));
+                input_file, line_number, "No fftype typemap defined for %s\n", SwigType_str(type, 0));
     }
 
-    is_void_return = (Cmp(c_return_type, "void") == 0);
+    bool is_void_return = (Cmp(c_return_type, "void") == 0);
     if (!is_void_return)
         Wrapper_add_localv(f, "fresult", c_return_type, "fresult = 0", NULL);
 
     Printv(f->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
 
     // SWIG: Emit all of the local variables for holding arguments.
-    emit_parameter_variables(l, f);
-    emit_attach_parmmaps(l, f);
+    emit_parameter_variables(parmlist, f);
+    emit_attach_parmmaps(parmlist, f);
 
     // Parameter overloading
-    Setattr(n, "wrap:parms", l);
+    Setattr(n, "wrap:parms", parmlist);
     Setattr(n, "wrap:name", wname);
 
     // Wrappers not wanted for some methods where the parameters cannot be overloaded in Fortran
     if (Getattr(n, "sym:overloaded"))
     {
-        // Emit warnings for the few cases that can't be overloaded in Fortran and give up on generating wrapper
+        // Emit warnings for the few cases that can'type be overloaded in Fortran and give up on generating wrapper
         Swig_overload_check(n);
         if (Getattr(n, "overload:ignore"))
         {
@@ -317,12 +317,15 @@ int FORTRAN::functionWrapper(Node *n)
         }
     }
 
-    Printf(f_interfaces, " %s function %s &\n", im_return_type, overloaded_name);
+    Printf(f_interfaces, " %s function %s &\n", f_return_type, overloaded_name);
 
-    num_arguments = emit_num_arguments(l);
+    int num_arguments = emit_num_arguments(parmlist);
 
     // Now walk the function parameter list and generate code to get arguments
-    for (i = 0, p = l; i < num_arguments; i++)
+    int gencomma = 0;
+    Parm *p = parmlist;
+    String *nondir_args = NewString("");
+    for (int i = 0; i < num_arguments; ++i)
     {
         while (checkAttribute(p, "tmap:in:numinputs", "0"))
         {
@@ -335,7 +338,7 @@ int FORTRAN::functionWrapper(Node *n)
         String *c_param_type = NewString("");
         String *arg = NewString("");
 
-        Printf(arg, "j%s", ln);
+        Printf(arg, "f%s", ln);
 
         /* Get the fctype C types of the parameter */
         if ((tm = Getattr(p, "tmap:fctype")))
@@ -395,7 +398,7 @@ int FORTRAN::functionWrapper(Node *n)
     Delete(nondir_args);
 
     /* Insert constraint checking code */
-    p = l;
+    p = parmlist;
     while (p)
     {
         if ((tm = Getattr(p, "tmap:check")))
@@ -411,7 +414,8 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     /* Insert cleanup code */
-    p = l;
+    String *cleanup = NewString("");
+    p = parmlist;
     while (p)
     {
         if ((tm = Getattr(p, "tmap:freearg")))
@@ -427,7 +431,8 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     /* Insert argument output code */
-    p = l;
+    String *outarg = NewString("");
+    p = parmlist;
     while (p)
     {
         if ((tm = Getattr(p, "tmap:argout"))) {
@@ -447,10 +452,9 @@ int FORTRAN::functionWrapper(Node *n)
         Swig_director_emit_dynamic_cast(n, f);
         String *actioncode = emit_action(n);
 
-        // Handle exception classes specified in the "except" feature's "throws" attribute
-
         /* Return value if necessary  */
-        if ((tm = Swig_typemap_lookup_out("out", n, Swig_cresult_name(), f, actioncode))) {
+        if ((tm = Swig_typemap_lookup_out("out", n, Swig_cresult_name(), f, actioncode)))
+        {
             Replaceall(tm, "$result", "fresult");
 
             if (GetFlag(n, "feature:new"))
@@ -461,10 +465,14 @@ int FORTRAN::functionWrapper(Node *n)
             Printf(f->code, "%s", tm);
             if (Len(tm))
                 Printf(f->code, "\n");
-        } else {
-            Swig_warning(WARN_TYPEMAP_OUT_UNDEF, input_file, line_number, "Unable to use return type %s in function %s.\n", SwigType_str(t, 0), Getattr(n, "name"));
         }
-        emit_return_variable(n, t, f);
+        else
+        {
+            Swig_warning(WARN_TYPEMAP_OUT_UNDEF, input_file, line_number,
+                    "Unable to use return type %s in function %s.\n",
+                    SwigType_str(type, 0), Getattr(n, "name"));
+        }
+        emit_return_variable(n, type, f);
     }
 
     /* Output argument output code */
@@ -537,10 +545,9 @@ int FORTRAN::functionWrapper(Node *n)
 #endif
 
     Delete(c_return_type);
-    Delete(im_return_type);
+    Delete(f_return_type);
     Delete(cleanup);
     Delete(outarg);
-    Delete(body);
     Delete(overloaded_name);
     DelWrapper(f);
     return SWIG_OK;
@@ -550,6 +557,7 @@ int FORTRAN::functionWrapper(Node *n)
 // Expose the code to the SWIG main function.
 //---------------------------------------------------------------------------//
 extern "C" Language *
-swig_fortran(void) {
-  return new FORTRAN();
+swig_fortran(void)
+{
+    return new FORTRAN();
 }
