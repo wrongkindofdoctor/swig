@@ -146,13 +146,13 @@ void FORTRAN::write_wrapper()
     Dump(f_header,   out);
 
     // Write wrapper code
-    Printf(f_wrappers, "#ifdef __cplusplus\n");
-    Printf(f_wrappers, "extern \"C\" {\n");
-    Printf(f_wrappers, "#endif\n");
+    Printf(out, "#ifdef __cplusplus\n");
+    Printf(out, "extern \"C\" {\n");
+    Printf(out, "#endif\n");
     Dump(f_wrappers, out);
-    Printf(f_wrappers, "#ifdef __cplusplus\n");
-    Printf(f_wrappers, "}\n");
-    Printf(f_wrappers, "#endif\n");
+    Printf(out, "#ifdef __cplusplus\n");
+    Printf(out, "}\n");
+    Printf(out, "#endif\n");
 
     // Write initialization code
     Wrapper_pretty_print(f_init, out);
