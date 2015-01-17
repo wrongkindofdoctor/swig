@@ -319,12 +319,11 @@ int FORTRAN::functionWrapper(Node *n)
 
     Printf(f_interfaces, " %s function %s &\n", f_return_type, overloaded_name);
 
-    int num_arguments = emit_num_arguments(parmlist);
-
     // Now walk the function parameter list and generate code to get arguments
     int gencomma = 0;
-    Parm *p = parmlist;
-    String *nondir_args = NewString("");
+    Parm* p = parmlist;
+    String* nondir_args = NewString("");
+    int num_arguments = emit_num_arguments(parmlist);
     for (int i = 0; i < num_arguments; ++i)
     {
         while (checkAttribute(p, "tmap:in:numinputs", "0"))
