@@ -15,19 +15,34 @@ class FORTRAN : public Language
     String *f_begin; //!< Very beginning of output file
     String *f_runtime; //!< SWIG runtime code
     String *f_header; //!< Declarations and inclusions from .i
-    String *f_wrappers; //!< Wrapper code
+    String *f_wrappers; //!< C++ Wrapper code
     String *f_init; //!< C++ initalization functions
 
     // Injected into _I file
-    String *f_interfaces; //!< interface code inside the _I file
+    String *f_wrapper_interfaces; //!< interface code inside the _I file
     // Injected into _M file
-    String *f_imports;    //!< Fortran "use" directives generated from %import
-    String *f_types;      //!< Fortran _M path
+    String *f_imports;     //!< Fortran "use" directives generated from %import
+    String *f_types;       //!< Generated class types
+    String *f_interfaces;  //!< Fortran _M: generated classes
+    String *f_subroutines; //!< Fortran _M: generated classes
+
+    // Side effect attributes
+    bool d_in_class; //!< Whether we're being called inside a class
 
   public:
     virtual void main(int argc, char *argv[]);
     virtual int top(Node *n);
     virtual int functionWrapper(Node *n);
+    virtual int destructorHandler(Node *n);
+    virtual int constructorHandler(Node *n);
+    virtual int classHandler(Node *n);
+    virtual int memberfunctionHandler(Node *n);
+
+    FORTRAN()
+        : d_in_class(false)
+    {
+        /* * */
+    }
 
   private:
     void write_wrapper();
@@ -35,13 +50,11 @@ class FORTRAN : public Language
     void write_module_code();
 };
 
-bool is_wrapping_class() { return false; }
-bool is_wrapping_enum() { return false; }
-bool is_wrapping_member() { return false; }
-
 //---------------------------------------------------------------------------//
 /*!
  * \brief Main function for code generation.
+ *
+ * TODO: add flag for writing automatic "final" destructors in fortran.
  */
 void FORTRAN::main(int argc, char *argv[])
 {
@@ -94,8 +107,8 @@ int FORTRAN::top(Node *n)
     Swig_register_filebyname("init", f_init);
 
     // Fortran interfaces (injected into _I.f90)
-    f_interfaces = NewString("");
-    Swig_register_filebyname("finterfaces", f_interfaces);
+    f_wrapper_interfaces = NewString("");
+    Swig_register_filebyname("fwrapperinterfaces", f_wrapper_interfaces);
 
     // Other imported fortran modules
     f_imports = NewString("");
@@ -104,6 +117,14 @@ int FORTRAN::top(Node *n)
     // Fortran classes
     f_types = NewString("");
     Swig_register_filebyname("ftypes", f_types);
+
+    // Fortran class constructors
+    f_interfaces = NewString("");
+    Swig_register_filebyname("finterfaces", f_interfaces);
+
+    // Fortran subroutines
+    f_subroutines = NewString("");
+    Swig_register_filebyname("fsubroutines", f_subroutines);
 
     /* Emit all other wrapper code */
     Language::top(n);
@@ -183,13 +204,14 @@ void FORTRAN::write_module_interface()
 
     // Write fortran header
     Printf(out, "module %s_I\n", d_module);
-    Printf(out, " use, intrinsic :: ISO_C_BINDING\n");
-    Printf(out, " interface\n");
+    Printf(out, " use, intrinsic :: ISO_C_BINDING\n"
+                " implicit none\n"
+                " interface\n");
 
-    Printv(out, f_interfaces, NULL);
+    Printv(out, f_wrapper_interfaces, NULL);
 
-    Printf(out, " end interface\n");
-    Printf(out, "end module %s_I\n", d_module);
+    Printf(out, " end interface\n"
+                "end module %s_I\n", d_module);
 
     // Close file
     Delete(out);
@@ -219,9 +241,14 @@ void FORTRAN::write_module_code()
     Printf(out, "module %s_M\n", d_module);
     Printf(out, " use, intrinsic :: ISO_C_BINDING\n");
     Printf(out, " use %s_I\n", d_module);
-    Dump(out, f_imports);
-    Dump(out, f_types);
-
+    Printv(out, f_imports, NULL);
+    Printf(out, " implicit none\n");
+    Printf(out, " ! TYPES\n");
+    Printv(out, f_types, NULL);
+    Printf(out, " ! INTERFACES\n");
+    Printv(out, f_interfaces, NULL);
+    Printf(out, "contains\n");
+    Printv(out, f_subroutines, NULL);
     Printf(out, "end module %s_M\n", d_module);
 
     // Close file
@@ -231,36 +258,38 @@ void FORTRAN::write_module_code()
 //---------------------------------------------------------------------------//
 /*!
  * \brief Wrap basic functions.
+ *
+ * This is also passed class methods.
  */
 int FORTRAN::functionWrapper(Node *n)
 {
     //bool is_destructor = (Cmp(Getattr(n, "nodeType"), "destructor") == 0);
 
-    // Basic attributes
-    String *symname = Getattr(n, "sym:name");
-    SwigType *type = Getattr(n, "type");
-    ParmList *parmlist = Getattr(n, "parms");
+    // Basic attributes (references)
+    String* symname = Getattr(n, "sym:name");
+    String* nodetype = Getattr(n, "nodeType");
+    SwigType* type = Getattr(n, "type");
+    ParmList* parmlist = Getattr(n, "parms");
+    String* orig_wrapper_name = Swig_name_wrapper(symname);
 
-    // Overloaded name
-    String *overloaded_name = 0;
+    // Update wrapper name for overloaded functions
+    String* wname = Copy(Swig_name_wrapper(symname));
     if (Getattr(n, "sym:overloaded"))
     {
-        overloaded_name = Getattr(n, "sym:overloaded_name");
-    }
-    else if (!addSymbol(symname, n))
-    {
-        return SWIG_ERROR;
+        String* overname = Getattr(n, "sym:overname");
+        Append(wname, overname);
     }
     else
     {
-        overloaded_name = Copy(symname);
+        if (!addSymbol(symname, n))
+            return SWIG_ERROR;
     }
+    Setattr(n, "wrap:name", wname);
 
     // A new wrapper function object
-    Wrapper *f = NewWrapper();
+    Wrapper* f = NewWrapper();
 
     // Make a wrapper name for this function
-    String *wname = Swig_name_wrapper(overloaded_name);
 
     /* Attach the non-standard typemaps to the parameter list. */
     Swig_typemap_attach_parms("fctype", parmlist, f);
@@ -280,34 +309,20 @@ int FORTRAN::functionWrapper(Node *n)
         Swig_warning(WARN_JAVA_TYPEMAP_JNI_UNDEF,
                 input_file, line_number, "No fctype typemap defined for %s\n", SwigType_str(type, 0));
     }
+    Printv(f->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
+
+    // Function attributes
     bool is_subroutine = (Cmp(c_return_type, "void") == 0);
-
-    // Get corresponding Fortran type
-    tm = Swig_typemap_lookup("fftype", n, "", 0);
-    String *f_return_type = NewString("");
-    if (tm)
-    {
-        Printf(f_return_type, "%s", tm);
-    }
-    else
-    {
-        Swig_warning(WARN_JAVA_TYPEMAP_JTYPE_UNDEF,
-                input_file, line_number, "No fftype typemap defined for %s\n", SwigType_str(type, 0));
-    }
-
+    // Add local variable for result
     if (!is_subroutine)
     {
         Wrapper_add_localv(f, "fresult", c_return_type, "fresult = 0", NULL);
     }
-    Printv(f->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
 
     // SWIG: Emit all of the local variables for holding arguments.
     emit_parameter_variables(parmlist, f);
     emit_attach_parmmaps(parmlist, f);
-
-    // Parameter overloading
     Setattr(n, "wrap:parms", parmlist);
-    Setattr(n, "wrap:name", wname);
 
     // Wrappers not wanted for some methods where the parameters cannot be overloaded in Fortran
     if (Getattr(n, "sym:overloaded"))
@@ -325,15 +340,15 @@ int FORTRAN::functionWrapper(Node *n)
     String* fortran_end_declaration = NewString("");
     if (is_subroutine)
     {
-        Printf(fortran_declaration, " subroutine %s &\n", overloaded_name);
-        Printf(fortran_end_declaration, " end subroutine\n", overloaded_name);
+        Printf(fortran_declaration, "  subroutine %s", wname);
+        Printf(fortran_end_declaration, "  end subroutine\n", wname);
     }
     else
     {
-        Printf(fortran_declaration, " %s function %s &\n", f_return_type, overloaded_name);
-        Printf(fortran_end_declaration, " end function\n", overloaded_name);
+        Printf(fortran_declaration, "  function %s", wname);
+        Printf(fortran_end_declaration, "  end function\n", wname);
     }
-    Printf(fortran_declaration, " (");
+    Printf(fortran_declaration, "(");
 
     // Now walk the function parameter list and generate code to get arguments
     Parm* p = parmlist;
@@ -341,8 +356,28 @@ int FORTRAN::functionWrapper(Node *n)
 
     // Parameter output inside the subroutine/function
     String* fortran_parameters = NewString("");
-    Printf(fortran_parameters, "  use,intrinsic :: ISO_C_BINDING\n");
-    Printf(fortran_parameters, "  implicit none\n");
+    Printf(fortran_parameters, "   use, intrinsic :: ISO_C_BINDING\n");
+    Printf(fortran_parameters, "   implicit none\n");
+
+    if (!is_subroutine)
+    {
+        // Get corresponding Fortran type
+        tm = Swig_typemap_lookup("fftype", n, "", 0);
+        String *f_return_type = NewString("");
+        if (tm)
+        {
+            Printf(f_return_type, "%s", tm);
+        }
+        else
+        {
+            Swig_warning(WARN_JAVA_TYPEMAP_JTYPE_UNDEF,
+                    input_file, line_number,
+                    "No fftype typemap defined for %s\n", SwigType_str(type, 0));
+        }
+
+        Printf(fortran_parameters, "   %s :: fresult\n", f_return_type);
+        Delete(f_return_type);
+    }
 
     int num_arguments = emit_num_arguments(parmlist);
     for (int i = 0; i < num_arguments; ++i)
@@ -390,7 +425,7 @@ int FORTRAN::functionWrapper(Node *n)
         // Add parameter name to declaration list
         Printv(fortran_declaration, prepend_comma, arg, NULL);
         // Add parameter type to the parameters list
-        Printv(fortran_parameters, "  ", f_param_type, " :: ", arg, ";\n", NULL);
+        Printv(fortran_parameters, "  ", f_param_type, " :: ", arg, "\n", NULL);
 
         /* Add parameter to C function */
 
@@ -417,7 +452,11 @@ int FORTRAN::functionWrapper(Node *n)
         Delete(arg);
     }
     Printf(fortran_declaration, ") &\n");
-    Printf(fortran_declaration, " BIND(C,name=\"%s\")\n", wname);
+    if (!is_subroutine)
+    {
+        Printf(fortran_declaration, "    result(fresult) &\n");
+    }
+    Printf(fortran_declaration, "    bind(C, name=\"%s\")\n", wname);
 
     Printv(f->code, nondir_args, NULL);
     Delete(nondir_args);
@@ -473,32 +512,27 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     // Now write code to make the function call
+    Swig_director_emit_dynamic_cast(n, f);
+    String *actioncode = emit_action(n);
+
+    /* Return value if necessary  */
+    tm = Swig_typemap_lookup_out("out", n, Swig_cresult_name(), f, actioncode);
+    if (tm)
     {
-        Swig_director_emit_dynamic_cast(n, f);
-        String *actioncode = emit_action(n);
+        Replaceall(tm, "$result", "fresult");
+        Replaceall(tm, "$owner", (GetFlag(n, "feature:new") ? "1" : "0"));
 
-        /* Return value if necessary  */
-        if ((tm = Swig_typemap_lookup_out("out", n, Swig_cresult_name(), f, actioncode)))
-        {
-            Replaceall(tm, "$result", "fresult");
-
-            if (GetFlag(n, "feature:new"))
-                Replaceall(tm, "$owner", "1");
-            else
-                Replaceall(tm, "$owner", "0");
-
-            Printf(f->code, "%s", tm);
-            if (Len(tm))
-                Printf(f->code, "\n");
-        }
-        else
-        {
-            Swig_warning(WARN_TYPEMAP_OUT_UNDEF, input_file, line_number,
-                    "Unable to use return type %s in function %s.\n",
-                    SwigType_str(type, 0), Getattr(n, "name"));
-        }
-        emit_return_variable(n, type, f);
+        Printf(f->code, "%s", tm);
+        if (Len(tm))
+            Printf(f->code, "\n");
     }
+    else
+    {
+        Swig_warning(WARN_TYPEMAP_OUT_UNDEF, input_file, line_number,
+                "Unable to use return type %s in function %s.\n",
+                SwigType_str(type, 0), Getattr(n, "name"));
+    }
+    emit_return_variable(n, type, f);
 
     /* Output argument output code */
     Printv(f->code, outarg, NULL);
@@ -507,51 +541,128 @@ int FORTRAN::functionWrapper(Node *n)
     Printv(f->code, cleanup, NULL);
 
     /* Finish C function and intermediary class function definitions */
-    // Printf(imclass_class_code, ")");
-    // Printf(imclass_class_code, ";\n");
-
     Printf(f->def, ") {");
 
     if (!is_subroutine)
         Printv(f->code, "    return fresult;\n", NULL);
     Printf(f->code, "}\n");
 
-    /* Substitute the cleanup code */
+    /* Standard SWIG substitutions */
     Replaceall(f->code, "$cleanup", cleanup);
-
-    /* Substitute the function name */
     Replaceall(f->code, "$symname", symname);
-
-    /* Contract macro modification */
     Replaceall(f->code, "SWIG_contract_assert(", "SWIG_contract_assert($null, ");
+    Replaceall(f->code, "$null", (is_subroutine ? "" : "0"));
 
-    if (!is_subroutine)
-    {
-        Replaceall(f->code, "$null", "");
-    }
-    else
-    {
-        Replaceall(f->code, "$null", "0");
-    }
-
-    /* Write the C++ function */
+    /* Write the C++ function into f_wrappers */
     Wrapper_print(f, f_wrappers);
 
     /* Write the Fortran interface file */
-    Printv(f_interfaces,
+    Printv(f_wrapper_interfaces,
            fortran_declaration, fortran_parameters, fortran_end_declaration,
            NULL);
 
     Delete(c_return_type);
-    Delete(f_return_type);
     Delete(cleanup);
     Delete(outarg);
-    Delete(overloaded_name);
     Delete(fortran_declaration);
     Delete(fortran_parameters);
     Delete(fortran_end_declaration);
     DelWrapper(f);
+    Delete(wname);
     return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Process classes.
+ */
+int FORTRAN::classHandler(Node *n)
+{
+    // Basic attributes
+    String *symname = Getattr(n, "sym:name");
+    String *real_classname = Getattr(n, "name");
+    SwigType *type = Getattr(n, "type");
+    ParmList *parmlist = Getattr(n, "parms");
+
+    if (!addSymbol(symname, n))
+        return SWIG_ERROR;
+
+    /* No base classes are currently supported */
+    List *baselist = Getattr(n, "bases");
+    if (baselist && Len(baselist))
+    {
+        Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
+                "Inheritance (class '%s') currently unimplemented.\n",
+                SwigType_namestr(Char(symname)));
+    }
+
+    /* Create bare-bones proxy class */
+    String* fortran_type = NewString("");
+    String* fortran_declaration = NewString("");
+    String* fortran_end_declaration = NewString("");
+
+    //Printf(fortran_declaration, );
+    //Printf(fortran_end_declaration, " end type\n");
+
+    Printf(fortran_declaration, "  type(C_PTR) :: instance_ptr=C_NULL_PTR\n");
+    Printf(fortran_declaration, " contains\n");
+
+    String* fortran_parameters = NewString("");
+    String* fortran_subroutines = NewString("");
+
+    /* Emit class members */
+    d_in_class = true;
+    Language::classHandler(n);
+    d_in_class = false;
+
+    // Class header
+
+    Printf(f_types, " type %s\n", Char(symname));
+    Printf(f_types, "  type(C_PTR), private :: ptr = C_NULL_PTR\n");
+    Printf(f_types, " contains\n");
+    //Printv(f_types, f_class_method_names, NULL);
+    Printf(f_types, " end type\n");
+//           fortran_declaration,
+//           fortran_parameters,
+//           fortran_subroutines,
+//           NULL);
+
+    Delete(fortran_subroutines);
+    Delete(fortran_parameters);
+    Delete(fortran_declaration);
+
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Extra stuff for constructors.
+ */
+int FORTRAN::constructorHandler(Node* n)
+{
+    Language::constructorHandler(n);
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Handle extra destructor stuff.
+ *
+ * TODO: this is where the optional "final" support for Fortran would be added?
+ */
+int FORTRAN::destructorHandler(Node* n)
+{
+    Language::destructorHandler(n);
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Process member functions.
+ */
+int FORTRAN::memberfunctionHandler(Node *n)
+{
+    Language::memberfunctionHandler(n);
 }
 
 //---------------------------------------------------------------------------//
