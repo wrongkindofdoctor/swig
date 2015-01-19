@@ -27,7 +27,6 @@ class FORTRAN : public Language
     String *f_subroutines; //!< Fortran _M: generated classes
 
     // Side effect attributes
-    bool d_in_class; //!< Whether we're being called inside a class
     bool d_in_constructor; //!< Whether we're being called inside a constructor
     bool d_in_destructor; //!< Whether we're being called inside a constructor
 
@@ -41,7 +40,6 @@ class FORTRAN : public Language
     virtual int memberfunctionHandler(Node *n);
 
     FORTRAN()
-        : d_in_class(false)
     {
         /* * */
     }
@@ -419,7 +417,6 @@ int FORTRAN::functionWrapper(Node *n)
         }
         // Add parameter name to declaration list
         Printv(fortran_arglist, prepend_comma, arg, NULL);
-        Printv(fortran_arglist, prepend_comma, arg, NULL);
         // Add parameter type to the parameters list
         Printv(fortran_parameters, "    ", f_param_type, " :: ", arg, "\n", NULL);
 
@@ -617,21 +614,44 @@ int FORTRAN::classHandler(Node *n)
     String* fortran_subroutines = NewString("");
 
     /* Emit class members */
-    d_in_class = true;
     Language::classHandler(n);
-    d_in_class = false;
 
-    // Class header
+    /* Add types */
+    String *smartptr = Getattr(n, "feature:smartptr");
+    SwigType *smart = 0;
+    if (smartptr)
+    {
+        SwigType *cpt = Swig_cparse_type(smartptr);
+        if (cpt)
+        {
+            smart = SwigType_typedef_resolve_all(cpt);
+            Delete(cpt);
+        }
+        else
+        {
+            // TODO: report line number of where the feature comes from
+            Swig_error(Getfile(n), Getline(n), "Invalid type (%s) in 'smartptr' "
+                     " feature for class %s.\n", smartptr, real_classname);
+        }
+    }
+    SwigType *ct = Copy(smart ? smart : real_classname);
+    SwigType_add_pointer(ct);
+    SwigType *realct = Copy(real_classname);
+    SwigType_add_pointer(realct);
+    Delete(smart);
+    Delete(ct);
+    Delete(realct);
 
+    /* Write fortran class header */
     Printf(f_types, " type %s\n", Char(symname));
     Printf(f_types, "  type(C_PTR), private :: ptr = C_NULL_PTR\n");
     Printf(f_types, " contains\n");
     //Printv(f_types, f_class_method_names, NULL);
     Printf(f_types, " end type\n");
-//           fortran_arglist,
-//           fortran_parameters,
-//           fortran_subroutines,
-//           NULL);
+    //           fortran_arglist,
+    //           fortran_parameters,
+    //           fortran_subroutines,
+    //           NULL);
 
     Delete(fortran_subroutines);
     Delete(fortran_parameters);
