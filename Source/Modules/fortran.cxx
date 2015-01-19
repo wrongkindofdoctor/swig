@@ -28,6 +28,8 @@ class FORTRAN : public Language
 
     // Side effect attributes
     bool d_in_class; //!< Whether we're being called inside a class
+    bool d_in_constructor; //!< Whether we're being called inside a constructor
+    bool d_in_destructor; //!< Whether we're being called inside a constructor
 
   public:
     virtual void main(int argc, char *argv[]);
@@ -273,7 +275,7 @@ int FORTRAN::functionWrapper(Node *n)
     String* orig_wrapper_name = Swig_name_wrapper(symname);
 
     // Update wrapper name for overloaded functions
-    String* wname = Copy(Swig_name_wrapper(symname));
+    String* wname = Copy(orig_wrapper_name);
     if (Getattr(n, "sym:overloaded"))
     {
         String* overname = Getattr(n, "sym:overname");
@@ -285,6 +287,11 @@ int FORTRAN::functionWrapper(Node *n)
             return SWIG_ERROR;
     }
     Setattr(n, "wrap:name", wname);
+
+    // Add fortran wrapper name
+    String* fwname = Copy(wname);
+    Replace(fwname, "_wrap_", "", DOH_REPLACE_FIRST);
+    Setattr(n, "fortran:name", fwname);
 
     // A new wrapper function object
     Wrapper* f = NewWrapper();
@@ -336,28 +343,14 @@ int FORTRAN::functionWrapper(Node *n)
         }
     }
 
-    String* fortran_declaration = NewString("");
-    String* fortran_end_declaration = NewString("");
-    if (is_subroutine)
-    {
-        Printf(fortran_declaration, "  subroutine %s", wname);
-        Printf(fortran_end_declaration, "  end subroutine\n", wname);
-    }
-    else
-    {
-        Printf(fortran_declaration, "  function %s", wname);
-        Printf(fortran_end_declaration, "  end function\n", wname);
-    }
-    Printf(fortran_declaration, "(");
-
     // Now walk the function parameter list and generate code to get arguments
     Parm* p = parmlist;
     String* nondir_args = NewString("");
 
     // Parameter output inside the subroutine/function
     String* fortran_parameters = NewString("");
-    Printf(fortran_parameters, "   use, intrinsic :: ISO_C_BINDING\n");
-    Printf(fortran_parameters, "   implicit none\n");
+    Printf(fortran_parameters, "    use, intrinsic :: ISO_C_BINDING\n");
+    Printf(fortran_parameters, "    implicit none\n");
 
     if (!is_subroutine)
     {
@@ -375,9 +368,11 @@ int FORTRAN::functionWrapper(Node *n)
                     "No fftype typemap defined for %s\n", SwigType_str(type, 0));
         }
 
-        Printf(fortran_parameters, "   %s :: fresult\n", f_return_type);
+        Printf(fortran_parameters, "    %s :: fresult\n", f_return_type);
         Delete(f_return_type);
     }
+
+    String* fortran_arglist = NewString("(");
 
     int num_arguments = emit_num_arguments(parmlist);
     for (int i = 0; i < num_arguments; ++i)
@@ -423,9 +418,10 @@ int FORTRAN::functionWrapper(Node *n)
                     "No fftype typemap defined for %s\n", SwigType_str(param_type, 0));
         }
         // Add parameter name to declaration list
-        Printv(fortran_declaration, prepend_comma, arg, NULL);
+        Printv(fortran_arglist, prepend_comma, arg, NULL);
+        Printv(fortran_arglist, prepend_comma, arg, NULL);
         // Add parameter type to the parameters list
-        Printv(fortran_parameters, "  ", f_param_type, " :: ", arg, "\n", NULL);
+        Printv(fortran_parameters, "    ", f_param_type, " :: ", arg, "\n", NULL);
 
         /* Add parameter to C function */
 
@@ -451,12 +447,12 @@ int FORTRAN::functionWrapper(Node *n)
         Delete(c_param_type);
         Delete(arg);
     }
-    Printf(fortran_declaration, ") &\n");
+    Printf(fortran_arglist, ")");
+
     if (!is_subroutine)
     {
-        Printf(fortran_declaration, "    result(fresult) &\n");
+        Printf(fortran_arglist, " &\n      result(fresult)");
     }
-    Printf(fortran_declaration, "    bind(C, name=\"%s\")\n", wname);
 
     Printv(f->code, nondir_args, NULL);
     Delete(nondir_args);
@@ -557,16 +553,26 @@ int FORTRAN::functionWrapper(Node *n)
     Wrapper_print(f, f_wrappers);
 
     /* Write the Fortran interface file */
+    const char* sub_or_func = (is_subroutine ? "subroutine" : "function");
+
     Printv(f_wrapper_interfaces,
-           fortran_declaration, fortran_parameters, fortran_end_declaration,
+           "   ", sub_or_func, " ", wname, fortran_arglist,
+           " &\n      bind(C, name=\"", wname, "\")\n",
+           fortran_parameters,
+           "   end ", sub_or_func, "\n",
            NULL);
+    Printv(f_subroutines,
+           "   ", sub_or_func, " ", fwname, fortran_arglist,
+           "\n",
+           fortran_parameters,
+           "   end ", sub_or_func, "\n",
+           NULL);
+
 
     Delete(c_return_type);
     Delete(cleanup);
     Delete(outarg);
-    Delete(fortran_declaration);
     Delete(fortran_parameters);
-    Delete(fortran_end_declaration);
     DelWrapper(f);
     Delete(wname);
     return SWIG_OK;
@@ -598,14 +604,14 @@ int FORTRAN::classHandler(Node *n)
 
     /* Create bare-bones proxy class */
     String* fortran_type = NewString("");
-    String* fortran_declaration = NewString("");
+    String* fortran_arglist = NewString("");
     String* fortran_end_declaration = NewString("");
 
-    //Printf(fortran_declaration, );
+    //Printf(fortran_arglist, );
     //Printf(fortran_end_declaration, " end type\n");
 
-    Printf(fortran_declaration, "  type(C_PTR) :: instance_ptr=C_NULL_PTR\n");
-    Printf(fortran_declaration, " contains\n");
+    Printf(fortran_arglist, "  type(C_PTR) :: instance_ptr=C_NULL_PTR\n");
+    Printf(fortran_arglist, " contains\n");
 
     String* fortran_parameters = NewString("");
     String* fortran_subroutines = NewString("");
@@ -622,14 +628,14 @@ int FORTRAN::classHandler(Node *n)
     Printf(f_types, " contains\n");
     //Printv(f_types, f_class_method_names, NULL);
     Printf(f_types, " end type\n");
-//           fortran_declaration,
+//           fortran_arglist,
 //           fortran_parameters,
 //           fortran_subroutines,
 //           NULL);
 
     Delete(fortran_subroutines);
     Delete(fortran_parameters);
-    Delete(fortran_declaration);
+    Delete(fortran_arglist);
 
     return SWIG_OK;
 }
