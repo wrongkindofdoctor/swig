@@ -10,10 +10,12 @@
 %typemap(fctype) long,               const long &               "int"
 %typemap(fctype) unsigned long,      const unsigned long &      "long"
 %typemap(fctype) long long,          const long long &          "long"
-%typemap(fctype) unsigned long long, const unsigned long long & "object"
+%typemap(fctype) unsigned long long, const unsigned long long & "size_t"
 %typemap(fctype) float,              const float &              "float"
 %typemap(fctype) double,             const double &             "double"
 %typemap(fctype) void                                           "void"
+%typemap(fctype) SWIGTYPE *, SWIGTYPE &                         "void*"
+
 
 /* FORTRAN types used in the fortran code */
 %typemap(fftype) bool,               const bool &               "logical(C_BOOL)"
@@ -30,10 +32,12 @@
 %typemap(fftype) unsigned long long, const unsigned long long & "integer(C_SIZE_T)"
 %typemap(fftype) float,              const float &              "real(C_FLOAT)"
 %typemap(fftype) double,             const double &             "real(C_DOUBLE)"
-%typemap(fftype) void                                           "void"
+%typemap(fftype) void                                           ""
+%typemap(fftype) SWIGTYPE *, SWIGTYPE &                         "type(C_PTR)"
 
 /* Input conversions */
-%typemap(in) char,
+%typemap(in) bool,
+             char,
              signed char,
              unsigned char,
              short,
@@ -49,17 +53,76 @@
 %{ $1 = ($1_ltype)$input; %}
 
 /* Output conversions */
-%typemap(out) bool           %{ $result = $1; %}
-%typemap(out) char           %{ $result = $1; %}
-%typemap(out) signed char    %{ $result = $1; %}
-%typemap(out) unsigned char  %{ $result = $1; %}
-%typemap(out) short          %{ $result = $1; %}
-%typemap(out) unsigned short %{ $result = $1; %}
-%typemap(out) int            %{ $result = $1; %}
-%typemap(out) unsigned int   %{ $result = $1; %}
-%typemap(out) long           %{ $result = $1; %}
-%typemap(out) unsigned long  %{ $result = $1; %}
-%typemap(out) long long      %{ $result = $1; %}
-%typemap(out) float          %{ $result = $1; %}
-%typemap(out) double         %{ $result = $1; %}
-%typemap(out) void ""
+%typemap(out) bool,
+              char,
+              signed char,
+              unsigned char,
+              short,
+              unsigned short,
+              int,
+              unsigned int,
+              long,
+              unsigned long,
+              long long,
+              unsigned long long,
+              float,
+              double
+%{ $result = $1; %}
+%typemap(out) void "";
+
+
+/* Default handling. Object passed by value: Convert to a pointer */
+%typemap(in) SWIGTYPE ($&1_type argp)
+%{ argp = *($&1_ltype*)&$input;
+   if (!argp) {
+     return $null;
+   }
+   $1 = *argp;
+%}
+
+%typemap(out) SWIGTYPE
+#ifdef __cplusplus
+%{ *($&1_ltype*)&$result = new $1_ltype((const $1_ltype &)$1); %}
+#else
+{
+  $&1_ltype $1ptr = ($&1_ltype) malloc(sizeof($1_ltype));
+  memmove($1ptr, &$1, sizeof($1_type));
+  *($&1_ltype*)&$result = $1ptr;
+}
+#endif
+
+/* Generic pointers and references */
+%typemap(in) SWIGTYPE * %{ $1 = *($&1_ltype)&$input; %}
+%typemap(in) SWIGTYPE & %{ $1 = *($&1_ltype)&$input;
+  if (!$1) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "$1_type reference is null");
+    return $null;
+  } %}
+%typemap(in) SWIGTYPE && %{ $1 = *($&1_ltype)&$input;
+  if (!$1) {
+    SWIG_JavaThrowException(jenv, SWIG_JavaNullPointerException, "$1_type reference is null");
+    return $null;
+  } %}
+%typemap(out) SWIGTYPE *
+%{ *($&1_ltype)&$result = $1; %}
+%typemap(out) SWIGTYPE &
+%{ *($&1_ltype)&$result = $1; %}
+%typemap(out) SWIGTYPE &&
+%{ *($&1_ltype)&$result = $1; %}
+
+/* Default array handling */
+%typemap(in) SWIGTYPE [] %{ $1 = *($&1_ltype)&$input; %}
+%typemap(out) SWIGTYPE [] %{ *($&1_ltype)&$result = $1; %}
+%typemap(freearg) SWIGTYPE [ANY], SWIGTYPE [] ""
+
+/* Type checking */
+%typecheck(SWIG_TYPECHECK_POINTER)
+    SWIGTYPE,
+    SWIGTYPE *,
+    SWIGTYPE &,
+    SWIGTYPE &&,
+    SWIGTYPE *const&,
+    SWIGTYPE [],
+    SWIGTYPE (CLASS::*)
+    ""
+
