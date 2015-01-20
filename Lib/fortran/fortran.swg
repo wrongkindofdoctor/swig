@@ -43,7 +43,7 @@
              size_t,
              float,
              double
-%{ $1 = ($*1_ltype)$input; %}
+%{ $1 = *$input; %}
 
 /* Output conversions */
 %typemap(out) bool,
@@ -59,6 +59,22 @@
 %{ $result = $1; %}
 
 %typemap(out) void "";
+
+/* Fortran class insertion */
+%typemap(faccess) bool,
+                  char,
+                  signed char,
+                  short,
+                  int,
+                  long,
+                  long long,
+                  size_t,
+                  float,
+                  double
+%{$1%}
+
+// For wrapped classes, pass the embedded class pointer
+%typemap(faccess) SWIGTYPE, SWIGTYPE *, SWIGTYPE &      %{$1%ptr%}
 
 /* Equivalent types in fortran */
 %apply char   { unsigned char };

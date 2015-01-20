@@ -305,6 +305,7 @@ int FORTRAN::functionWrapper(Node *n)
     /* Attach the non-standard typemaps to the parameter list. */
     Swig_typemap_attach_parms("fctype", parmlist, f);
     Swig_typemap_attach_parms("fftype", parmlist, f);
+    Swig_typemap_attach_parms("faccess", parmlist, f);
 
     /* Get return types */
 
@@ -377,13 +378,20 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     String* fortran_arglist = NewString("(");
+    String* fortran_calllist = NewString("(");
 
-    int num_arguments = emit_num_arguments(parmlist);
-    for (int i = 0; i < num_arguments; ++i)
+    int i = 0;
+    while (p)
     {
         while (checkAttribute(p, "tmap:in:numinputs", "0"))
         {
             p = Getattr(p, "tmap:in:next");
+        }
+        if (!p)
+        {
+            Swig_error(Getfile(n), Getline(n), "while iterating through typemap inputs"
+                     " for function %s.\n", symname);
+            return SWIG_ERROR;
         }
 
         const char* prepend_comma = (i == 0 ? "" : ", ");
@@ -403,10 +411,27 @@ int FORTRAN::functionWrapper(Node *n)
         else
         {
             SwigType *param_type = Getattr(p, "type");
-            Swig_warning(WARN_JAVA_TYPEMAP_JNI_UNDEF, input_file, line_number,
+            Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
                     "No fctype typemap defined for %s\n", SwigType_str(param_type, 0));
         }
         Printv(f->def, prepend_comma, c_param_type, " ", arg, NULL);
+
+        /* Add parameter to C function */
+
+        // Get typemap for this argument
+        tm = Getattr(p, "tmap:in");
+        if (tm)
+        {
+            Replaceall(tm, "$input", arg);
+            Setattr(p, "emit:input", arg);
+            Printf(nondir_args, "%s\n", tm);
+        }
+        else
+        {
+            SwigType *param_type = Getattr(p, "type");
+            Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
+                         "Unable to use type %s as a function argument.\n", SwigType_str(param_type, 0));
+        }
 
         /* Add parameter to intermediary class declarations */
         String *f_param_type = NewString("");
@@ -418,7 +443,7 @@ int FORTRAN::functionWrapper(Node *n)
         else
         {
             SwigType *param_type = Getattr(p, "type");
-            Swig_warning(WARN_JAVA_TYPEMAP_JTYPE_UNDEF, input_file, line_number,
+            Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
                     "No fftype typemap defined for %s\n", SwigType_str(param_type, 0));
         }
         // Add parameter name to declaration list
@@ -426,31 +451,33 @@ int FORTRAN::functionWrapper(Node *n)
         // Add parameter type to the parameters list
         Printv(fortran_parameters, "    ", f_param_type, " :: ", arg, "\n", NULL);
 
-        /* Add parameter to C function */
-
-        // Get typemap for this argument
-        if ((tm = Getattr(p, "tmap:in")))
+        /* Get main subroutine "call" argument */
+        String *f_callarg = NewString("");
+        tm = Getattr(p, "tmap:faccess");
+        if (tm)
         {
-            Replaceall(tm, "$input", arg);
-            Setattr(p, "emit:input", arg);
-
-            Printf(nondir_args, "%s\n", tm);
-
-            p = Getattr(p, "tmap:in:next");
+            Printv(f_callarg, tm, NULL);
         }
         else
         {
             SwigType *param_type = Getattr(p, "type");
             Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
-                         "Unable to use type %s as a function argument.\n", SwigType_str(param_type, 0));
-            p = nextSibling(p);
+                    "No faccess typemap defined for %s = %s\n", param_type, SwigType_str(param_type, 0));
         }
+        // Add parameter type to the parameters list
+        Printv(fortran_calllist, prepend_comma, f_callarg, NULL);
 
         Delete(f_param_type);
+        Delete(f_callarg);
         Delete(c_param_type);
         Delete(arg);
+
+        ++i;
+        p = nextSibling(p);
     }
+
     Printf(fortran_arglist, ")");
+    Printf(fortran_calllist, ")");
 
     if (!is_subroutine)
     {
@@ -568,6 +595,10 @@ int FORTRAN::functionWrapper(Node *n)
            "   ", sub_or_func, " ", fwname, fortran_arglist,
            "\n",
            fortran_parameters,
+           "    ", (is_subroutine ? "call " : "fresult = "),
+           wname,
+           fortran_calllist,
+           "\n",
            "   end ", sub_or_func, "\n",
            NULL);
 
@@ -592,11 +623,12 @@ int FORTRAN::functionWrapper(Node *n)
         }
     }
 
-
-    Delete(c_return_type);
     Delete(cleanup);
     Delete(outarg);
     Delete(fortran_parameters);
+    Delete(fortran_arglist);
+    Delete(fortran_calllist);
+    Delete(c_return_type);
     DelWrapper(f);
     Delete(wname);
     return SWIG_OK;
