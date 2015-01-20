@@ -26,7 +26,9 @@ class FORTRAN : public Language
     String *f_interfaces;  //!< Fortran _M: generated classes
     String *f_subroutines; //!< Fortran _M: generated classes
 
-    // Side effect attributes
+    // Current class parameters
+    String *f_cur_methods; //!< Method strings inside the current class
+    String *f_cur_constructors; //!< Constructor strings inside the current class
     bool d_in_constructor; //!< Whether we're being called inside a constructor
     bool d_in_destructor; //!< Whether we're being called inside a constructor
 
@@ -40,6 +42,10 @@ class FORTRAN : public Language
     virtual int memberfunctionHandler(Node *n);
 
     FORTRAN()
+        : f_cur_methods(NULL)
+        , f_cur_constructors(NULL)
+        , d_in_constructor(false)
+        , d_in_destructor(false)
     {
         /* * */
     }
@@ -267,7 +273,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     // Basic attributes (references)
     String* symname = Getattr(n, "sym:name");
-    String* nodetype = Getattr(n, "nodeType");
+    //String* nodetype = Getattr(n, "nodeType");
     SwigType* type = Getattr(n, "type");
     ParmList* parmlist = Getattr(n, "parms");
     String* orig_wrapper_name = Swig_name_wrapper(symname);
@@ -565,6 +571,27 @@ int FORTRAN::functionWrapper(Node *n)
            "   end ", sub_or_func, "\n",
            NULL);
 
+    /* Write class interface if appropriate */
+    if (is_wrapping_class())
+    {
+        if (d_in_constructor)
+        {
+            // Inside a constructor
+            assert(f_cur_constructors);
+            Printv(f_cur_constructors,
+                   "  procedure :: ", fwname, "\n",
+                   NULL);
+        }
+        else
+        {
+            // Just a class method
+            assert(f_cur_methods);
+            Printv(f_cur_methods,
+                   "  procedure :: ", symname, " => ", fwname, "\n",
+                   NULL);
+        }
+    }
+
 
     Delete(c_return_type);
     Delete(cleanup);
@@ -584,8 +611,6 @@ int FORTRAN::classHandler(Node *n)
     // Basic attributes
     String *symname = Getattr(n, "sym:name");
     String *real_classname = Getattr(n, "name");
-    SwigType *type = Getattr(n, "type");
-    ParmList *parmlist = Getattr(n, "parms");
 
     if (!addSymbol(symname, n))
         return SWIG_ERROR;
@@ -599,19 +624,11 @@ int FORTRAN::classHandler(Node *n)
                 SwigType_namestr(Char(symname)));
     }
 
-    /* Create bare-bones proxy class */
-    String* fortran_type = NewString("");
-    String* fortran_arglist = NewString("");
-    String* fortran_end_declaration = NewString("");
-
-    //Printf(fortran_arglist, );
-    //Printf(fortran_end_declaration, " end type\n");
-
-    Printf(fortran_arglist, "  type(C_PTR) :: instance_ptr=C_NULL_PTR\n");
-    Printf(fortran_arglist, " contains\n");
-
-    String* fortran_parameters = NewString("");
-    String* fortran_subroutines = NewString("");
+    /* Initialize strings that will be populated by class members */
+    assert(!f_cur_methods);
+    assert(!f_cur_constructors);
+    f_cur_methods = NewString("");
+    f_cur_constructors = NewString("");
 
     /* Emit class members */
     Language::classHandler(n);
@@ -643,19 +660,21 @@ int FORTRAN::classHandler(Node *n)
     Delete(realct);
 
     /* Write fortran class header */
-    Printf(f_types, " type %s\n", Char(symname));
-    Printf(f_types, "  type(C_PTR), private :: ptr = C_NULL_PTR\n");
-    Printf(f_types, " contains\n");
-    //Printv(f_types, f_class_method_names, NULL);
-    Printf(f_types, " end type\n");
-    //           fortran_arglist,
-    //           fortran_parameters,
-    //           fortran_subroutines,
-    //           NULL);
+    Printv(f_types, " type ", symname, "\n"
+                    "  type(C_PTR), private :: ptr = C_NULL_PTR\n"
+                    " contains\n",
+                    f_cur_methods,
+                    " end type\n",
+                    NULL);
 
-    Delete(fortran_subroutines);
-    Delete(fortran_parameters);
-    Delete(fortran_arglist);
+    /* Write fortran constructors */
+    Printv(f_types, " interface ", symname, "\n",
+                    f_cur_constructors,
+                    " end interface\n",
+                    NULL);
+
+    Delete(f_cur_methods); f_cur_methods = NULL;
+    Delete(f_cur_constructors); f_cur_constructors = NULL;
 
     return SWIG_OK;
 }
@@ -666,7 +685,9 @@ int FORTRAN::classHandler(Node *n)
  */
 int FORTRAN::constructorHandler(Node* n)
 {
+    d_in_constructor = true;
     Language::constructorHandler(n);
+    d_in_constructor = false;
     return SWIG_OK;
 }
 
@@ -678,7 +699,9 @@ int FORTRAN::constructorHandler(Node* n)
  */
 int FORTRAN::destructorHandler(Node* n)
 {
+    d_in_destructor = true;
     Language::destructorHandler(n);
+    d_in_destructor = false;
     return SWIG_OK;
 }
 
@@ -689,6 +712,7 @@ int FORTRAN::destructorHandler(Node* n)
 int FORTRAN::memberfunctionHandler(Node *n)
 {
     Language::memberfunctionHandler(n);
+    return SWIG_OK;
 }
 
 //---------------------------------------------------------------------------//
