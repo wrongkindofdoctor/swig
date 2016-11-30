@@ -132,6 +132,11 @@ int FORTRAN::top(Node *n)
     f_subroutines = NewString("");
     Swig_register_filebyname("fsubroutines", f_subroutines);
 
+    // Substitution code
+    String *wrapper_name = NewString("swigc_%f");
+    Swig_name_register("wrapper", wrapper_name);
+    Delete(wrapper_name);
+
     /* Emit all other wrapper code */
     Language::top(n);
 
@@ -293,8 +298,7 @@ int FORTRAN::functionWrapper(Node *n)
     Setattr(n, "wrap:name", wname);
 
     // Add fortran wrapper name
-    String* fwname = Copy(wname);
-    Replace(fwname, "_wrap_", "", DOH_REPLACE_FIRST);
+    String* fwname = Copy(symname);
     Setattr(n, "fortran:name", fwname);
 
     // A new wrapper function object
@@ -726,8 +730,6 @@ int FORTRAN::constructorHandler(Node* n)
 //---------------------------------------------------------------------------//
 /*!
  * \brief Handle extra destructor stuff.
- *
- * TODO: this is where the optional "final" support for Fortran would be added?
  */
 int FORTRAN::destructorHandler(Node* n)
 {
