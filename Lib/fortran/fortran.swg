@@ -1,33 +1,40 @@
+/* C parameter types used in the wrapper code */
+%typemap(fcptype) bool        %{bool*%}
+%typemap(fcptype) char        %{char*%}
+%typemap(fcptype) signed char %{signed char*%}
+%typemap(fcptype) int         %{int*%}
+%typemap(fcptype) long        %{long*%}
+%typemap(fcptype) long long   %{long long*%}
+%typemap(fcptype) size_t      %{size_t*%}
+%typemap(fcptype) float       %{float*%}
+%typemap(fcptype) double      %{double*%}
+%typemap(fcptype) SWIGTYPE *  %{void*%}
+%typemap(fcptype) SWIGTYPE &  %{void*%}
+
 /* C return types used in the wrapper code */
-%typemap(fctype) bool               %{bool%}
-%typemap(fctype) char               %{char%}
-%typemap(fctype) signed char        %{signed char%}
-%typemap(fctype) unsigned char      %{unsigned char%}
-%typemap(fctype) short              %{short%}
-%typemap(fctype) unsigned short     %{int%}
-%typemap(fctype) int                %{int%}
-%typemap(fctype) unsigned int       %{long%}
-%typemap(fctype) long               %{long%}
-%typemap(fctype) unsigned long      %{long%}
-%typemap(fctype) long long          %{long long%}
-%typemap(fctype) unsigned long long %{size_t%}
-%typemap(fctype) float              %{float%}
-%typemap(fctype) double             %{double%}
-%typemap(fctype) void               %{void%}
-%typemap(fctype) SWIGTYPE *         %{void*%}
-%typemap(fctype) SWIGTYPE &         %{void*%}
+%typemap(fcrtype) bool        %{bool%}
+%typemap(fcrtype) char        %{char%}
+%typemap(fcrtype) signed char %{signed char%}
+%typemap(fcrtype) int         %{int%}
+%typemap(fcrtype) long        %{long%}
+%typemap(fcrtype) long long   %{long long%}
+%typemap(fcrtype) size_t      %{size_t%}
+%typemap(fcrtype) float       %{float%}
+%typemap(fcrtype) double      %{double%}
+%typemap(fcrtype) void        %{void%}
 
 /* FORTRAN types used in the fortran code */
-%typemap(fftype) bool        "logical(C_BOOL)"
-%typemap(fftype) char        "character(C_CHAR)"
-%typemap(fftype) signed char "integer(C_SIGNED_CHAR)"
-%typemap(fftype) short       "integer(C_SHORT)"
-%typemap(fftype) int         "integer(C_INT)"
-%typemap(fftype) long        "integer(C_LONG)"
-%typemap(fftype) long long   "integer(C_LONG_LONG)"
-%typemap(fftype) size_t      "integer(C_SIZE_T)"
-%typemap(fftype) float       "real(C_FLOAT)"
-%typemap(fftype) double      "real(C_DOUBLE)"
+%typemap(fftype) bool        *, bool        &, bool        "logical(C_BOOL)"
+%typemap(fftype) char        *, char        &, char        "character(C_CHAR)"
+%typemap(fftype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
+%typemap(fftype) short       *, short       &, short       "integer(C_SHORT)"
+%typemap(fftype) int         *, int         &, int         "integer(C_INT)"
+%typemap(fftype) long        *, long        &, long        "integer(C_LONG)"
+%typemap(fftype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
+%typemap(fftype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
+%typemap(fftype) float       *, float       &, float       "real(C_FLOAT)"
+%typemap(fftype) double      *, double      &, double      "real(C_DOUBLE)"
+
 %typemap(fftype) SWIGTYPE *  "type(C_PTR)"
 %typemap(fftype) SWIGTYPE &  "type(C_PTR)"
 %typemap(fftype) void        ""
@@ -77,22 +84,10 @@
 %typemap(faccess) SWIGTYPE, SWIGTYPE *, SWIGTYPE &      %{$1%ptr%}
 
 /* Equivalent types in fortran */
-%apply char   { unsigned char };
-%apply int    { unsigned short };
-%apply long   { unsigned int, unsigned long, const unsigned int & };
-%apply size_t { unsigned long long };
-
-%apply bool        { const bool & }
-%apply char        { const char & }
-%apply signed char { const signed char & }
-%apply short       { const short & }
-%apply int         { const int & }
-%apply long        { const long & }
-%apply long long   { const long long & }
-%apply size_t      { const size_t & }
-%apply float       { const float & }
-%apply double      { const double & }
-
+//%apply int    { unsigned short };
+//%apply long   { unsigned int, unsigned long, const unsigned int & };
+//%apply size_t { unsigned long long };
+//%apply SWIGTYPE { const SWIGTYPE*, SWIGTYPE &, const SWIGTYPE& }
 
 %typemap(out) SWIGTYPE
 #ifdef __cplusplus
@@ -122,6 +117,9 @@
 %typemap(freearg) SWIGTYPE [ANY], SWIGTYPE [] ""
 
 /* Type checking */
+%{
+#include <cassert>
+%}
 %typecheck(SWIG_TYPECHECK_POINTER)
     SWIGTYPE,
     SWIGTYPE *,

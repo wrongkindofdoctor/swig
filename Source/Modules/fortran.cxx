@@ -18,13 +18,12 @@ class FORTRAN : public Language
     String *f_wrappers; //!< C++ Wrapper code
     String *f_init; //!< C++ initalization functions
 
-    // Injected into _I file
-    String *f_wrapper_interfaces; //!< interface code inside the _I file
-    // Injected into _M file
+    // Injected into module file
     String *f_imports;     //!< Fortran "use" directives generated from %import
+    String *f_public;      //!< List of public interface functions and mapping
     String *f_types;       //!< Generated class types
-    String *f_interfaces;  //!< Fortran _M: generated classes
-    String *f_subroutines; //!< Fortran _M: generated classes
+    String *f_interfaces;  //!< Fortran interface declarations to SWIG functions
+    String *f_subroutines; //!< Fortran subroutines
 
     // Current class parameters
     String *f_cur_methods; //!< Method strings inside the current class
@@ -53,7 +52,7 @@ class FORTRAN : public Language
   private:
     void write_wrapper();
     void write_module_interface();
-    void write_module_code();
+    void write_module();
 };
 
 //---------------------------------------------------------------------------//
@@ -112,13 +111,13 @@ int FORTRAN::top(Node *n)
     f_init = NewString("");
     Swig_register_filebyname("init", f_init);
 
-    // Fortran interfaces (injected into _I.f90)
-    f_wrapper_interfaces = NewString("");
-    Swig_register_filebyname("fwrapperinterfaces", f_wrapper_interfaces);
-
     // Other imported fortran modules
     f_imports = NewString("");
     Swig_register_filebyname("fimports", f_imports);
+
+    // Public interface functions
+    f_public = NewString("");
+    Swig_register_filebyname("fpublic", f_public);
 
     // Fortran classes
     f_types = NewString("");
@@ -142,8 +141,7 @@ int FORTRAN::top(Node *n)
 
     /* Write fortran module files */
     write_wrapper();
-    write_module_interface();
-    write_module_code();
+    write_module();
 
     /* Cleanup files */
     Delete(f_runtime);
@@ -195,48 +193,13 @@ void FORTRAN::write_wrapper()
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Write Fortran interface module
- */
-void FORTRAN::write_module_interface()
-{
-    // Open file
-    String* path = NewStringf(
-            "%s%s_I.f90", SWIG_output_directory(), Char(d_module));
-    File* out = NewFile(path, "w", SWIG_output_files());
-    if (!out)
-    {
-        FileErrorDisplay(path);
-        SWIG_exit(EXIT_FAILURE);
-    }
-    Delete(path);
-
-    // Write SWIG auto-generation banner
-    Swig_banner_target_lang(out, "!");
-
-    // Write fortran header
-    Printf(out, "module %s_I\n", d_module);
-    Printf(out, " use, intrinsic :: ISO_C_BINDING\n"
-                " implicit none\n"
-                " interface\n");
-
-    Printv(out, f_wrapper_interfaces, NULL);
-
-    Printf(out, " end interface\n"
-                "end module %s_I\n", d_module);
-
-    // Close file
-    Delete(out);
-}
-
-//---------------------------------------------------------------------------//
-/*!
  * \brief Write Fortran implementation module
  */
-void FORTRAN::write_module_code()
+void FORTRAN::write_module()
 {
     // Open file
     String* path = NewStringf(
-            "%s%s_M.f90", SWIG_output_directory(), Char(d_module));
+            "%s%s.f90", SWIG_output_directory(), Char(d_module));
     File* out = NewFile(path, "w", SWIG_output_files());
     if (!out)
     {
@@ -248,19 +211,23 @@ void FORTRAN::write_module_code()
     // Write SWIG auto-generation banner
     Swig_banner_target_lang(out, "!");
 
-    // Write fortran header
-    Printf(out, "module %s_M\n", d_module);
+    // Write module
+    Printf(out, "module %s\n", d_module);
     Printf(out, " use, intrinsic :: ISO_C_BINDING\n");
-    Printf(out, " use %s_I\n", d_module);
     Printv(out, f_imports, NULL);
     Printf(out, " implicit none\n");
+    Printf(out, " ! PUBLIC METHODS AND TYPES\n");
+    Printv(out, f_public, NULL);
     Printf(out, " ! TYPES\n");
     Printv(out, f_types, NULL);
     Printf(out, " ! INTERFACES\n");
+    Printf(out, " private\n");
+    Printf(out, " interface\n");
     Printv(out, f_interfaces, NULL);
+    Printf(out, " end interface\n");
     Printf(out, "contains\n");
     Printv(out, f_subroutines, NULL);
-    Printf(out, "end module %s_M\n", d_module);
+    Printf(out, "end module %s\n", d_module);
 
     // Close file
     Delete(out);
@@ -307,14 +274,15 @@ int FORTRAN::functionWrapper(Node *n)
     // Make a wrapper name for this function
 
     /* Attach the non-standard typemaps to the parameter list. */
-    Swig_typemap_attach_parms("fctype", parmlist, f);
+    Swig_typemap_attach_parms("fcptype", parmlist, f);
+    Swig_typemap_attach_parms("fcrtype", parmlist, f);
     Swig_typemap_attach_parms("fftype", parmlist, f);
     Swig_typemap_attach_parms("faccess", parmlist, f);
 
     /* Get return types */
 
     // Get C type
-    String *tm = Swig_typemap_lookup("fctype", n, "", 0);
+    String *tm = Swig_typemap_lookup("fcrtype", n, "", 0);
     String *c_return_type = NewString("");
     if (tm)
     {
@@ -323,7 +291,7 @@ int FORTRAN::functionWrapper(Node *n)
     else
     {
         Swig_warning(WARN_JAVA_TYPEMAP_JNI_UNDEF,
-                input_file, line_number, "No fctype typemap defined for %s\n", SwigType_str(type, 0));
+                input_file, line_number, "No fcrtype typemap defined for %s\n", SwigType_str(type, 0));
     }
     Printv(f->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
 
@@ -361,6 +329,7 @@ int FORTRAN::functionWrapper(Node *n)
     Printf(fortran_parameters, "    use, intrinsic :: ISO_C_BINDING\n");
     Printf(fortran_parameters, "    implicit none\n");
 
+    // Set up return value types if it's a function (rather than subroutine)
     if (!is_subroutine)
     {
         // Get corresponding Fortran type
@@ -407,7 +376,7 @@ int FORTRAN::functionWrapper(Node *n)
 
         /* Get the C types of the parameter */
         String *c_param_type = NewString("");
-        tm = Getattr(p, "tmap:fctype");
+        tm = Getattr(p, "tmap:fcptype");
         if (tm)
         {
             Printv(c_param_type, tm, NULL);
@@ -416,7 +385,7 @@ int FORTRAN::functionWrapper(Node *n)
         {
             SwigType *param_type = Getattr(p, "type");
             Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
-                    "No fctype typemap defined for %s\n", SwigType_str(param_type, 0));
+                    "No fcptype typemap defined for %s\n", SwigType_str(param_type, 0));
         }
         Printv(f->def, prepend_comma, c_param_type, " ", arg, NULL);
 
@@ -586,23 +555,13 @@ int FORTRAN::functionWrapper(Node *n)
     /* Write the C++ function into f_wrappers */
     Wrapper_print(f, f_wrappers);
 
-    /* Write the Fortran interface file */
+    /* Write the Fortran interface to the C routine */
     const char* sub_or_func = (is_subroutine ? "subroutine" : "function");
 
-    Printv(f_wrapper_interfaces,
-           "   ", sub_or_func, " ", wname, fortran_arglist,
+    Printv(f_interfaces,
+           "   ", sub_or_func, " ", symname, fortran_arglist,
            " &\n      bind(C, name=\"", wname, "\")\n",
            fortran_parameters,
-           "   end ", sub_or_func, "\n",
-           NULL);
-    Printv(f_subroutines,
-           "   ", sub_or_func, " ", fwname, fortran_arglist,
-           "\n",
-           fortran_parameters,
-           "    ", (is_subroutine ? "call " : "fresult = "),
-           wname,
-           fortran_calllist,
-           "\n",
            "   end ", sub_or_func, "\n",
            NULL);
 
@@ -625,6 +584,13 @@ int FORTRAN::functionWrapper(Node *n)
                    "  procedure :: ", symname, " => ", fwname, "\n",
                    NULL);
         }
+    }
+    else
+    {
+        // Not a class: make the function public
+        Printv(f_public,
+               " public :: ", symname, "\n",
+               NULL);
     }
 
     Delete(cleanup);
