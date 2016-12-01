@@ -240,6 +240,12 @@
 
 /* please leave 740-759 free for Python */
 
+#define WARN_FORTRAN_TYPEMAP_FCPTYPE_UNDEF    760
+#define WARN_FORTRAN_TYPEMAP_FCRTYPE_UNDEF    761
+#define WARN_FORTRAN_TYPEMAP_FFTYPE_UNDEF     762
+
+/* please leave 760-779 free for Fortran */
+
 #define WARN_RUBY_WRONG_NAME                  801
 #define WARN_RUBY_MULTIPLE_INHERITANCE        802
 

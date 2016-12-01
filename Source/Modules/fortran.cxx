@@ -290,7 +290,7 @@ int FORTRAN::functionWrapper(Node *n)
     }
     else
     {
-        Swig_warning(WARN_JAVA_TYPEMAP_JNI_UNDEF,
+        Swig_warning(WARN_FORTRAN_TYPEMAP_FCRTYPE_UNDEF,
                 input_file, line_number, "No fcrtype typemap defined for %s\n", SwigType_str(type, 0));
     }
     Printv(f->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
@@ -341,7 +341,7 @@ int FORTRAN::functionWrapper(Node *n)
         }
         else
         {
-            Swig_warning(WARN_JAVA_TYPEMAP_JTYPE_UNDEF,
+            Swig_warning(WARN_FORTRAN_TYPEMAP_FFTYPE_UNDEF,
                     input_file, line_number,
                     "No fftype typemap defined for %s\n", SwigType_str(type, 0));
         }
