@@ -123,7 +123,7 @@
     ""
 
 //---------------------------------------------------------------------------//
-// Wrapper code inserted into Fortran
+// Proxy code inserted into Fortran
 //---------------------------------------------------------------------------//
 
 /* Fortran types used in the fortran interface code */
@@ -167,8 +167,22 @@
                  double      *, double      &, double 
 %{$1%}
 
-// For wrapped classes, pass the embedded class pointer
+// For proxy classes, pass the embedded class pointer
 %typemap(fxget) SWIGTYPE, SWIGTYPE *, SWIGTYPE & %{$1%ptr%}
+
+/* ------------------------------------------------------------------------- */
+/*
+  Add fortran code to the proxy/shadow code 
+  
+   %fortranprepend   - Add code before the C++ function is called
+   %fortranappend    - Add code after the C++ function is called
+*/
+
+#define %fortranprepend       %feature("fortranprepend") 
+#define %clearfortranprepend  %feature("fortranprepend","")
+
+#define %fortranappend         %feature("fortranappend") 
+#define %clearfortranappend    %feature("fortranappend","")
 
 //---------------------------------------------------------------------------//
 

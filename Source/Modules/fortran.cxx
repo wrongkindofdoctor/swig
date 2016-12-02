@@ -55,6 +55,8 @@ class FORTRAN : public Language
     // Helper functions
     String* get_simple_typemap(const char* tmname, Node* n,
                                const_String_or_char_ptr var = "");
+    String* fortranprepend(Node* n);
+    String* fortranappend(Node* n);
 };
 
 //---------------------------------------------------------------------------//
@@ -545,6 +547,12 @@ int FORTRAN::functionWrapper(Node *n)
            "   end ", sub_or_func_str, "\n",
            NULL);
 
+    // Get strings to append and prepend if needed
+    const_String_or_char_ptr prepend = fortranprepend(n);
+    if (!prepend) prepend = "";
+    const_String_or_char_ptr append = fortranappend(n);
+    if (!append) append = "";
+
     /* Write the subroutine proxy code */
     if (d_in_constructor)
     {
@@ -553,7 +561,9 @@ int FORTRAN::functionWrapper(Node *n)
         Printv(f_proxy,
                " subroutine ", fwname, "(fresult", prepend_comma, fargs, ")\n",
                fxparams,
-               "  fresult%ptr = ", wname, "(", fxcallargs, ")\n"
+               prepend,
+               "  fresult%ptr = ", wname, "(", fxcallargs, ")\n",
+               append,
                " end subroutine\n",
                NULL);
     }
@@ -563,7 +573,9 @@ int FORTRAN::functionWrapper(Node *n)
                " ", sub_or_func_str, " ", fwname, "(", fargs, ")",
                result_str,
                fxparams,
-               "  ", (is_subroutine ? "call " : "fresult = "), wname, "(", fxcallargs, ")\n"
+               prepend,
+               "  ", (is_subroutine ? "call " : "fresult = "), wname, "(", fxcallargs, ")\n",
+               append,
                " end ", sub_or_func_str, "\n",
                NULL);
     }
@@ -734,6 +746,40 @@ String* FORTRAN::get_simple_typemap(const char* tmname, Node* n,
                      SwigType_str(type, 0));
     }
     return result;
+}
+
+//---------------------------------------------------------------------------//
+// Return fortran code to be inserted at the beginning of a proxy function
+String* FORTRAN::fortranprepend(Node* n)
+{
+    String *str = Getattr(n, "feature:fortranprepend");
+    if (!str)
+        return NULL;
+
+    char *t = Char(str);
+    if (*t == '{')
+    {
+        Delitem(str, 0);
+        Delitem(str, DOH_END);
+    }
+    return str;
+}
+
+//---------------------------------------------------------------------------//
+// Return fortran code to be inserted at the end of a proxy function
+String* FORTRAN::fortranappend(Node* n)
+{
+    String *str = Getattr(n, "feature:fortranappend");
+    if (!str)
+        return NULL;
+
+    char *t = Char(str);
+    if (*t == '{')
+    {
+        Delitem(str, 0);
+        Delitem(str, DOH_END);
+    }
+    return str;
 }
 
 //---------------------------------------------------------------------------//
