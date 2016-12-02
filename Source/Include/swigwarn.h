@@ -240,9 +240,7 @@
 
 /* please leave 740-759 free for Python */
 
-#define WARN_FORTRAN_TYPEMAP_FCPTYPE_UNDEF    760
-#define WARN_FORTRAN_TYPEMAP_FCRTYPE_UNDEF    761
-#define WARN_FORTRAN_TYPEMAP_FFTYPE_UNDEF     762
+#define WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF    760
 
 /* please leave 760-779 free for Fortran */
 

@@ -126,24 +126,36 @@
 // Wrapper code inserted into Fortran
 //---------------------------------------------------------------------------//
 
-/* FORTRAN types used in the fortran code */
-%typemap(fftype) bool        *, bool        &, bool        "logical(C_BOOL)"
-%typemap(fftype) char        *, char        &, char        "character(C_CHAR)"
-%typemap(fftype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
-%typemap(fftype) short       *, short       &, short       "integer(C_SHORT)"
-%typemap(fftype) int         *, int         &, int         "integer(C_INT)"
-%typemap(fftype) long        *, long        &, long        "integer(C_LONG)"
-%typemap(fftype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
-%typemap(fftype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
-%typemap(fftype) float       *, float       &, float       "real(C_FLOAT)"
-%typemap(fftype) double      *, double      &, double      "real(C_DOUBLE)"
+/* Fortran types used in the fortran interface code */
+%typemap(fitype) bool        *, bool        &, bool        "logical(C_BOOL)"
+%typemap(fitype) char        *, char        &, char        "character(C_CHAR)"
+%typemap(fitype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
+%typemap(fitype) short       *, short       &, short       "integer(C_SHORT)"
+%typemap(fitype) int         *, int         &, int         "integer(C_INT)"
+%typemap(fitype) long        *, long        &, long        "integer(C_LONG)"
+%typemap(fitype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
+%typemap(fitype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
+%typemap(fitype) float       *, float       &, float       "real(C_FLOAT)"
+%typemap(fitype) double      *, double      &, double      "real(C_DOUBLE)"
+%typemap(fitype) SWIGTYPE *, SWIGTYPE & "type(C_PTR)"
+%typemap(fitype) void        ""
 
-%typemap(fftype) SWIGTYPE *  "type(C_PTR)"
-%typemap(fftype) SWIGTYPE &  "type(C_PTR)"
-%typemap(fftype) void        ""
+/* Fortran types used in the fortran wrapper code */
+%typemap(fwtype) bool        *, bool        &, bool        "logical(C_BOOL)"
+%typemap(fwtype) char        *, char        &, char        "character(C_CHAR)"
+%typemap(fwtype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
+%typemap(fwtype) short       *, short       &, short       "integer(C_SHORT)"
+%typemap(fwtype) int         *, int         &, int         "integer(C_INT)"
+%typemap(fwtype) long        *, long        &, long        "integer(C_LONG)"
+%typemap(fwtype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
+%typemap(fwtype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
+%typemap(fwtype) float       *, float       &, float       "real(C_FLOAT)"
+%typemap(fwtype) double      *, double      &, double      "real(C_DOUBLE)"
+%typemap(fwtype) SWIGTYPE *, SWIGTYPE & "class($*1_ltype)"
+%typemap(fwtype) void        ""
 
-/* Fortran argument types */
-%typemap(fcall)  bool        *, bool        &, bool       ,
+/* Fortran 'call' argument extraction used in wrapper subroutine */
+%typemap(fwcall) bool        *, bool        &, bool       ,
                  char        *, char        &, char       ,
                  signed char *, signed char &, signed char,
                  short       *, short       &, short      ,
@@ -156,7 +168,7 @@
 %{$1%}
 
 // For wrapped classes, pass the embedded class pointer
-%typemap(fcall) SWIGTYPE, SWIGTYPE *, SWIGTYPE & %{$1%ptr%}
+%typemap(fwcall) SWIGTYPE, SWIGTYPE *, SWIGTYPE & %{$1%ptr%}
 
 //---------------------------------------------------------------------------//
 
