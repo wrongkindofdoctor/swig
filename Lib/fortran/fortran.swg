@@ -16,16 +16,16 @@
 %typemap(fcptype) SWIGTYPE &  %{void*%}
 
 /* C return types used in the wrapper code */
-%typemap(fcrtype) bool        %{bool%}
-%typemap(fcrtype) char        %{char%}
-%typemap(fcrtype) signed char %{signed char%}
-%typemap(fcrtype) int         %{int%}
-%typemap(fcrtype) long        %{long%}
-%typemap(fcrtype) long long   %{long long%}
-%typemap(fcrtype) size_t      %{size_t%}
-%typemap(fcrtype) float       %{float%}
-%typemap(fcrtype) double      %{double%}
-%typemap(fcrtype) void        %{void%}
+%typemap(fcrtype) bool       , const bool       & %{bool%}
+%typemap(fcrtype) char       , const char       & %{char%}
+%typemap(fcrtype) signed char, const signed char& %{signed char%}
+%typemap(fcrtype) int        , const int        & %{int%}
+%typemap(fcrtype) long       , const long       & %{long%}
+%typemap(fcrtype) long long  , const long long  & %{long long%}
+%typemap(fcrtype) size_t     , const size_t     & %{size_t%}
+%typemap(fcrtype) float      , const float      & %{float%}
+%typemap(fcrtype) double     , const double     & %{double%}
+%typemap(fcrtype) void       , const void       & %{void%}
 %typemap(fcrtype) SWIGTYPE *  %{void*%}
 
 // TODO: use SWIG's fancy typemap checking
@@ -200,7 +200,7 @@
 //---------------------------------------------------------------------------//
 
 /* Equivalent types in fortran */
-//%apply int    { unsigned short };
-//%apply long   { unsigned int, unsigned long, const unsigned int & };
-//%apply size_t { unsigned long long };
-//%apply SWIGTYPE { const SWIGTYPE*, SWIGTYPE &, const SWIGTYPE& }
+%apply int    { unsigned short };
+%apply long   { unsigned int, unsigned long, const unsigned int & };
+%apply size_t { unsigned long long };
+%apply SWIGTYPE { const SWIGTYPE*, SWIGTYPE &, const SWIGTYPE& }
