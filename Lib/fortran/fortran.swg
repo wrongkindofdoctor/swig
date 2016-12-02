@@ -1,3 +1,7 @@
+//---------------------------------------------------------------------------//
+// Wrapper code inserted into C
+//---------------------------------------------------------------------------//
+
 /* C parameter types used in the wrapper code */
 %typemap(fcptype) bool        %{bool*%}
 %typemap(fcptype) char        %{char*%}
@@ -22,22 +26,7 @@
 %typemap(fcrtype) float       %{float%}
 %typemap(fcrtype) double      %{double%}
 %typemap(fcrtype) void        %{void%}
-
-/* FORTRAN types used in the fortran code */
-%typemap(fftype) bool        *, bool        &, bool        "logical(C_BOOL)"
-%typemap(fftype) char        *, char        &, char        "character(C_CHAR)"
-%typemap(fftype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
-%typemap(fftype) short       *, short       &, short       "integer(C_SHORT)"
-%typemap(fftype) int         *, int         &, int         "integer(C_INT)"
-%typemap(fftype) long        *, long        &, long        "integer(C_LONG)"
-%typemap(fftype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
-%typemap(fftype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
-%typemap(fftype) float       *, float       &, float       "real(C_FLOAT)"
-%typemap(fftype) double      *, double      &, double      "real(C_DOUBLE)"
-
-%typemap(fftype) SWIGTYPE *  "type(C_PTR)"
-%typemap(fftype) SWIGTYPE &  "type(C_PTR)"
-%typemap(fftype) void        ""
+%typemap(fcrtype) SWIGTYPE *  %{void*%}
 
 /* Input conversions: Fortran requires input arguments to be pointers */
 %typemap(in) bool,
@@ -50,7 +39,7 @@
              size_t,
              float,
              double
-%{ $1 = *$input; %}
+%{ $1 = *$input; /*tmin*/ %}
 
 /* Output conversions */
 %typemap(out) bool,
@@ -63,31 +52,9 @@
               size_t,
               float,
               double
-%{ $result = $1; %}
+%{ $result = $1; /*tmout*/ %}
 
 %typemap(out) void "";
-
-/* Fortran class insertion */
-%typemap(faccess) bool,
-                  char,
-                  signed char,
-                  short,
-                  int,
-                  long,
-                  long long,
-                  size_t,
-                  float,
-                  double
-%{$1%}
-
-// For wrapped classes, pass the embedded class pointer
-%typemap(faccess) SWIGTYPE, SWIGTYPE *, SWIGTYPE &      %{$1%ptr%}
-
-/* Equivalent types in fortran */
-//%apply int    { unsigned short };
-//%apply long   { unsigned int, unsigned long, const unsigned int & };
-//%apply size_t { unsigned long long };
-//%apply SWIGTYPE { const SWIGTYPE*, SWIGTYPE &, const SWIGTYPE& }
 
 %typemap(out) SWIGTYPE
 #ifdef __cplusplus
@@ -130,3 +97,46 @@
     SWIGTYPE (CLASS::*)
     ""
 
+//---------------------------------------------------------------------------//
+// Wrapper code inserted into Fortran
+//---------------------------------------------------------------------------//
+
+/* FORTRAN types used in the fortran code */
+%typemap(fftype) bool        *, bool        &, bool        "logical(C_BOOL)"
+%typemap(fftype) char        *, char        &, char        "character(C_CHAR)"
+%typemap(fftype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
+%typemap(fftype) short       *, short       &, short       "integer(C_SHORT)"
+%typemap(fftype) int         *, int         &, int         "integer(C_INT)"
+%typemap(fftype) long        *, long        &, long        "integer(C_LONG)"
+%typemap(fftype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
+%typemap(fftype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
+%typemap(fftype) float       *, float       &, float       "real(C_FLOAT)"
+%typemap(fftype) double      *, double      &, double      "real(C_DOUBLE)"
+
+%typemap(fftype) SWIGTYPE *  "type(C_PTR)"
+%typemap(fftype) SWIGTYPE &  "type(C_PTR)"
+%typemap(fftype) void        ""
+
+/* Fortran argument types */
+%typemap(fcall)  bool        *, bool        &, bool       ,
+                 char        *, char        &, char       ,
+                 signed char *, signed char &, signed char,
+                 short       *, short       &, short      ,
+                 int         *, int         &, int        ,
+                 long        *, long        &, long       ,
+                 long long   *, long long   &, long long  ,
+                 size_t      *, size_t      &, size_t     ,
+                 float       *, float       &, float      ,
+                 double      *, double      &, double 
+%{f$1%}
+
+// For wrapped classes, pass the embedded class pointer
+%typemap(fcall) SWIGTYPE, SWIGTYPE *, SWIGTYPE &      %{$1%ptr%}
+
+//---------------------------------------------------------------------------//
+
+/* Equivalent types in fortran */
+//%apply int    { unsigned short };
+//%apply long   { unsigned int, unsigned long, const unsigned int & };
+//%apply size_t { unsigned long long };
+//%apply SWIGTYPE { const SWIGTYPE*, SWIGTYPE &, const SWIGTYPE& }

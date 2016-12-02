@@ -26,8 +26,8 @@ class FORTRAN : public Language
     String *f_subroutines; //!< Fortran subroutines
 
     // Current class parameters
+    String *d_cur_class_symname;
     String *f_cur_methods; //!< Method strings inside the current class
-    String *f_cur_constructors; //!< Constructor strings inside the current class
     bool d_in_constructor; //!< Whether we're being called inside a constructor
     bool d_in_destructor; //!< Whether we're being called inside a constructor
 
@@ -42,7 +42,6 @@ class FORTRAN : public Language
 
     FORTRAN()
         : f_cur_methods(NULL)
-        , f_cur_constructors(NULL)
         , d_in_constructor(false)
         , d_in_destructor(false)
     {
@@ -226,6 +225,7 @@ void FORTRAN::write_module()
     Printv(out, f_interfaces, NULL);
     Printf(out, " end interface\n");
     Printf(out, "contains\n");
+    Printf(out, " ! FORTRAN WRAPPER FUNCTIONS\n");
     Printv(out, f_subroutines, NULL);
     Printf(out, "end module %s\n", d_module);
 
@@ -248,10 +248,9 @@ int FORTRAN::functionWrapper(Node *n)
     //String* nodetype = Getattr(n, "nodeType");
     SwigType* type = Getattr(n, "type");
     ParmList* parmlist = Getattr(n, "parms");
-    String* orig_wrapper_name = Swig_name_wrapper(symname);
 
-    // Update wrapper name for overloaded functions
-    String* wname = Copy(orig_wrapper_name);
+    // Create wrapper name, taking into account overloaded functions
+    String* wname = Copy(Swig_name_wrapper(symname));
     if (Getattr(n, "sym:overloaded"))
     {
         String* overname = Getattr(n, "sym:overname");
@@ -265,7 +264,17 @@ int FORTRAN::functionWrapper(Node *n)
     Setattr(n, "wrap:name", wname);
 
     // Add fortran wrapper name
-    String* fwname = Copy(symname);
+    String* fwname;
+    if (is_wrapping_class())
+    {
+        fwname = Copy(wname);
+        Replace(fwname, "swigc", "swigf", DOH_REPLACE_FIRST);
+    }
+    else
+    {
+        // Replace with actual function name
+        fwname = Copy(symname);
+    }
     Setattr(n, "fortran:name", fwname);
 
     // A new wrapper function object
@@ -277,7 +286,7 @@ int FORTRAN::functionWrapper(Node *n)
     Swig_typemap_attach_parms("fcptype", parmlist, f);
     Swig_typemap_attach_parms("fcrtype", parmlist, f);
     Swig_typemap_attach_parms("fftype", parmlist, f);
-    Swig_typemap_attach_parms("faccess", parmlist, f);
+    Swig_typemap_attach_parms("fcall", parmlist, f);
 
     /* Get return types */
 
@@ -426,7 +435,7 @@ int FORTRAN::functionWrapper(Node *n)
 
         /* Get main subroutine "call" argument */
         String *f_callarg = NewString("");
-        tm = Getattr(p, "tmap:faccess");
+        tm = Getattr(p, "tmap:fcall");
         if (tm)
         {
             Printv(f_callarg, tm, NULL);
@@ -435,7 +444,7 @@ int FORTRAN::functionWrapper(Node *n)
         {
             SwigType *param_type = Getattr(p, "type");
             Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
-                    "No faccess typemap defined for %s = %s\n", param_type, SwigType_str(param_type, 0));
+                    "No fcall typemap defined for %s = %s\n", param_type, SwigType_str(param_type, 0));
         }
         // Add parameter type to the parameters list
         Printv(fortran_calllist, prepend_comma, f_callarg, NULL);
@@ -451,11 +460,6 @@ int FORTRAN::functionWrapper(Node *n)
 
     Printf(fortran_arglist, ")");
     Printf(fortran_calllist, ")");
-
-    if (!is_subroutine)
-    {
-        Printf(fortran_arglist, " &\n      result(fresult)");
-    }
 
     Printv(f->code, nondir_args, NULL);
     Delete(nondir_args);
@@ -555,39 +559,62 @@ int FORTRAN::functionWrapper(Node *n)
     /* Write the C++ function into f_wrappers */
     Wrapper_print(f, f_wrappers);
 
-    /* Write the Fortran interface to the C routine */
-    const char* sub_or_func = (is_subroutine ? "subroutine" : "function");
+    const char* sub_or_func_str = (is_subroutine ? "subroutine" : "function");
+    const char* result_str = (is_subroutine ? "\n" : " &\n      result(fresult)\n");
 
+    /* Write the Fortran interface to the C routine */
     Printv(f_interfaces,
-           "   ", sub_or_func, " ", symname, fortran_arglist,
-           " &\n      bind(C, name=\"", wname, "\")\n",
+           "   ", sub_or_func_str, " ", wname, fortran_arglist,
+           " &\n     bind(C, name=\"", wname, "\")",
+           result_str,
            fortran_parameters,
-           "   end ", sub_or_func, "\n",
+           "   end ", sub_or_func_str, "\n",
            NULL);
 
-    /* Write class interface if appropriate */
+    /* Write the subroutine wrapper */
+    Printv(f_subroutines,
+           "   ", sub_or_func_str, " ", fwname, fortran_arglist,
+           result_str,
+           fortran_parameters,
+           "    ", (is_subroutine ? "call " : "fresult = "),
+           wname, fortran_calllist, "\n",
+           "   end ", sub_or_func_str, "\n",
+           NULL);
+        
+    /* Write type or public aliases */
     if (is_wrapping_class())
     {
+        // Write class interface
+        assert(f_cur_methods);
+        assert(d_cur_class_symname);
         if (d_in_constructor)
         {
             // Inside a constructor
-            assert(f_cur_constructors);
-            Printv(f_cur_constructors,
-                   "  procedure :: ", fwname, "\n",
+            Printv(f_cur_methods,
+                   "  procedure :: ctor => ", fwname, "\n",
+                   NULL);
+        }
+        else if (d_in_destructor)
+        {
+            // Inside a constructor
+            Printv(f_cur_methods,
+                   "  procedure :: dtor => ", fwname, "\n",
                    NULL);
         }
         else
         {
+            String *name = Getattr(n, "name");
+
             // Just a class method
-            assert(f_cur_methods);
             Printv(f_cur_methods,
-                   "  procedure :: ", symname, " => ", fwname, "\n",
+                   "  procedure :: ", name, " => ", fwname, "\n",
                    NULL);
         }
+        
     }
     else
     {
-        // Not a class: make the function public
+        // Not a class: make the function public (and alias the name)
         Printv(f_public,
                " public :: ", symname, "\n",
                NULL);
@@ -628,9 +655,9 @@ int FORTRAN::classHandler(Node *n)
 
     /* Initialize strings that will be populated by class members */
     assert(!f_cur_methods);
-    assert(!f_cur_constructors);
     f_cur_methods = NewString("");
-    f_cur_constructors = NewString("");
+
+    d_cur_class_symname = symname;
 
     /* Emit class members */
     Language::classHandler(n);
@@ -661,6 +688,10 @@ int FORTRAN::classHandler(Node *n)
     Delete(ct);
     Delete(realct);
 
+    /* Write public accessibility */
+    Printv(f_public, " public :: ", symname, "\n",
+                    NULL);
+
     /* Write fortran class header */
     Printv(f_types, " type ", symname, "\n"
                     "  type(C_PTR), private :: ptr = C_NULL_PTR\n"
@@ -669,14 +700,8 @@ int FORTRAN::classHandler(Node *n)
                     " end type\n",
                     NULL);
 
-    /* Write fortran constructors */
-    Printv(f_types, " interface ", symname, "\n",
-                    f_cur_constructors,
-                    " end interface\n",
-                    NULL);
-
     Delete(f_cur_methods); f_cur_methods = NULL;
-    Delete(f_cur_constructors); f_cur_constructors = NULL;
+    d_cur_class_symname = NULL;
 
     return SWIG_OK;
 }
