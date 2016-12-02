@@ -35,7 +35,7 @@
 #define SWIG_AppendOutput(result, obj)  SWIG_Fortran_AppendOutput(result, obj)
 
 /* set constant */
-#if defined(SWIGPYTHON_BUILTIN)
+#if defined(SWIGfortran_BUILTIN)
 #define SWIG_SetConstant(name, obj) SWIG_Fortran_SetConstant(d, d == md ? public_interface : NULL, name,obj) 
 #else
 #define SWIG_SetConstant(name, obj) SWIG_Fortran_SetConstant(d, name,obj) 
@@ -140,22 +140,22 @@
 %typemap(fitype) SWIGTYPE *, SWIGTYPE & "type(C_PTR)"
 %typemap(fitype) void        ""
 
-/* Fortran types used in the fortran wrapper code */
-%typemap(fwtype) bool        *, bool        &, bool        "logical(C_BOOL)"
-%typemap(fwtype) char        *, char        &, char        "character(C_CHAR)"
-%typemap(fwtype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
-%typemap(fwtype) short       *, short       &, short       "integer(C_SHORT)"
-%typemap(fwtype) int         *, int         &, int         "integer(C_INT)"
-%typemap(fwtype) long        *, long        &, long        "integer(C_LONG)"
-%typemap(fwtype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
-%typemap(fwtype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
-%typemap(fwtype) float       *, float       &, float       "real(C_FLOAT)"
-%typemap(fwtype) double      *, double      &, double      "real(C_DOUBLE)"
-%typemap(fwtype) SWIGTYPE *, SWIGTYPE & "class($*1_ltype)"
-%typemap(fwtype) void        ""
+/* Fortran types used in the fortran proxy code */
+%typemap(fxtype) bool        *, bool        &, bool        "logical(C_BOOL)"
+%typemap(fxtype) char        *, char        &, char        "character(C_CHAR)"
+%typemap(fxtype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
+%typemap(fxtype) short       *, short       &, short       "integer(C_SHORT)"
+%typemap(fxtype) int         *, int         &, int         "integer(C_INT)"
+%typemap(fxtype) long        *, long        &, long        "integer(C_LONG)"
+%typemap(fxtype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
+%typemap(fxtype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
+%typemap(fxtype) float       *, float       &, float       "real(C_FLOAT)"
+%typemap(fxtype) double      *, double      &, double      "real(C_DOUBLE)"
+%typemap(fxtype) SWIGTYPE *, SWIGTYPE & "class($*1_ltype)"
+%typemap(fxtype) void        ""
 
-/* Fortran 'call' argument extraction used in wrapper subroutine */
-%typemap(fwcall) bool        *, bool        &, bool       ,
+/* Fortran 'call' argument extraction used in proxy code subroutine */
+%typemap(fxget)  bool        *, bool        &, bool       ,
                  char        *, char        &, char       ,
                  signed char *, signed char &, signed char,
                  short       *, short       &, short      ,
@@ -168,7 +168,7 @@
 %{$1%}
 
 // For wrapped classes, pass the embedded class pointer
-%typemap(fwcall) SWIGTYPE, SWIGTYPE *, SWIGTYPE & %{$1%ptr%}
+%typemap(fxget) SWIGTYPE, SWIGTYPE *, SWIGTYPE & %{$1%ptr%}
 
 //---------------------------------------------------------------------------//
 
