@@ -126,19 +126,32 @@
 // Proxy code inserted into Fortran
 //---------------------------------------------------------------------------//
 
-/* Fortran types used in the fortran interface code */
-%typemap(fitype) bool        *, bool        &, bool        "logical(C_BOOL)"
-%typemap(fitype) char        *, char        &, char        "character(C_CHAR)"
-%typemap(fitype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
-%typemap(fitype) short       *, short       &, short       "integer(C_SHORT)"
-%typemap(fitype) int         *, int         &, int         "integer(C_INT)"
-%typemap(fitype) long        *, long        &, long        "integer(C_LONG)"
-%typemap(fitype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
-%typemap(fitype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
-%typemap(fitype) float       *, float       &, float       "real(C_FLOAT)"
-%typemap(fitype) double      *, double      &, double      "real(C_DOUBLE)"
-%typemap(fitype) SWIGTYPE *, SWIGTYPE & "type(C_PTR)"
-%typemap(fitype) void        ""
+/* Fortran parameter types used in the fortran interface */
+%typemap(fiptype) bool        *, bool        &, bool        "logical(C_BOOL)"
+%typemap(fiptype) char        *, char        &, char        "character(C_CHAR)"
+%typemap(fiptype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
+%typemap(fiptype) short       *, short       &, short       "integer(C_SHORT)"
+%typemap(fiptype) int         *, int         &, int         "integer(C_INT)"
+%typemap(fiptype) long        *, long        &, long        "integer(C_LONG)"
+%typemap(fiptype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
+%typemap(fiptype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
+%typemap(fiptype) float       *, float       &, float       "real(C_FLOAT)"
+%typemap(fiptype) double      *, double      &, double      "real(C_DOUBLE)"
+%typemap(fiptype) SWIGTYPE *, SWIGTYPE & "type(C_PTR), value"
+%typemap(fiptype) void        ""
+
+/* Fortran return types used in the fortran interface */
+%typemap(firtype) bool        *, bool        &, bool        "logical(C_BOOL)"
+%typemap(firtype) char        *, char        &, char        "character(C_CHAR)"
+%typemap(firtype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
+%typemap(firtype) short       *, short       &, short       "integer(C_SHORT)"
+%typemap(firtype) int         *, int         &, int         "integer(C_INT)"
+%typemap(firtype) long        *, long        &, long        "integer(C_LONG)"
+%typemap(firtype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
+%typemap(firtype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
+%typemap(firtype) float       *, float       &, float       "real(C_FLOAT)"
+%typemap(firtype) double      *, double      &, double      "real(C_DOUBLE)"
+%typemap(firtype) SWIGTYPE *, SWIGTYPE & "type(C_PTR)"
 
 /* Fortran types used in the fortran proxy code */
 %typemap(fxtype) bool        *, bool        &, bool        "logical(C_BOOL)"

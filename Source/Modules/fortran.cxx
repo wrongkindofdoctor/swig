@@ -293,7 +293,8 @@ int FORTRAN::functionWrapper(Node *n)
     /* Attach the non-standard typemaps to the parameter list. */
     Swig_typemap_attach_parms("fcptype", parmlist, f);
     Swig_typemap_attach_parms("fcrtype", parmlist, f);
-    Swig_typemap_attach_parms("fitype", parmlist, f);
+    Swig_typemap_attach_parms("fiptype", parmlist, f);
+    Swig_typemap_attach_parms("firtype", parmlist, f);
     Swig_typemap_attach_parms("fxtype", parmlist, f);
     Swig_typemap_attach_parms("fxget", parmlist, f);
 
@@ -347,7 +348,7 @@ int FORTRAN::functionWrapper(Node *n)
     if (!is_subroutine)
     {
         // Get Fortran interface return type
-        String* f_return_type = get_simple_typemap("fitype", n);
+        String* f_return_type = get_simple_typemap("firtype", n);
         Printf(fiparams, "   %s :: fresult\n", f_return_type);
         Delete(f_return_type);
 
@@ -411,7 +412,7 @@ int FORTRAN::functionWrapper(Node *n)
         Printv(fargs, prepend_comma, arg, NULL);
 
         // Add parameter type to the parameters list
-        String *fi_param_type = get_simple_typemap("fitype", p);
+        String *fi_param_type = get_simple_typemap("fiptype", p);
         Printv(fiparams, "   ", fi_param_type, " :: ", arg, "\n", NULL);
         Delete(fi_param_type);
 
