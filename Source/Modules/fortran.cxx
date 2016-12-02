@@ -26,6 +26,7 @@ class FORTRAN : public Language
     String *f_subroutines; //!< Fortran subroutines
 
     // Current class parameters
+    String *f_cur_classname; //!< Symbolic class name
     String *f_cur_methods; //!< Method strings inside the current class
     bool d_in_constructor; //!< Whether we're being called inside a constructor
     bool d_in_destructor; //!< Whether we're being called inside a constructor
@@ -40,7 +41,8 @@ class FORTRAN : public Language
     virtual int memberfunctionHandler(Node *n);
 
     FORTRAN()
-        : f_cur_methods(NULL)
+        : f_cur_classname(NULL)
+        , f_cur_methods(NULL)
         , d_in_constructor(false)
         , d_in_destructor(false)
     {
@@ -304,6 +306,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     // Function attributes
     bool is_subroutine = (Cmp(c_return_type, "void") == 0);
+
     // Add local variable for result
     if (!is_subroutine)
     {
@@ -359,10 +362,11 @@ int FORTRAN::functionWrapper(Node *n)
         Delete(f_return_type);
     }
 
-    String* fortran_arglist = NewString("(");
-    String* fortran_calllist = NewString("(");
+    String* fortran_arglist = NewString("");
+    String* fortran_calllist = NewString("");
 
-    int i = 0;
+    const char* prepend_comma = "";
+
     while (p)
     {
         while (checkAttribute(p, "tmap:in:numinputs", "0"))
@@ -375,8 +379,6 @@ int FORTRAN::functionWrapper(Node *n)
                      " for function %s.\n", symname);
             return SWIG_ERROR;
         }
-
-        const char* prepend_comma = (i == 0 ? "" : ", ");
 
         // Construct conversion argument name
         String *arg = NewString("");
@@ -455,12 +457,12 @@ int FORTRAN::functionWrapper(Node *n)
         Delete(c_param_type);
         Delete(arg);
 
-        ++i;
         p = nextSibling(p);
+        prepend_comma = ", ";
     }
 
-    Printf(fortran_arglist, ")");
-    Printf(fortran_calllist, ")");
+    Printf(fortran_arglist, "");
+    Printf(fortran_calllist, "");
 
     Printv(f->code, nondir_args, NULL);
     Delete(nondir_args);
@@ -565,7 +567,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     /* Write the Fortran interface to the C routine */
     Printv(f_interfaces,
-           "   ", sub_or_func_str, " ", wname, fortran_arglist,
+           "   ", sub_or_func_str, " ", wname, "(", fortran_arglist, ")",
            " &\n      bind(C, name=\"", wname, "\")",
            result_str,
            fortran_parameters,
@@ -573,14 +575,31 @@ int FORTRAN::functionWrapper(Node *n)
            NULL);
 
     /* Write the subroutine wrapper */
-    Printv(f_subroutines,
-           "   ", sub_or_func_str, " ", fwname, fortran_arglist,
-           result_str,
-           fortran_parameters,
-           "    ", (is_subroutine ? "call " : "fresult = "),
-           wname, fortran_calllist, "\n",
-           "   end ", sub_or_func_str, "\n",
-           NULL);
+    if (d_in_constructor)
+    {
+        assert(f_cur_classname);
+        // Constructors get returned into subroutines, and have a dummy 'this'
+        // parameter
+        Printv(f_subroutines,
+               "   subroutine ", fwname, "(this", prepend_comma, fortran_arglist, ")\n",
+               fortran_parameters,
+               "    class(", f_cur_classname, ") :: this\n",
+               "    fresult = ", wname, "(", fortran_calllist, ")\n"
+               "    this%ptr = fresult\n"
+               "   end subroutine\n",
+               NULL);
+    }
+    else
+    {
+        Printv(f_subroutines,
+               "   ", sub_or_func_str, " ", fwname, "(", fortran_arglist, ")",
+               result_str,
+               fortran_parameters,
+               "    ", (is_subroutine ? "call " : "fresult = "),
+               wname, "(", fortran_calllist, ")\n"
+               "   end ", sub_or_func_str, "\n",
+               NULL);
+    }
         
     /* Write type or public aliases */
     if (is_wrapping_class())
@@ -640,6 +659,7 @@ int FORTRAN::classHandler(Node *n)
     /* Initialize strings that will be populated by class members */
     assert(!f_cur_methods);
     f_cur_methods = NewString("");
+    f_cur_classname = symname;
 
     /* Emit class members */
     Language::classHandler(n);
@@ -683,6 +703,7 @@ int FORTRAN::classHandler(Node *n)
                     NULL);
 
     Delete(f_cur_methods); f_cur_methods = NULL;
+    f_cur_classname = NULL;
 
     return SWIG_OK;
 }

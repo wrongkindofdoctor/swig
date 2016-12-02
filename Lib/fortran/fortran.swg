@@ -28,6 +28,27 @@
 %typemap(fcrtype) void        %{void%}
 %typemap(fcrtype) SWIGTYPE *  %{void*%}
 
+// TODO: use SWIG's fancy typemap checking
+#if 0
+#define SWIG_Object void *
+#define VOID_Object void
+#define SWIG_AppendOutput(result, obj)  SWIG_Fortran_AppendOutput(result, obj)
+
+/* set constant */
+#if defined(SWIGPYTHON_BUILTIN)
+#define SWIG_SetConstant(name, obj) SWIG_Fortran_SetConstant(d, d == md ? public_interface : NULL, name,obj) 
+#else
+#define SWIG_SetConstant(name, obj) SWIG_Fortran_SetConstant(d, name,obj) 
+#endif
+
+/* raise */
+#define SWIG_Raise(obj, type, desc) SWIG_Fortran_Raise(obj, type, desc)
+
+%include <typemaps/swigtypemaps.swg>
+
+#endif
+
+%typemap(out) void "";
 /* Input conversions: Fortran requires input arguments to be pointers */
 %typemap(in) bool,
              char,
@@ -54,13 +75,17 @@
               double
 %{ $result = $1; /*tmout*/ %}
 
-%typemap(out) void "";
+%typemap(out) SWIGTYPE* %{ *($&1_ltype)&$result = $1; %}
+
+/* Input conversions */
+%typemap(in) SWIGTYPE* %{ $1 = ($1_ltype)$input; %}
+%typemap(in) SWIGTYPE& %{ $1 = *($&1_ltype)&$input; assert($1); %}
 
 %typemap(out) SWIGTYPE
 #ifdef __cplusplus
 %{
     // Return object passed by value
-    *($&1_ltype*)&$result = new $1_ltype((const $1_ltype &)$1);
+    *($&1_ltype*)&$result = new $1_ltype((const $1_ltype &)$1); /* pass-by-value */
 %}
 #else
 {
@@ -131,7 +156,7 @@
 %{$1%}
 
 // For wrapped classes, pass the embedded class pointer
-%typemap(fcall) SWIGTYPE, SWIGTYPE *, SWIGTYPE &      %{$1%ptr%}
+%typemap(fcall) SWIGTYPE, SWIGTYPE *, SWIGTYPE & %{$1%ptr%}
 
 //---------------------------------------------------------------------------//
 
