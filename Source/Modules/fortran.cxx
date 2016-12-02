@@ -26,7 +26,6 @@ class FORTRAN : public Language
     String *f_subroutines; //!< Fortran subroutines
 
     // Current class parameters
-    String *d_cur_class_symname;
     String *f_cur_methods; //!< Method strings inside the current class
     bool d_in_constructor; //!< Whether we're being called inside a constructor
     bool d_in_destructor; //!< Whether we're being called inside a constructor
@@ -57,8 +56,6 @@ class FORTRAN : public Language
 //---------------------------------------------------------------------------//
 /*!
  * \brief Main function for code generation.
- *
- * TODO: add flag for writing automatic "final" destructors in fortran.
  */
 void FORTRAN::main(int argc, char *argv[])
 {
@@ -75,6 +72,9 @@ void FORTRAN::main(int argc, char *argv[])
 
     /* Set language-specific configuration file */
     SWIG_config_file("fortran.swg");
+
+    /* TODO: Allow operator overloads */
+    //allow_overloading();
 }
 
 //---------------------------------------------------------------------------//
@@ -225,7 +225,7 @@ void FORTRAN::write_module()
     Printv(out, f_interfaces, NULL);
     Printf(out, " end interface\n");
     Printf(out, "contains\n");
-    Printf(out, " ! FORTRAN WRAPPER FUNCTIONS\n");
+    Printf(out, "   ! FORTRAN WRAPPER FUNCTIONS\n");
     Printv(out, f_subroutines, NULL);
     Printf(out, "end module %s\n", d_module);
 
@@ -241,11 +241,8 @@ void FORTRAN::write_module()
  */
 int FORTRAN::functionWrapper(Node *n)
 {
-    //bool is_destructor = (Cmp(Getattr(n, "nodeType"), "destructor") == 0);
-
     // Basic attributes (references)
     String* symname = Getattr(n, "sym:name");
-    //String* nodetype = Getattr(n, "nodeType");
     SwigType* type = Getattr(n, "type");
     ParmList* parmlist = Getattr(n, "parms");
 
@@ -292,13 +289,14 @@ int FORTRAN::functionWrapper(Node *n)
 
     // Get C type
     String *tm = Swig_typemap_lookup("fcrtype", n, "", 0);
-    String *c_return_type = NewString("");
+    String *c_return_type = NULL;
     if (tm)
     {
-        Printf(c_return_type, "%s", tm);
+        c_return_type = Copy(tm);
     }
     else
     {
+        c_return_type = NewString("");
         Swig_warning(WARN_FORTRAN_TYPEMAP_FCRTYPE_UNDEF,
                 input_file, line_number, "No fcrtype typemap defined for %s\n", SwigType_str(type, 0));
     }
@@ -317,10 +315,11 @@ int FORTRAN::functionWrapper(Node *n)
     emit_attach_parmmaps(parmlist, f);
     Setattr(n, "wrap:parms", parmlist);
 
+#if 0
     // Wrappers not wanted for some methods where the parameters cannot be overloaded in Fortran
     if (Getattr(n, "sym:overloaded"))
     {
-        // Emit warnings for the few cases that can'type be overloaded in Fortran and give up on generating wrapper
+        // Emit warnings for the few cases that can't be overloaded in Fortran and give up on generating wrapper
         Swig_overload_check(n);
         if (Getattr(n, "overload:ignore"))
         {
@@ -328,6 +327,7 @@ int FORTRAN::functionWrapper(Node *n)
             return SWIG_OK;
         }
     }
+#endif
 
     // Now walk the function parameter list and generate code to get arguments
     Parm* p = parmlist;
@@ -425,6 +425,7 @@ int FORTRAN::functionWrapper(Node *n)
         else
         {
             SwigType *param_type = Getattr(p, "type");
+            Printv(f_param_type, "UNKNOWN_", param_type, NULL);
             Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
                     "No fftype typemap defined for %s\n", SwigType_str(param_type, 0));
         }
@@ -434,11 +435,11 @@ int FORTRAN::functionWrapper(Node *n)
         Printv(fortran_parameters, "    ", f_param_type, " :: ", arg, "\n", NULL);
 
         /* Get main subroutine "call" argument */
-        String *f_callarg = NewString("");
-        tm = Getattr(p, "tmap:fcall");
+        String *f_call_arg = NewString("");
+        tm = Swig_typemap_lookup("fcall", n, arg, 0);
         if (tm)
         {
-            Printv(f_callarg, tm, NULL);
+            Printv(f_call_arg, tm, NULL);
         }
         else
         {
@@ -447,10 +448,10 @@ int FORTRAN::functionWrapper(Node *n)
                     "No fcall typemap defined for %s = %s\n", param_type, SwigType_str(param_type, 0));
         }
         // Add parameter type to the parameters list
-        Printv(fortran_calllist, prepend_comma, f_callarg, NULL);
+        Printv(fortran_calllist, prepend_comma, f_call_arg, NULL);
 
         Delete(f_param_type);
-        Delete(f_callarg);
+        Delete(f_call_arg);
         Delete(c_param_type);
         Delete(arg);
 
@@ -565,7 +566,7 @@ int FORTRAN::functionWrapper(Node *n)
     /* Write the Fortran interface to the C routine */
     Printv(f_interfaces,
            "   ", sub_or_func_str, " ", wname, fortran_arglist,
-           " &\n     bind(C, name=\"", wname, "\")",
+           " &\n      bind(C, name=\"", wname, "\")",
            result_str,
            fortran_parameters,
            "   end ", sub_or_func_str, "\n",
@@ -586,31 +587,14 @@ int FORTRAN::functionWrapper(Node *n)
     {
         // Write class interface
         assert(f_cur_methods);
-        assert(d_cur_class_symname);
-        if (d_in_constructor)
-        {
-            // Inside a constructor
-            Printv(f_cur_methods,
-                   "  procedure :: ctor => ", fwname, "\n",
-                   NULL);
-        }
-        else if (d_in_destructor)
-        {
-            // Inside a constructor
-            Printv(f_cur_methods,
-                   "  procedure :: dtor => ", fwname, "\n",
-                   NULL);
-        }
-        else
-        {
-            String *name = Getattr(n, "name");
 
-            // Just a class method
-            Printv(f_cur_methods,
-                   "  procedure :: ", name, " => ", fwname, "\n",
-                   NULL);
-        }
-        
+        // Given function name (renamed to ctor/dtor if needed)
+        String *name = Getattr(n, "name");
+
+        // Print remapping
+        Printv(f_cur_methods,
+               "  procedure :: ", name, " => ", fwname, "\n",
+               NULL);
     }
     else
     {
@@ -657,8 +641,6 @@ int FORTRAN::classHandler(Node *n)
     assert(!f_cur_methods);
     f_cur_methods = NewString("");
 
-    d_cur_class_symname = symname;
-
     /* Emit class members */
     Language::classHandler(n);
 
@@ -701,7 +683,6 @@ int FORTRAN::classHandler(Node *n)
                     NULL);
 
     Delete(f_cur_methods); f_cur_methods = NULL;
-    d_cur_class_symname = NULL;
 
     return SWIG_OK;
 }
@@ -712,6 +693,8 @@ int FORTRAN::classHandler(Node *n)
  */
 int FORTRAN::constructorHandler(Node* n)
 {
+    String* newname = NewString("ctor");
+    Setattr(n, "name", newname);
     d_in_constructor = true;
     Language::constructorHandler(n);
     d_in_constructor = false;
@@ -724,6 +707,8 @@ int FORTRAN::constructorHandler(Node* n)
  */
 int FORTRAN::destructorHandler(Node* n)
 {
+    String* newname = NewString("dtor");
+    Setattr(n, "name", newname);
     d_in_destructor = true;
     Language::destructorHandler(n);
     d_in_destructor = false;

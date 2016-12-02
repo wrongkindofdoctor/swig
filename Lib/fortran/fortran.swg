@@ -128,7 +128,7 @@
                  size_t      *, size_t      &, size_t     ,
                  float       *, float       &, float      ,
                  double      *, double      &, double 
-%{f$1%}
+%{$1%}
 
 // For wrapped classes, pass the embedded class pointer
 %typemap(fcall) SWIGTYPE, SWIGTYPE *, SWIGTYPE &      %{$1%ptr%}
