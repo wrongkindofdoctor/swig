@@ -28,26 +28,6 @@
 %typemap(fcptype) SWIGTYPE *  %{void*%}
 %typemap(fcptype) SWIGTYPE &  %{void*%}
 
-// TODO: use SWIG's fancy typemap checking
-#if 0
-#define SWIG_Object void *
-#define VOID_Object void
-#define SWIG_AppendOutput(result, obj)  SWIG_Fortran_AppendOutput(result, obj)
-
-/* set constant */
-#if defined(SWIGfortran_BUILTIN)
-#define SWIG_SetConstant(name, obj) SWIG_Fortran_SetConstant(d, d == md ? public_interface : NULL, name,obj) 
-#else
-#define SWIG_SetConstant(name, obj) SWIG_Fortran_SetConstant(d, name,obj) 
-#endif
-
-/* raise */
-#define SWIG_Raise(obj, type, desc) SWIG_Fortran_Raise(obj, type, desc)
-
-%include <typemaps/swigtypemaps.swg>
-
-#endif
-
 %typemap(out) void "";
 /* Input conversions: Fortran requires input arguments to be pointers */
 %typemap(in) bool,
