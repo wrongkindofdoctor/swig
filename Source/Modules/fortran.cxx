@@ -239,7 +239,7 @@ void FORTRAN::write_module()
     Printv(out, f_interfaces, NULL);
     Printf(out, " end interface\n");
     Printf(out, "contains\n");
-    Printf(out, " ! FORTRAN PROXY CODE\n");
+    Printf(out, "  ! FORTRAN PROXY CODE\n");
     Printv(out, f_proxy, NULL);
     Printf(out, "end module %s\n", d_module);
 
@@ -344,8 +344,8 @@ int FORTRAN::functionWrapper(Node *n)
         "   use, intrinsic :: ISO_C_BINDING\n"
         "   implicit none\n");
     String* fxparams = NewString(
-        "  use, intrinsic :: ISO_C_BINDING\n"
-        "  implicit none\n");
+        "   use, intrinsic :: ISO_C_BINDING\n"
+        "   implicit none\n");
 
     // Set up return value types if it's a function (rather than subroutine)
     if (!is_subroutine)
@@ -358,7 +358,7 @@ int FORTRAN::functionWrapper(Node *n)
         // Get Fortran proxy return type (for constructors, this is
         // repurposed as a dummy argument)
         f_return_type = get_simple_typemap("fxtype", n);
-        Printf(fxparams, "  %s :: fresult\n", f_return_type);
+        Printf(fxparams, "   %s :: fresult\n", f_return_type);
         Delete(f_return_type);
     }
 
@@ -544,11 +544,11 @@ int FORTRAN::functionWrapper(Node *n)
 
     /* Write the Fortran interface to the C routine */
     Printv(f_interfaces,
-           "   ", sub_or_func_str, " ", wname, "(", fargs, ")",
+           "  ", sub_or_func_str, " ", wname, "(", fargs, ")",
            " &\n     bind(C, name=\"", wname, "\")",
            result_str,
            fiparams,
-           "   end ", sub_or_func_str, "\n",
+           "  end ", sub_or_func_str, "\n",
            NULL);
 
     // Get strings to append and prepend if needed
@@ -563,24 +563,24 @@ int FORTRAN::functionWrapper(Node *n)
         // Constructors get returned into subroutines, and have a dummy 'this'
         // parameter
         Printv(f_proxy,
-               " subroutine ", fwname, "(fresult", prepend_comma, fargs, ")\n",
+               "  subroutine ", fwname, "(fresult", prepend_comma, fargs, ")\n",
                fxparams,
                prepend,
-               "  fresult%ptr = ", wname, "(", fxcallargs, ")\n",
+               "   fresult%ptr = ", wname, "(", fxcallargs, ")\n",
                append,
-               " end subroutine\n",
+               "  end subroutine\n",
                NULL);
     }
     else
     {
         Printv(f_proxy,
-               " ", sub_or_func_str, " ", fwname, "(", fargs, ")",
+               "  ", sub_or_func_str, " ", fwname, "(", fargs, ")",
                result_str,
                fxparams,
                prepend,
-               "  ", (is_subroutine ? "call " : "fresult = "), wname, "(", fxcallargs, ")\n",
+               "   ", (is_subroutine ? "call " : "fresult = "), wname, "(", fxcallargs, ")\n",
                append,
-               " end ", sub_or_func_str, "\n",
+               "  end ", sub_or_func_str, "\n",
                NULL);
     }
         
@@ -867,7 +867,15 @@ void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
     else
     {
         Node *n = classLookup(classnametype);
-        String *classname = Getattr(n, "sym:name");
+        String *classname = NULL;
+        if (n)
+        {
+            classname = Getattr(n, "sym:name");
+        }
+        else
+        {
+            Printf(stderr, "No class type found for %s\n", classnametype);
+        }
         if (classname)
         {
             replacementname = Copy(classname);
