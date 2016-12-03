@@ -2786,6 +2786,18 @@ int Language::constructorHandler(Node *n) {
   }
 
   Swig_ConstructorToFunction(n, NSpace, ClassType, none_comparison, director_ctor, CPlusPlus, Getattr(n, "template") ? 0 : Extend, DirectorClassName);
+
+  // NOTE: this breaks python wrapping
+#if 0
+  /* if user has renamed the constructor, prepend with class name */
+  String* classname = Getattr(CurrentClass, "sym:name");
+  if (Cmp(symname, classname) != 0)
+  {
+      Clear(mrename);
+      Printf(mrename, "%s__%s", classname, );
+  }
+#endif
+
   Setattr(n, "sym:name", mrename);
   functionWrapper(n);
   Delete(mrename);

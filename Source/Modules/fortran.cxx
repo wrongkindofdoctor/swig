@@ -82,7 +82,7 @@ void FORTRAN::main(int argc, char *argv[])
     /* Set language-specific configuration file */
     SWIG_config_file("fortran.swg");
 
-    /* TODO: Allow operator overloads */
+    /* TODO: Allow function overloads */
     //allow_overloading();
 }
 
@@ -695,17 +695,26 @@ int FORTRAN::classHandler(Node *n)
  */
 int FORTRAN::constructorHandler(Node* n)
 {
-    Node *classn = classLookup(Getattr(n, "name"));
+    Node *classn = getCurrentClass();
     assert(classn);
     
     // Possibly renamed constructor (default: name of the class)
     String* symname = Getattr(n, "sym:name");
+    String* classname = Getattr(classn, "sym:name");
 
     const_String_or_char_ptr alias = "ctor";
-    if (Cmp(symname, Getattr(classn, "sym:name")))
+    if (Cmp(symname, classname))
     {
         // User provided a custom name (it differs from the class name)
+        // Printf(stderr, "User aliased constructor name %s => %s\n",
+        //        Getattr(classn, "sym:name"), symname);
         alias = symname;
+
+        // To avoid conflicts with templated functions, modify the
+        // constructor's symname
+        String* mrename = NewStringf("%s_%s", classname, symname);
+        Setattr(n, "sym:name", mrename);
+        Delete(mrename);
     }
     Setattr(n, "fortran:alias", alias);
 
