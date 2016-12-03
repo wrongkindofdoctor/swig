@@ -377,8 +377,8 @@ int FORTRAN::functionWrapper(Node *n)
         }
         if (!p)
         {
-            Swig_error(Getfile(n), Getline(n), "while iterating through typemap inputs"
-                     " for function %s.\n", symname);
+            Swig_error(Getfile(n), Getline(n), "while iterating through "
+                       "typemap inputs for function %s.\n", symname);
             return SWIG_ERROR;
         }
 
@@ -587,15 +587,14 @@ int FORTRAN::functionWrapper(Node *n)
     /* Write type or public aliases */
     if (is_wrapping_class())
     {
-        // Write class interface
-        assert(f_cur_methods);
-
-        // Given function name (renamed to ctor/dtor if needed)
-        String *name = Getattr(n, "name");
+        // Get aliased name
+        String* alias = Getattr(n, "fortran:alias");
+        assert(alias);
 
         // Print remapping
+        assert(f_cur_methods);
         Printv(f_cur_methods,
-               "  procedure :: ", name, " => ", fwname, "\n",
+               "  procedure :: ", alias, " => ", fwname, "\n",
                NULL);
     }
     else
@@ -696,8 +695,20 @@ int FORTRAN::classHandler(Node *n)
  */
 int FORTRAN::constructorHandler(Node* n)
 {
-    String* newname = NewString("ctor");
-    Setattr(n, "name", newname);
+    Node *classn = classLookup(Getattr(n, "name"));
+    assert(classn);
+    
+    // Possibly renamed constructor (default: name of the class)
+    String* symname = Getattr(n, "sym:name");
+
+    const_String_or_char_ptr alias = "ctor";
+    if (Cmp(symname, Getattr(classn, "sym:name")))
+    {
+        // User provided a custom name (it differs from the class name)
+        alias = symname;
+    }
+    Setattr(n, "fortran:alias", alias);
+
     d_in_constructor = true;
     Language::constructorHandler(n);
     d_in_constructor = false;
@@ -710,8 +721,7 @@ int FORTRAN::constructorHandler(Node* n)
  */
 int FORTRAN::destructorHandler(Node* n)
 {
-    String* newname = NewString("dtor");
-    Setattr(n, "name", newname);
+    Setattr(n, "fortran:alias", "dtor");
     d_in_destructor = true;
     Language::destructorHandler(n);
     d_in_destructor = false;
@@ -724,6 +734,7 @@ int FORTRAN::destructorHandler(Node* n)
  */
 int FORTRAN::memberfunctionHandler(Node *n)
 {
+    Setattr(n, "fortran:alias", Getattr(n, "sym:name"));
     Language::memberfunctionHandler(n);
     return SWIG_OK;
 }
@@ -744,6 +755,8 @@ String* FORTRAN::get_simple_typemap(const char* tmname, Node* n,
         Printf(stderr, "%c Substitutetypemap %8s: node %8s type %8s: %8s => %8s\n",
                (applied ? '*' : ' '), tmname, Getattr(n, "name"),
                Getattr(n, "type"), tm, result);
+#else
+        (void)sizeof(applied);
 #endif
     }
     else
@@ -840,7 +853,8 @@ void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
 
     if (SwigType_isenum(classnametype))
     {
-        replacementname = NewStringf("SWIGENUMTYPE%s", SwigType_manglestr(classnametype));
+        replacementname = NewStringf("SWIGENUMTYPE%s",
+                                     SwigType_manglestr(classnametype));
         Replace(replacementname, "enum ", "", DOH_REPLACE_ANY);
 #if 0
         String *enumname = getEnumName(classnametype);
