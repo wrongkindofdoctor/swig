@@ -1,66 +1,126 @@
+//---------------------------------*-SWIG-*----------------------------------//
+/*!
+ * \file   fortran/fortran.swg
+ * \author Seth R Johnson
+ * \date   Sat Dec 03 09:10:31 2016
+ * \brief  Fortran typemap code
+ * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
+ */
 //---------------------------------------------------------------------------//
-// Wrapper code inserted into C
+
+//---------------------------------------------------------------------------//
+/*! LANGUAGE EXTENSIONS.
+
+   %fortranprepend : Add code before the C++ function is called
+   %fortranappend  : Add code after the C++ function is called
+ */
+
+#define %fortranprepend       %feature("fortranprepend")
+#define %clearfortranprepend  %feature("fortranprepend","")
+
+#define %fortranappend         %feature("fortranappend")
+#define %clearfortranappend    %feature("fortranappend","")
+
+//---------------------------------------------------------------------------//
+/*! CUSTOM TYPEMAP DESCRIPTIONS.
+ *
+ * fcrtype : return type in C wrapper code
+ * fcptype : parameter type in C wrapper code
+ * fiptype : Fortran type in interface code (equivalent to C argument type)
+ * firtype : Fortran return type in interface code (equiv to C return type)
+ * fxtype  : Fortran proxy (shadow) code type
+ * fxget   : Code used in proxy 'call' argument to convert proxy code type to
+ *           interface type
+ */
+
+//---------------------------------------------------------------------------//
+// FUNDAMENTAL TYPES
+//---------------------------------------------------------------------------//
+/*!
+ * \def FORTRAN_TYPEMAP
+ * \brief Add a typemap for a fundamental built-in type.
+ *
+ * Return types are passed by value. Argument types in Fortran must be pointers
+ * (so \c fcptype is a pointer, and we use a \c typemap(in) to dereference the
+ * argument).
+ *
+ * - We can't return by reference-value in Fortran; you'll get a build-time
+ *   error in your wrapper code if you try.
+ * - Returning by const reference is automatically turned into return-by-value.
+ */
+%define FORTRAN_TYPEMAP(CTYPE, FTYPE)
+  %typemap(fcrtype) CTYPE, CTYPE*, CTYPE& %{CTYPE%}
+  %typemap(fcptype) CTYPE, CTYPE*, CTYPE& %{CTYPE*%}
+
+  %typemap(in)      CTYPE                 %{$1 = *$input;%}
+  %typemap(in)             CTYPE*, CTYPE& %{$1 = $input;%}
+
+  %typemap(out)     CTYPE, const CTYPE* %{$result = $1;%}
+  %typemap(out)            const CTYPE& %{$result = *$1;%}
+  %typemap(out)            CTYPE& %{
+    #error "Can't return by mutable reference in Fortran"
+  %}
+
+  %typemap(fiptype) CTYPE, CTYPE*, CTYPE& FTYPE
+  %typemap(firtype) CTYPE, CTYPE*, CTYPE& FTYPE
+  %typemap(fxtype)  CTYPE, CTYPE*, CTYPE& FTYPE
+  %typemap(fxget)   CTYPE, CTYPE*, CTYPE& %{$1%}
+%enddef
+
+FORTRAN_TYPEMAP(bool       , "logical(C_BOOL)"     )
+FORTRAN_TYPEMAP(char       , "character(C_CHAR)"   )
+FORTRAN_TYPEMAP(short      , "integer(C_SHORT)"    )
+FORTRAN_TYPEMAP(int        , "integer(C_INT)"      )
+FORTRAN_TYPEMAP(long       , "integer(C_LONG)"     )
+FORTRAN_TYPEMAP(long long  , "integer(C_LONG_LONG)")
+FORTRAN_TYPEMAP(size_t     , "integer(C_SIZE_T)"   )
+FORTRAN_TYPEMAP(float      , "real(C_FLOAT)"       )
+FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
+
+// Apply
+%apply char   { signed char, unsigned char };
+%apply short  { unsigned short };
+%apply int    { unsigned int };
+%apply long   { unsigned long };
+%apply size_t { unsigned long long };
+
+// Instead of applying chars specifically, could do:
+// FORTRAN_TYPEMAP(signed char, "integer(C_SIGNED_CHAR)")
+
+//---------------------------------------------------------------------------//
+// VOID TYPES
+//---------------------------------------------------------------------------//
+%typemap(fcrtype) void %{void%}
+%typemap(out)     void %{%}
+%typemap(fiptype) void ""
+%typemap(fxtype)  void ""
+
+//---------------------------------------------------------------------------//
+// POINTER/CLASS TYPES
 //---------------------------------------------------------------------------//
 
-/* C return types used in the wrapper code */
-%typemap(fcrtype) bool       , const bool       & %{bool%}
-%typemap(fcrtype) char       , const char       & %{char%}
-%typemap(fcrtype) signed char, const signed char& %{signed char%}
-%typemap(fcrtype) int        , const int        & %{int%}
-%typemap(fcrtype) long       , const long       & %{long%}
-%typemap(fcrtype) long long  , const long long  & %{long long%}
-%typemap(fcrtype) size_t     , const size_t     & %{size_t%}
-%typemap(fcrtype) float      , const float      & %{float%}
-%typemap(fcrtype) double     , const double     & %{double%}
-%typemap(fcrtype) void       , const void       & %{void%}
-%typemap(fcrtype) SWIGTYPE *  %{void*%}
+%typemap(in)      SWIGTYPE* %{ $1 = ($1_ltype)$input; %}
+%typemap(in)      SWIGTYPE& %{ $1 = ($1_ltype)($input); assert($1); %}
+%typemap(out)     SWIGTYPE*, const SWIGTYPE& %{ $result = $1; %}
+%typemap(fcrtype) SWIGTYPE*, SWIGTYPE&  %{void*%}
+%typemap(fcptype) SWIGTYPE*, SWIGTYPE&  %{void*%}
+%typemap(fiptype) SWIGTYPE*, SWIGTYPE&  "type(C_PTR), value"
+%typemap(firtype) SWIGTYPE*, SWIGTYPE&  "type(C_PTR)"
+%typemap(fxtype)  SWIGTYPE*, SWIGTYPE&  "class($fortranclassname)"
+%typemap(fxget)   SWIGTYPE*, SWIGTYPE&  "$1%ptr"
 
-/* C parameter types used in the wrapper code */
-%typemap(fcptype) bool        %{bool*%}
-%typemap(fcptype) char        %{char*%}
-%typemap(fcptype) signed char %{signed char*%}
-%typemap(fcptype) int         %{int*%}
-%typemap(fcptype) long        %{long*%}
-%typemap(fcptype) long long   %{long long*%}
-%typemap(fcptype) size_t      %{size_t*%}
-%typemap(fcptype) float       %{float*%}
-%typemap(fcptype) double      %{double*%}
-%typemap(fcptype) SWIGTYPE *  %{void*%}
-%typemap(fcptype) SWIGTYPE &  %{void*%}
+//%apply SWIGTYPE { const SWIGTYPE*, SWIGTYPE &, const SWIGTYPE& }
 
-%typemap(out) void "";
-/* Input conversions: Fortran requires input arguments to be pointers */
-%typemap(in) bool,
-             char,
-             signed char,
-             short,
-             int,
-             long,
-             long long,
-             size_t,
-             float,
-             double
-%{ $1 = *$input; /*tmin*/ %}
+// %typemap(out) SWIGTYPE&& %{ *($&1_ltype)&$result = $1; %}
+// %typemap(in)  SWIGTYPE*  %{ $1 = ($1_ltype)$input; %}
+// %typemap(in)  SWIGTYPE&  %{ $1 = *($&1_ltype)&$input; assert($1); %}
 
-/* Output conversions */
-%typemap(out) bool,
-              char,
-              signed char,
-              short,
-              int,
-              long,
-              long long,
-              size_t,
-              float,
-              double
-%{ $result = $1; /*tmout*/ %}
+// Array handling
+// %typemap(in)      SWIGTYPE[] %{ $1 = *($&1_ltype)&$input; %}
+// %typemap(out)     SWIGTYPE[] %{ *($&1_ltype)&$result = $1; %}
+// %typemap(freearg) SWIGTYPE[ANY], SWIGTYPE [] ""
 
-%typemap(out) SWIGTYPE* %{ *($&1_ltype)&$result = $1; %}
-
-/* Input conversions */
-%typemap(in) SWIGTYPE* %{ $1 = ($1_ltype)$input; %}
-%typemap(in) SWIGTYPE& %{ $1 = *($&1_ltype)&$input; assert($1); %}
-
+#if 0
 %typemap(out) SWIGTYPE
 #ifdef __cplusplus
 %{
@@ -74,113 +134,21 @@
   *($&1_ltype*)&$result = $1ptr;
 }
 #endif
+#endif
 
-/* Generic pointers and references */
-%typemap(in) SWIGTYPE * %{ $1 = ($1_ltype)$input; %}
-%typemap(in) SWIGTYPE & %{ $1 = *($&1_ltype)&$input; assert($1); %}
-
-%typemap(out) SWIGTYPE *  %{ *($&1_ltype)&$result = $1; %}
-%typemap(out) SWIGTYPE &  %{ *($&1_ltype)&$result = $1; %}
-%typemap(out) SWIGTYPE && %{ *($&1_ltype)&$result = $1; %}
-
-/* Default array handling */
-%typemap(in) SWIGTYPE [] %{ $1 = *($&1_ltype)&$input; %}
-%typemap(out) SWIGTYPE [] %{ *($&1_ltype)&$result = $1; %}
-%typemap(freearg) SWIGTYPE [ANY], SWIGTYPE [] ""
-
-/* Type checking */
+// Type checking on pointers
 %{
 #include <cassert>
 %}
 %typecheck(SWIG_TYPECHECK_POINTER)
-    SWIGTYPE,
-    SWIGTYPE *,
-    SWIGTYPE &,
-    SWIGTYPE &&,
-    SWIGTYPE *const&,
-    SWIGTYPE [],
-    SWIGTYPE (CLASS::*)
-    ""
-
+   SWIGTYPE,
+   SWIGTYPE*,
+   SWIGTYPE&,
+   SWIGTYPE&&,
+   const SWIGTYPE&,
+   SWIGTYPE[],
+   SWIGTYPE(CLASS::*)
+   ""
 //---------------------------------------------------------------------------//
-// Proxy code inserted into Fortran
+// end of fortran/fortran.swg
 //---------------------------------------------------------------------------//
-
-/* Fortran parameter types used in the fortran interface */
-%typemap(fiptype) bool        *, bool        &, bool        "logical(C_BOOL)"
-%typemap(fiptype) char        *, char        &, char        "character(C_CHAR)"
-%typemap(fiptype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
-%typemap(fiptype) short       *, short       &, short       "integer(C_SHORT)"
-%typemap(fiptype) int         *, int         &, int         "integer(C_INT)"
-%typemap(fiptype) long        *, long        &, long        "integer(C_LONG)"
-%typemap(fiptype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
-%typemap(fiptype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
-%typemap(fiptype) float       *, float       &, float       "real(C_FLOAT)"
-%typemap(fiptype) double      *, double      &, double      "real(C_DOUBLE)"
-%typemap(fiptype) SWIGTYPE *, SWIGTYPE & "type(C_PTR), value"
-%typemap(fiptype) void        ""
-
-/* Fortran return types used in the fortran interface */
-%typemap(firtype) bool        *, bool        &, bool        "logical(C_BOOL)"
-%typemap(firtype) char        *, char        &, char        "character(C_CHAR)"
-%typemap(firtype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
-%typemap(firtype) short       *, short       &, short       "integer(C_SHORT)"
-%typemap(firtype) int         *, int         &, int         "integer(C_INT)"
-%typemap(firtype) long        *, long        &, long        "integer(C_LONG)"
-%typemap(firtype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
-%typemap(firtype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
-%typemap(firtype) float       *, float       &, float       "real(C_FLOAT)"
-%typemap(firtype) double      *, double      &, double      "real(C_DOUBLE)"
-%typemap(firtype) SWIGTYPE *, SWIGTYPE & "type(C_PTR)"
-
-/* Fortran types used in the fortran proxy code */
-%typemap(fxtype) bool        *, bool        &, bool        "logical(C_BOOL)"
-%typemap(fxtype) char        *, char        &, char        "character(C_CHAR)"
-%typemap(fxtype) signed char *, signed char &, signed char "integer(C_SIGNED_CHAR)"
-%typemap(fxtype) short       *, short       &, short       "integer(C_SHORT)"
-%typemap(fxtype) int         *, int         &, int         "integer(C_INT)"
-%typemap(fxtype) long        *, long        &, long        "integer(C_LONG)"
-%typemap(fxtype) long long   *, long long   &, long long   "integer(C_LONG_LONG)"
-%typemap(fxtype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
-%typemap(fxtype) float       *, float       &, float       "real(C_FLOAT)"
-%typemap(fxtype) double      *, double      &, double      "real(C_DOUBLE)"
-%typemap(fxtype) SWIGTYPE *, SWIGTYPE & "class($fortranclassname)"
-%typemap(fxtype) void        ""
-
-/* Fortran 'call' argument extraction used in proxy code subroutine */
-%typemap(fxget)  bool        *, bool        &, bool       ,
-                 char        *, char        &, char       ,
-                 signed char *, signed char &, signed char,
-                 short       *, short       &, short      ,
-                 int         *, int         &, int        ,
-                 long        *, long        &, long       ,
-                 long long   *, long long   &, long long  ,
-                 size_t      *, size_t      &, size_t     ,
-                 float       *, float       &, float      ,
-                 double      *, double      &, double 
-%{$1%}
-
-// For proxy classes, pass the embedded class pointer
-%typemap(fxget) SWIGTYPE, SWIGTYPE *, SWIGTYPE & %{$1%ptr%}
-
-/* ------------------------------------------------------------------------- */
-/*
-  Add fortran code to the proxy/shadow code 
-  
-   %fortranprepend   - Add code before the C++ function is called
-   %fortranappend    - Add code after the C++ function is called
-*/
-
-#define %fortranprepend       %feature("fortranprepend") 
-#define %clearfortranprepend  %feature("fortranprepend","")
-
-#define %fortranappend         %feature("fortranappend") 
-#define %clearfortranappend    %feature("fortranappend","")
-
-//---------------------------------------------------------------------------//
-
-/* Equivalent types in fortran */
-%apply int    { unsigned short };
-%apply long   { unsigned int, unsigned long, const unsigned int & };
-%apply size_t { unsigned long long };
-%apply SWIGTYPE { const SWIGTYPE*, SWIGTYPE &, const SWIGTYPE& }
