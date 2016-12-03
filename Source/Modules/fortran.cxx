@@ -57,6 +57,9 @@ class FORTRAN : public Language
                                const_String_or_char_ptr var = "");
     String* fortranprepend(Node* n);
     String* fortranappend(Node* n);
+    bool substitute_classname(SwigType *pt, String *tm);
+    void substitute_classname_impl(SwigType *classnametype, String *tm,
+                                   const char *classnamespecialvariable);
 };
 
 //---------------------------------------------------------------------------//
@@ -291,8 +294,8 @@ int FORTRAN::functionWrapper(Node *n)
     // Make a wrapper name for this function
 
     /* Attach the non-standard typemaps to the parameter list. */
-    Swig_typemap_attach_parms("fcptype", parmlist, f);
     Swig_typemap_attach_parms("fcrtype", parmlist, f);
+    Swig_typemap_attach_parms("fcptype", parmlist, f);
     Swig_typemap_attach_parms("fiptype", parmlist, f);
     Swig_typemap_attach_parms("firtype", parmlist, f);
     Swig_typemap_attach_parms("fxtype", parmlist, f);
@@ -726,7 +729,8 @@ int FORTRAN::memberfunctionHandler(Node *n)
 }
 
 //---------------------------------------------------------------------------//
-// Returns a new string for a typemap that accepts no arguments
+// Returns a new string for a typemap that accepts no arguments, with special
+// substitutions performed on the result
 String* FORTRAN::get_simple_typemap(const char* tmname, Node* n,
                                     const_String_or_char_ptr var)
 {
@@ -735,12 +739,17 @@ String* FORTRAN::get_simple_typemap(const char* tmname, Node* n,
     if (tm)
     {
         result = Copy(tm);
+        bool applied = substitute_classname(Getattr(n, "type"), result);
+#if 0
+        Printf(stderr, "%c Substitutetypemap %8s: node %8s type %8s: %8s => %8s\n",
+               (applied ? '*' : ' '), tmname, Getattr(n, "name"),
+               Getattr(n, "type"), tm, result);
+#endif
     }
     else
     {
         SwigType *type = Getattr(n, "type");
-        result = NewString("");
-        Printv(result, "UNKNOWN_", type, NULL);
+        result = NewStringf("SWIGTYPE%s", SwigType_manglestr(type));
         Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF,
                      input_file, line_number,
                      "No %s typemap defined for %s\n", tmname,
@@ -781,6 +790,97 @@ String* FORTRAN::fortranappend(Node* n)
         Delitem(str, DOH_END);
     }
     return str;
+}
+
+//---------------------------------------------------------------------------//
+// Substitute the '$fortranclassname' variables with the Fortran proxy class
+// wrapper names. Shamelessly stolen from the Java wrapper code.
+
+bool FORTRAN::substitute_classname(SwigType *pt, String *tm)
+{
+    bool substitution_performed = false;
+    SwigType *type = Copy(SwigType_typedef_resolve_all(pt));
+    SwigType *strippedtype = SwigType_strip_qualifiers(type);
+
+    if (Strstr(tm, "$fortranclassname"))
+    {
+        substitute_classname_impl(strippedtype, tm, "$fortranclassname");
+        substitution_performed = true;
+    }
+    if (Strstr(tm, "$*fortranclassname"))
+    {
+        SwigType *classnametype = Copy(strippedtype);
+        Delete(SwigType_pop(classnametype));
+        if (Len(classnametype) > 0)
+        {
+            substitute_classname_impl(classnametype, tm, "$*fortranclassname");
+            substitution_performed = true;
+        }
+        Delete(classnametype);
+    }
+    if (Strstr(tm, "$&fortranclassname"))
+    {
+        SwigType *classnametype = Copy(strippedtype);
+        SwigType_add_pointer(classnametype);
+        substitute_classname_impl(classnametype, tm, "$&fortranclassname");
+        substitution_performed = true;
+        Delete(classnametype);
+    }
+
+    Delete(strippedtype);
+    Delete(type);
+
+    return substitution_performed;
+}
+
+void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
+                                        const char *classnamespecialvariable)
+{
+    String *replacementname;
+
+    if (SwigType_isenum(classnametype))
+    {
+        replacementname = NewStringf("SWIGENUMTYPE%s", SwigType_manglestr(classnametype));
+        Replace(replacementname, "enum ", "", DOH_REPLACE_ANY);
+#if 0
+        String *enumname = getEnumName(classnametype);
+        if (enumname)
+        {
+            replacementname = Copy(enumname);
+        }
+        else
+        {
+            bool anonymous_enum = (Cmp(classnametype, "enum ") == 0);
+            if (anonymous_enum)
+            {
+                replacementname = NewString("int");
+            }
+            else
+            {
+                // An unknown enum - one that has not been parsed (neither a C enum forward reference nor a definition) or an ignored enum
+                replacementname = NewStringf("SWIGTYPE%s", SwigType_manglestr(classnametype));
+                Replace(replacementname, "enum ", "", DOH_REPLACE_ANY);
+            }
+        }
+#endif
+    }
+    else
+    {
+        Node *n = classLookup(classnametype);
+        String *classname = Getattr(n, "sym:name");
+        if (classname)
+        {
+            replacementname = Copy(classname);
+        }
+        else
+        {
+            // use $descriptor if SWIG does not know anything about this type. Note that any typedefs are resolved.
+            replacementname = NewStringf("SWIGTYPE%s",
+                                         SwigType_manglestr(classnametype));
+        }
+    }
+    Replaceall(tm, classnamespecialvariable, replacementname);
+    Delete(replacementname);
 }
 
 //---------------------------------------------------------------------------//

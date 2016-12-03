@@ -2,19 +2,6 @@
 // Wrapper code inserted into C
 //---------------------------------------------------------------------------//
 
-/* C parameter types used in the wrapper code */
-%typemap(fcptype) bool        %{bool*%}
-%typemap(fcptype) char        %{char*%}
-%typemap(fcptype) signed char %{signed char*%}
-%typemap(fcptype) int         %{int*%}
-%typemap(fcptype) long        %{long*%}
-%typemap(fcptype) long long   %{long long*%}
-%typemap(fcptype) size_t      %{size_t*%}
-%typemap(fcptype) float       %{float*%}
-%typemap(fcptype) double      %{double*%}
-%typemap(fcptype) SWIGTYPE *  %{void*%}
-%typemap(fcptype) SWIGTYPE &  %{void*%}
-
 /* C return types used in the wrapper code */
 %typemap(fcrtype) bool       , const bool       & %{bool%}
 %typemap(fcrtype) char       , const char       & %{char%}
@@ -27,6 +14,19 @@
 %typemap(fcrtype) double     , const double     & %{double%}
 %typemap(fcrtype) void       , const void       & %{void%}
 %typemap(fcrtype) SWIGTYPE *  %{void*%}
+
+/* C parameter types used in the wrapper code */
+%typemap(fcptype) bool        %{bool*%}
+%typemap(fcptype) char        %{char*%}
+%typemap(fcptype) signed char %{signed char*%}
+%typemap(fcptype) int         %{int*%}
+%typemap(fcptype) long        %{long*%}
+%typemap(fcptype) long long   %{long long*%}
+%typemap(fcptype) size_t      %{size_t*%}
+%typemap(fcptype) float       %{float*%}
+%typemap(fcptype) double      %{double*%}
+%typemap(fcptype) SWIGTYPE *  %{void*%}
+%typemap(fcptype) SWIGTYPE &  %{void*%}
 
 // TODO: use SWIG's fancy typemap checking
 #if 0
@@ -164,7 +164,7 @@
 %typemap(fxtype) size_t      *, size_t      &, size_t      "integer(C_SIZE_T)"
 %typemap(fxtype) float       *, float       &, float       "real(C_FLOAT)"
 %typemap(fxtype) double      *, double      &, double      "real(C_DOUBLE)"
-%typemap(fxtype) SWIGTYPE *, SWIGTYPE & "class($*1_ltype)"
+%typemap(fxtype) SWIGTYPE *, SWIGTYPE & "class($fortranclassname)"
 %typemap(fxtype) void        ""
 
 /* Fortran 'call' argument extraction used in proxy code subroutine */
