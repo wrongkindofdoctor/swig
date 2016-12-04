@@ -565,7 +565,7 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     else
     {
         sub_or_func_str = "function";
-        result_str = " &\n     result(result)\n";
+        result_str = " &\n     result(output)\n";
     }
 
     // Set up function call, parameter list, and input arguments
@@ -593,12 +593,12 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     }
     else
     {
-        Printv(fxcall, "result = ", wname, "(", NULL);
+        Printv(fxcall, "output = ", wname, "(", NULL);
 
         // Get Fortran proxy return type (for constructors, this is
         // repurposed as a dummy argument)
         String* f_return_type = get_typemap_out("ftype", n);
-        Printv(fxparams, "   ", f_return_type, " :: result\n", NULL);
+        Printv(fxparams, "   ", f_return_type, " :: output\n", NULL);
         Delete(f_return_type);
     }
 
@@ -1011,17 +1011,20 @@ void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
         {
             classname = Getattr(n, "sym:name");
         }
-        else
-        {
-            Printf(stderr, "No class type found for %s\n", classnametype);
-        }
+
         if (classname)
         {
             replacementname = Copy(classname);
         }
         else
         {
-            // use $descriptor if SWIG does not know anything about this type. Note that any typedefs are resolved.
+            // use $descriptor if SWIG does not know anything about this type.
+            // Note that any typedefs are resolved.
+            Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF,
+                         input_file, line_number,
+                         "No class type found for %s\n",
+                         SwigType_str(classnametype, 0));
+            
             replacementname = NewStringf("SWIGTYPE%s",
                                          SwigType_manglestr(classnametype));
         }
