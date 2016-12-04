@@ -39,6 +39,9 @@ class FORTRAN : public Language
     virtual int classHandler(Node *n);
     virtual int memberfunctionHandler(Node *n);
 
+    virtual String *makeParameterName(Node *n, Parm *p, int arg_num,
+                                      bool is_setter = false) const;
+
     FORTRAN()
         : f_cur_methods(NULL)
         , d_in_constructor(false)
@@ -52,6 +55,8 @@ class FORTRAN : public Language
     void write_module_interface();
     void write_module();
 
+    void write_proxy_code(Node* n, bool is_subroutine);
+    
     // Helper functions
     String* get_typemap(const char* tmname, Node* n, const_String_or_char_ptr var);
     String* get_typemap_out(const char* tmname, Node* n);
@@ -297,8 +302,6 @@ int FORTRAN::functionWrapper(Node *n)
     // Attach the non-standard typemaps to the parameter list.
     Swig_typemap_attach_parms("ctype",  parmlist, f);
     Swig_typemap_attach_parms("imtype", parmlist, f);
-    Swig_typemap_attach_parms("ftype",  parmlist, f);
-    Swig_typemap_attach_parms("fxget",  parmlist, f);
 
     // Get C return type
     String* c_return_type = get_typemap_out("ctype", n);
@@ -518,9 +521,54 @@ int FORTRAN::functionWrapper(Node *n)
            NULL);
     Delete(fiargs);
     Delete(fiparams);
+    Delete(wname);
+    Delete(fwname);
 
-    // >>> CREATE PROXY CODE
+    // >>> WRITE PROXY CODE
 
+    write_proxy_code(n, is_subroutine);
+
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Write the proxy subroutine/function code.
+ *
+ * \param[in] n Function node
+ * \param[in] fwname Wrapped function name
+ * \param[in] is_subroutine Whether the function has 'void' return type 
+ */
+void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
+{
+    String* wname  = Getattr(n, "wrap:name");
+    String* fwname = Getattr(n, "imfuncname");
+    
+    // Set up proxy subroutine label.
+    const char* sub_or_func_str = NULL;
+    const char* result_str = NULL;
+    if (d_in_constructor)
+    {
+        // Constructors (which to SWIG is a function that returns a 'new'
+        // variable) gets turned into a subroutine with the dummy 'this'
+        // parameter that we bind to the result of the 'new' function
+        sub_or_func_str = "subroutine";
+        result_str = "\n";
+        is_subroutine = true;
+    }
+    else if (is_subroutine)
+    {
+        // Subroutine that's not a constructor
+        sub_or_func_str = "subroutine";
+        result_str = "\n";
+    }
+    else
+    {
+        sub_or_func_str = "function";
+        result_str = " &\n     result(result)\n";
+    }
+
+    // Set up function call, parameter list, and input arguments
     String* fxparams = NewString(
         "   use, intrinsic :: ISO_C_BINDING\n");
     String* fxcall = NewString("   ");
@@ -528,11 +576,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     const char* arg_prepend_comma = "";
     const char* call_prepend_comma = "";
-    if (is_subroutine)
-    {
-        Printv(fxcall, "call ", wname, "(", NULL);
-    }
-    else if (d_in_constructor)
+    if (d_in_constructor)
     {
         Printv(fxcall, "self%ptr = ", wname, "(", NULL);
         Printv(fxargs, "self", NULL);
@@ -542,6 +586,10 @@ int FORTRAN::functionWrapper(Node *n)
         Delete(f_return_type);
 
         arg_prepend_comma = ", ";
+    }
+    else if (is_subroutine)
+    {
+        Printv(fxcall, "call ", wname, "(", NULL);
     }
     else
     {
@@ -554,48 +602,36 @@ int FORTRAN::functionWrapper(Node *n)
         Delete(f_return_type);
     }
 
-    p = parmlist;
+    // Get parameters and bind our wrapper typemaps
+    ParmList* p = Getattr(n, "parms");
+    Swig_typemap_attach_parms("fxget", p, NULL);
+    Swig_typemap_attach_parms("ftype", p, NULL);
+
+    int i = 0;
     while (p)
     {
-        String* arg = Getattr(p, "name");
+        String* argname = this->makeParameterName(n, p, i++);
 
         // Add parameter name to argument list
-        Printv(fxargs, arg_prepend_comma, arg, NULL);
+        Printv(fxargs, arg_prepend_comma, argname, NULL);
 
         // Add parameter to function call
         // TODO: change to 'fout' typemap
-        String *fxcall_arg = get_typemap("fxget", p, arg);
+        String *fxcall_arg = get_typemap("fxget", p, argname);
         Printv(fxcall, call_prepend_comma, fxcall_arg, NULL);
         Delete(fxcall_arg);
 
         // Add parameter type to the fortran interface parameters list
-        String* ftype = get_typemap("ftype", p, arg);
-        Printv(fxparams, "   ", ftype, " :: ", arg, "\n", NULL);
+        String* ftype = get_typemap("ftype", p, argname);
+        Printv(fxparams, "   ", ftype, " :: ", argname, "\n", NULL);
         Delete(ftype);
+        Delete(argname);
 
         // Next iteration
         arg_prepend_comma = call_prepend_comma = ", ";
         p = nextSibling(p);
     }
     Printv(fxcall, ")\n", NULL);
-
-    // >>> WRITE INTERFACE CODE
-
-    // >>> WRITE PROXY CODE
-
-    if (d_in_constructor)
-    {
-        // Constructors (which to SWIG is a function that returns a 'new'
-        // variable) gets turned into a subroutine with the dummy 'this'
-        // parameter that we bind to the result of the 'new' function
-        sub_or_func_str = "subroutine";
-        result_str = "\n";
-        is_subroutine = true;
-    }
-    else if (!is_subroutine)
-    {
-        result_str = " &\n     result(result)\n";
-    }
 
     // Get strings to append and prepend if needed
     const_String_or_char_ptr prepend = fortranprepend(n);
@@ -630,6 +666,7 @@ int FORTRAN::functionWrapper(Node *n)
     else
     {
         // Not a class: make the function public (and alias the name)
+        String* symname = Getattr(n, "sym:name");
         Printv(f_public,
                " public :: ", symname, "\n",
                NULL);
@@ -638,9 +675,22 @@ int FORTRAN::functionWrapper(Node *n)
     Delete(fxargs);
     Delete(fxcall);
     Delete(fxparams);
-    Delete(wname);
-    Delete(fwname);
-    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Create a friendly parameter name
+ */
+String* FORTRAN::makeParameterName(Node *n, Parm *p,
+                                   int arg_num, bool setter) const
+{
+    String *name = Getattr(p, "name");
+    if (name)
+        return Swig_name_make(p, 0, name, 0, 0);
+
+    // The general function which replaces arguments whose
+    // names clash with keywords with (less useful) "argN".
+    return Language::makeParameterName(n, p, arg_num, setter);
 }
 
 //---------------------------------------------------------------------------//
