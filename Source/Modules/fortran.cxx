@@ -334,13 +334,11 @@ int FORTRAN::functionWrapper(Node *n)
     // Now walk the function parameter list and generate code to get arguments
     String* nondir_args = NewString("");
 
-    // Fortran interface parameters
+    // Fortran interface parameters and wrapper code parameters
     String* fiparams = NewString(
-        "   use, intrinsic :: ISO_C_BINDING\n"
-        "   implicit none\n");
+        "   use, intrinsic :: ISO_C_BINDING\n");
     String* fxparams = NewString(
-        "   use, intrinsic :: ISO_C_BINDING\n"
-        "   implicit none\n");
+        "   use, intrinsic :: ISO_C_BINDING\n");
 
     // Set up return value types if it's a function (rather than subroutine)
     if (!is_subroutine)
@@ -399,7 +397,8 @@ int FORTRAN::functionWrapper(Node *n)
         {
             SwigType *param_type = Getattr(p, "type");
             Swig_warning(WARN_TYPEMAP_IN_UNDEF, input_file, line_number,
-                         "Unable to use type %s as a function argument.\n", SwigType_str(param_type, 0));
+                         "Unable to use type %s as a function argument.\n",
+                         SwigType_str(param_type, 0));
         }
 
         /* Add parameter to fortran interface declarations */
@@ -793,7 +792,7 @@ String* FORTRAN::get_typemap_out(const char* tmname, Node* n)
         result = Copy(tm);
         bool applied = substitute_classname(Getattr(n, "type"), result);
 #if 0
-        Printf(stderr, "%c Substitutetypemap %8s: node %8s type %8s: %8s => %8s\n",
+        Printf(stderr, "%c Substitute typemap %8s: node %8s type %8s: %8s => %8s\n",
                (applied ? '*' : ' '), tmname, Getattr(n, "name"),
                Getattr(n, "type"), tm, result);
 #else
