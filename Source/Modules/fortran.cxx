@@ -260,6 +260,8 @@ int FORTRAN::functionWrapper(Node *n)
     SwigType* type     = Getattr(n, "type");
     ParmList* parmlist = Getattr(n, "parms");
 
+    // >>> INITIALIZE
+
     // Create wrapper name, taking into account overloaded functions
     String* wname = Copy(Swig_name_wrapper(symname));
     if (Getattr(n, "sym:overloaded"))
@@ -287,7 +289,7 @@ int FORTRAN::functionWrapper(Node *n)
         // Use actual function name
         fwname = Copy(symname);
     }
-    Setattr(n, "fortran:name", fwname);
+    Setattr(n, "imfuncname", fwname);
 
     // A new wrapper function object
     Wrapper* f = NewWrapper();
@@ -310,7 +312,6 @@ int FORTRAN::functionWrapper(Node *n)
     {
         Wrapper_add_localv(f, "fresult", c_return_type, "fresult = 0", NULL);
     }
-    Delete(c_return_type); c_return_type = NULL;
 
     // SWIG: Emit all of the local variables for holding arguments.
     emit_parameter_variables(parmlist, f);
@@ -331,13 +332,10 @@ int FORTRAN::functionWrapper(Node *n)
     }
 #endif
 
-    // Now walk the function parameter list and generate code to get arguments
-    String* nondir_args = NewString("");
+    // >>> BUILD WRAPPER FUNCTION AND INTERFACE CODE
 
     // Fortran interface parameters and wrapper code parameters
     String* fiparams = NewString(
-        "   use, intrinsic :: ISO_C_BINDING\n");
-    String* fxparams = NewString(
         "   use, intrinsic :: ISO_C_BINDING\n");
 
     // Set up return value types if it's a function (rather than subroutine)
@@ -347,22 +345,12 @@ int FORTRAN::functionWrapper(Node *n)
         String* f_return_type = get_typemap_out("imtype", n);
         Printf(fiparams, "   %s :: fresult\n", f_return_type);
         Delete(f_return_type);
-
-        // Get Fortran proxy return type (for constructors, this is
-        // repurposed as a dummy argument)
-        f_return_type = get_typemap_out("ftype", n);
-        Printf(fxparams, "   %s :: fresult\n", f_return_type);
-        Delete(f_return_type);
     }
 
-    // Fortran proxy parameters
-    String* fargs      = NewString("");
-    String* fxcallargs = NewString("");
-
+    String* fiargs = NewString("");
     const char* prepend_comma = "";
-
-    Parm* p = NULL;
-    for (p = parmlist; p; p = nextSibling(p))
+    Parm* p = parmlist;
+    while (p)
     {
         while (checkAttribute(p, "tmap:in:numinputs", "0"))
         {
@@ -383,15 +371,12 @@ int FORTRAN::functionWrapper(Node *n)
         Printv(f->def, prepend_comma, c_param_type, " ", arg, NULL);
         Delete(c_param_type); c_param_type = NULL;
 
-        /* Add parameter to C function */
-
         // Get typemap for this argument
-        String* tm = Getattr(p, "tmap:in");
-        if (tm)
+        if (String* tm = Getattr(p, "tmap:in"))
         {
             Replaceall(tm, "$input", arg);
             Setattr(p, "emit:input", arg);
-            Printf(nondir_args, "%s\n", tm);
+            Printv(f->code, tm, "\n", NULL);
         }
         else
         {
@@ -401,37 +386,20 @@ int FORTRAN::functionWrapper(Node *n)
                          SwigType_str(param_type, 0));
         }
 
-        /* Add parameter to fortran interface declarations */
-        
         // Add parameter name to declaration list
-        Printv(fargs, prepend_comma, arg, NULL);
+        Printv(fiargs, prepend_comma, arg, NULL);
 
         // Add parameter type to the parameters list
-        String *fi_param_type = get_typemap("imtype", p, "");
-        Printv(fiparams, "   ", fi_param_type, " :: ", arg, "\n", NULL);
-        Delete(fi_param_type);
+        String* ftype = get_typemap("imtype", p, "");
+        Printv(fiparams, "   ", ftype, " :: ", arg, "\n", NULL);
+        Delete(ftype);
 
-        /* Get main subroutine "call" argument */
-
-        /* Add parameter to fortran wrapper declarations */
-        
-        // Add parameter type to the parameters list
-        String *fxparam_type = get_typemap("ftype", p, arg);
-        Printv(fxparams, "   ", fxparam_type, " :: ", arg, "\n", NULL);
-        Delete(fxparam_type);
-
-        // Add parameter type to the parameters list
-        String *fxcall_arg = get_typemap("fxget", p, arg);
-        Printv(fxcallargs, prepend_comma, fxcall_arg, NULL);
-        Delete(fxcall_arg);
-
-        Delete(arg);
-
+        // Next iteration
         prepend_comma = ", ";
+        p = nextSibling(p);
     }
-
-    Printv(f->code, nondir_args, NULL);
-    Delete(nondir_args);
+    // Done with C function arguments
+    Printf(f->def, ") {");
 
     /* Insert constraint checking code */
     p = parmlist;
@@ -483,10 +451,10 @@ int FORTRAN::functionWrapper(Node *n)
             p = nextSibling(p);
         }
     }
-
+    
     // Now write code to make the function call
     Swig_director_emit_dynamic_cast(n, f);
-    String *actioncode = emit_action(n);
+    String* actioncode = emit_action(n);
 
     /* Return value if necessary  */
     {
@@ -514,11 +482,12 @@ int FORTRAN::functionWrapper(Node *n)
     /* Output cleanup code */
     Printv(f->code, cleanup, NULL);
 
-    /* Finish C function and intermediary class function definitions */
-    Printf(f->def, ") {");
-
     if (!is_subroutine)
-        Printv(f->code, "    return fresult;\n", NULL);
+    {
+        String* qualified_return = SwigType_rcaststr(c_return_type, "fresult");
+        Printf(f->code, "    return %s;\n", qualified_return);
+        Delete(qualified_return);
+    }
     Printf(f->code, "}\n");
 
     /* Standard SWIG substitutions */
@@ -529,18 +498,104 @@ int FORTRAN::functionWrapper(Node *n)
 
     /* Write the C++ function into the wrapper code file */
     Wrapper_print(f, f_wrapper);
+    Delete(outarg);
+    Delete(c_return_type);
+    Delete(cleanup);
+    DelWrapper(f);
+
+    // >>> WRITE INTERFACE CODE
 
     const char* sub_or_func_str = (is_subroutine ? "subroutine" : "function");
     const char* result_str = (is_subroutine ? "\n" : " &\n     result(fresult)\n");
 
     /* Write the Fortran interface to the C routine */
     Printv(f_interfaces,
-           "  ", sub_or_func_str, " ", wname, "(", fargs, ")",
+           "  ", sub_or_func_str, " ", wname, "(", fiargs, ")",
            " &\n     bind(C, name=\"", wname, "\")",
            result_str,
            fiparams,
            "  end ", sub_or_func_str, "\n",
            NULL);
+    Delete(fiargs);
+    Delete(fiparams);
+
+    // >>> CREATE PROXY CODE
+
+    String* fxparams = NewString(
+        "   use, intrinsic :: ISO_C_BINDING\n");
+    String* fxcall = NewString("   ");
+    String* fxargs = NewString("");
+
+    const char* arg_prepend_comma = "";
+    const char* call_prepend_comma = "";
+    if (is_subroutine)
+    {
+        Printv(fxcall, "call ", wname, "(", NULL);
+    }
+    else if (d_in_constructor)
+    {
+        Printv(fxcall, "self%ptr = ", wname, "(", NULL);
+        Printv(fxargs, "self", NULL);
+
+        String* f_return_type = get_typemap_out("ftype", n);
+        Printv(fxparams, "   ", f_return_type, " :: self\n", NULL);
+        Delete(f_return_type);
+
+        arg_prepend_comma = ", ";
+    }
+    else
+    {
+        Printv(fxcall, "result = ", wname, "(", NULL);
+
+        // Get Fortran proxy return type (for constructors, this is
+        // repurposed as a dummy argument)
+        String* f_return_type = get_typemap_out("ftype", n);
+        Printv(fxparams, "   ", f_return_type, " :: result\n", NULL);
+        Delete(f_return_type);
+    }
+
+    p = parmlist;
+    while (p)
+    {
+        String* arg = Getattr(p, "name");
+
+        // Add parameter name to argument list
+        Printv(fxargs, arg_prepend_comma, arg, NULL);
+
+        // Add parameter to function call
+        // TODO: change to 'fout' typemap
+        String *fxcall_arg = get_typemap("fxget", p, arg);
+        Printv(fxcall, call_prepend_comma, fxcall_arg, NULL);
+        Delete(fxcall_arg);
+
+        // Add parameter type to the fortran interface parameters list
+        String* ftype = get_typemap("ftype", p, arg);
+        Printv(fxparams, "   ", ftype, " :: ", arg, "\n", NULL);
+        Delete(ftype);
+
+        // Next iteration
+        arg_prepend_comma = call_prepend_comma = ", ";
+        p = nextSibling(p);
+    }
+    Printv(fxcall, ")\n", NULL);
+
+    // >>> WRITE INTERFACE CODE
+
+    // >>> WRITE PROXY CODE
+
+    if (d_in_constructor)
+    {
+        // Constructors (which to SWIG is a function that returns a 'new'
+        // variable) gets turned into a subroutine with the dummy 'this'
+        // parameter that we bind to the result of the 'new' function
+        sub_or_func_str = "subroutine";
+        result_str = "\n";
+        is_subroutine = true;
+    }
+    else if (!is_subroutine)
+    {
+        result_str = " &\n     result(result)\n";
+    }
 
     // Get strings to append and prepend if needed
     const_String_or_char_ptr prepend = fortranprepend(n);
@@ -548,32 +603,16 @@ int FORTRAN::functionWrapper(Node *n)
     const_String_or_char_ptr append = fortranappend(n);
     if (!append) append = "";
 
-    /* Write the subroutine proxy code */
-    if (d_in_constructor)
-    {
-        // Constructors get returned into subroutines, and have a dummy 'this'
-        // parameter
-        Printv(f_proxy,
-               "  subroutine ", fwname, "(fresult", prepend_comma, fargs, ")\n",
-               fxparams,
-               prepend,
-               "   fresult%ptr = ", wname, "(", fxcallargs, ")\n",
-               append,
-               "  end subroutine\n",
-               NULL);
-    }
-    else
-    {
-        Printv(f_proxy,
-               "  ", sub_or_func_str, " ", fwname, "(", fargs, ")",
-               result_str,
-               fxparams,
-               prepend,
-               "   ", (is_subroutine ? "call " : "fresult = "), wname, "(", fxcallargs, ")\n",
-               append,
-               "  end ", sub_or_func_str, "\n",
-               NULL);
-    }
+    // Write 
+    Printv(f_proxy,
+           "  ", sub_or_func_str, " ", fwname, "(", fxargs, ")",
+           result_str,
+           fxparams,
+           prepend,
+           fxcall,
+           append,
+           "  end ", sub_or_func_str, "\n",
+           NULL);
         
     /* Write type or public aliases */
     if (is_wrapping_class())
@@ -596,15 +635,11 @@ int FORTRAN::functionWrapper(Node *n)
                NULL);
     }
 
-    // TODO: cleanup code needs to be written to C wrapper
-    Delete(outarg);
-    Delete(cleanup);
-    Delete(fargs);
-    Delete(fiparams);
+    Delete(fxargs);
+    Delete(fxcall);
     Delete(fxparams);
-    Delete(fxcallargs);
-    DelWrapper(f);
     Delete(wname);
+    Delete(fwname);
     return SWIG_OK;
 }
 
