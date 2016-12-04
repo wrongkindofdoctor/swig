@@ -2794,7 +2794,7 @@ int Language::constructorHandler(Node *n) {
   if (Cmp(symname, classname) != 0)
   {
       Clear(mrename);
-      Printf(mrename, "%s__%s", classname, );
+      Printf(mrename, "%s__%s", classname, symname);
   }
 #endif
 

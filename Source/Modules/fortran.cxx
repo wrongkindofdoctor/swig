@@ -53,8 +53,8 @@ class FORTRAN : public Language
     void write_module();
 
     // Helper functions
-    String* get_simple_typemap(const char* tmname, Node* n,
-                               const_String_or_char_ptr var = "");
+    String* get_typemap(const char* tmname, Node* n, const_String_or_char_ptr var);
+    String* get_typemap_out(const char* tmname, Node* n);
     String* fortranprepend(Node* n);
     String* fortranappend(Node* n);
     bool substitute_classname(SwigType *pt, String *tm);
@@ -255,9 +255,9 @@ void FORTRAN::write_module()
  */
 int FORTRAN::functionWrapper(Node *n)
 {
-    // Basic attributes (references)
-    String* symname = Getattr(n, "sym:name");
-    SwigType* type = Getattr(n, "type");
+    // Basic attributes
+    String* symname    = Getattr(n, "sym:name");
+    SwigType* type     = Getattr(n, "type");
     ParmList* parmlist = Getattr(n, "parms");
 
     // Create wrapper name, taking into account overloaded functions
@@ -274,16 +274,17 @@ int FORTRAN::functionWrapper(Node *n)
     }
     Setattr(n, "wrap:name", wname);
 
-    // Add fortran proxy name
+    // Determine fortran proxy function name
     String* fwname;
     if (is_wrapping_class())
     {
+        // Use mangled name, which will be renamed to class member
         fwname = Copy(wname);
         Replace(fwname, "swigc", "swigf", DOH_REPLACE_FIRST);
     }
     else
     {
-        // Replace with actual function name
+        // Use actual function name
         fwname = Copy(symname);
     }
     Setattr(n, "fortran:name", fwname);
@@ -291,20 +292,14 @@ int FORTRAN::functionWrapper(Node *n)
     // A new wrapper function object
     Wrapper* f = NewWrapper();
 
-    // Make a wrapper name for this function
+    // Attach the non-standard typemaps to the parameter list.
+    Swig_typemap_attach_parms("ctype",  parmlist, f);
+    Swig_typemap_attach_parms("imtype", parmlist, f);
+    Swig_typemap_attach_parms("ftype",  parmlist, f);
+    Swig_typemap_attach_parms("fxget",  parmlist, f);
 
-    /* Attach the non-standard typemaps to the parameter list. */
-    Swig_typemap_attach_parms("fcrtype", parmlist, f);
-    Swig_typemap_attach_parms("fcptype", parmlist, f);
-    Swig_typemap_attach_parms("fiptype", parmlist, f);
-    Swig_typemap_attach_parms("firtype", parmlist, f);
-    Swig_typemap_attach_parms("fxtype", parmlist, f);
-    Swig_typemap_attach_parms("fxget", parmlist, f);
-
-    /* Get return types */
-
-    // Get C type
-    String *c_return_type = get_simple_typemap("fcrtype", n);
+    // Get C return type
+    String* c_return_type = get_typemap_out("ctype", n);
     Printv(f->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
 
     // Function attributes
@@ -351,13 +346,13 @@ int FORTRAN::functionWrapper(Node *n)
     if (!is_subroutine)
     {
         // Get Fortran interface return type
-        String* f_return_type = get_simple_typemap("firtype", n);
+        String* f_return_type = get_typemap_out("imtype", n);
         Printf(fiparams, "   %s :: fresult\n", f_return_type);
         Delete(f_return_type);
 
         // Get Fortran proxy return type (for constructors, this is
         // repurposed as a dummy argument)
-        f_return_type = get_simple_typemap("fxtype", n);
+        f_return_type = get_typemap_out("ftype", n);
         Printf(fxparams, "   %s :: fresult\n", f_return_type);
         Delete(f_return_type);
     }
@@ -368,8 +363,8 @@ int FORTRAN::functionWrapper(Node *n)
 
     const char* prepend_comma = "";
 
-    Parm* p = parmlist;
-    while (p)
+    Parm* p = NULL;
+    for (p = parmlist; p; p = nextSibling(p))
     {
         while (checkAttribute(p, "tmap:in:numinputs", "0"))
         {
@@ -383,12 +378,10 @@ int FORTRAN::functionWrapper(Node *n)
         }
 
         // Construct conversion argument name
-        String *arg = NewString("");
-        String *lname = Getattr(p, "lname");
-        Printf(arg, "f%s", lname);
+        String *arg = NewStringf("f%s", Getattr(p, "lname"));
 
         /* Get the C types of the parameter */
-        String *c_param_type = get_simple_typemap("fcptype", p);
+        String *c_param_type = get_typemap("ctype", p, "");
         Printv(f->def, prepend_comma, c_param_type, " ", arg, NULL);
         Delete(c_param_type); c_param_type = NULL;
 
@@ -415,7 +408,7 @@ int FORTRAN::functionWrapper(Node *n)
         Printv(fargs, prepend_comma, arg, NULL);
 
         // Add parameter type to the parameters list
-        String *fi_param_type = get_simple_typemap("fiptype", p);
+        String *fi_param_type = get_typemap("imtype", p, "");
         Printv(fiparams, "   ", fi_param_type, " :: ", arg, "\n", NULL);
         Delete(fi_param_type);
 
@@ -424,19 +417,18 @@ int FORTRAN::functionWrapper(Node *n)
         /* Add parameter to fortran wrapper declarations */
         
         // Add parameter type to the parameters list
-        String *fxparam_type = get_simple_typemap("fxtype", p);
+        String *fxparam_type = get_typemap("ftype", p, arg);
         Printv(fxparams, "   ", fxparam_type, " :: ", arg, "\n", NULL);
         Delete(fxparam_type);
 
         // Add parameter type to the parameters list
-        String *fxcall_arg = get_simple_typemap("fxget", p, arg);
+        String *fxcall_arg = get_typemap("fxget", p, arg);
         Printv(fxcallargs, prepend_comma, fxcall_arg, NULL);
         Delete(fxcall_arg);
 
         Delete(arg);
 
         prepend_comma = ", ";
-        p = nextSibling(p);
     }
 
     Printv(f->code, nondir_args, NULL);
@@ -751,13 +743,53 @@ int FORTRAN::memberfunctionHandler(Node *n)
 //---------------------------------------------------------------------------//
 // Returns a new string for a typemap that accepts no arguments, with special
 // substitutions performed on the result
-String* FORTRAN::get_simple_typemap(const char* tmname, Node* n,
-                                    const_String_or_char_ptr var)
+String* FORTRAN::get_typemap(const char* tmname, Node* n,
+                             const_String_or_char_ptr var)
 {
     String* tm = Swig_typemap_lookup(tmname, n, var, NULL);
     String* result = NULL;
     if (tm)
     {
+        result = Copy(tm);
+        bool applied = substitute_classname(Getattr(n, "type"), result);
+#if 0
+        Printf(stderr, "%c Substitutetypemap %8s: node %8s type %8s: %8s => %8s\n",
+               (applied ? '*' : ' '), tmname, Getattr(n, "name"),
+               Getattr(n, "type"), tm, result);
+#else
+        (void)sizeof(applied);
+#endif
+    }
+    else
+    {
+        SwigType *type = Getattr(n, "type");
+        result = NewStringf("SWIGTYPE%s", SwigType_manglestr(type));
+        Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF,
+                     input_file, line_number,
+                     "No %s typemap defined for %s\n", tmname,
+                     SwigType_str(type, 0));
+    }
+    return result;
+}
+
+
+//---------------------------------------------------------------------------//
+// Returns a new string for a typemap that accepts no arguments, with special
+// substitutions performed on the result
+String* FORTRAN::get_typemap_out(const char* tmname, Node* n)
+{
+    String* tm = Swig_typemap_lookup(tmname, n, "", NULL);
+    String* result = NULL;
+    if (tm)
+    {
+        {
+            // Check for output override typemap
+            String* outkey = NewStringf("tmap:%s:out", tmname);
+            String* alt_tm = Getattr(n, outkey);
+            if (alt_tm)
+                tm = alt_tm;
+            Delete(outkey);
+        }
         result = Copy(tm);
         bool applied = substitute_classname(Getattr(n, "type"), result);
 #if 0

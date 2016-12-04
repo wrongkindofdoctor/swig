@@ -24,11 +24,11 @@
 //---------------------------------------------------------------------------//
 /*! CUSTOM TYPEMAP DESCRIPTIONS.
  *
- * fcrtype : return type in C wrapper code
- * fcptype : parameter type in C wrapper code
- * fiptype : Fortran type in interface code (equivalent to C argument type)
- * firtype : Fortran return type in interface code (equiv to C return type)
- * fxtype  : Fortran proxy (shadow) code type
+ * ctype : type in C wrapper code (input parameter, default return value)
+ * ctype:out : *return* type (overrides ctype)
+ * imtype : Fortran type in interface code (equivalent to C argument type)
+ * imtype:out : Fortran return type in interface code (overrides imtype)
+ * ftype  : Fortran proxy (shadow) code type
  * fxget   : Code used in proxy 'call' argument to convert proxy code type to
  *           interface type
  */
@@ -41,7 +41,7 @@
  * \brief Add a typemap for a fundamental built-in type.
  *
  * Return types are passed by value. Argument types in Fortran must be pointers
- * (so \c fcptype is a pointer, and we use a \c typemap(in) to dereference the
+ * (so \c ctype is a pointer, and we use a \c typemap(in) to dereference the
  * argument).
  *
  * - We can't return by reference-value in Fortran; you'll get a build-time
@@ -49,8 +49,7 @@
  * - Returning by const reference is automatically turned into return-by-value.
  */
 %define FORTRAN_TYPEMAP(CTYPE, FTYPE)
-  %typemap(fcrtype) CTYPE, CTYPE*, CTYPE& %{CTYPE%}
-  %typemap(fcptype) CTYPE, CTYPE*, CTYPE& %{CTYPE*%}
+  %typemap(ctype, out="CTYPE") CTYPE, CTYPE*, CTYPE& %{CTYPE*%}
 
   %typemap(in)      CTYPE                 %{$1 = *$input;%}
   %typemap(in)             CTYPE*, CTYPE& %{$1 = $input;%}
@@ -61,10 +60,9 @@
     #error "Can't return by mutable reference in Fortran"
   %}
 
-  %typemap(fiptype) CTYPE, CTYPE*, CTYPE& FTYPE
-  %typemap(firtype) CTYPE, CTYPE*, CTYPE& FTYPE
-  %typemap(fxtype)  CTYPE, CTYPE*, CTYPE& FTYPE
-  %typemap(fxget)   CTYPE, CTYPE*, CTYPE& %{$1%}
+  %typemap(imtype)   CTYPE, CTYPE*, CTYPE& FTYPE
+  %typemap(ftype)    CTYPE, CTYPE*, CTYPE& FTYPE
+  %typemap(fxget)    CTYPE, CTYPE*, CTYPE& %{$1%}
 %enddef
 
 FORTRAN_TYPEMAP(bool       , "logical(C_BOOL)"     )
@@ -90,51 +88,22 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 //---------------------------------------------------------------------------//
 // VOID TYPES
 //---------------------------------------------------------------------------//
-%typemap(fcrtype) void %{void%}
+%typemap(ctype) void %{void%}
 %typemap(out)     void %{%}
-%typemap(fiptype) void ""
-%typemap(fxtype)  void ""
+%typemap(imtype) void ""
+%typemap(ftype)  void ""
 
 //---------------------------------------------------------------------------//
 // POINTER/CLASS TYPES
 //---------------------------------------------------------------------------//
 
-%typemap(in)      SWIGTYPE* %{ $1 = ($1_ltype)$input; %}
+%typemap(in)      SWIGTYPE* %{ $1 = ($1_ltype)($input); %}
 %typemap(in)      SWIGTYPE& %{ $1 = ($1_ltype)($input); assert($1); %}
 %typemap(out)     SWIGTYPE*, const SWIGTYPE& %{ $result = $1; %}
-%typemap(fcrtype) SWIGTYPE*, SWIGTYPE&  %{void*%}
-%typemap(fcptype) SWIGTYPE*, SWIGTYPE&  %{void*%}
-%typemap(fiptype) SWIGTYPE*, SWIGTYPE&  "type(C_PTR), value"
-%typemap(firtype) SWIGTYPE*, SWIGTYPE&  "type(C_PTR)"
-%typemap(fxtype)  SWIGTYPE*, SWIGTYPE&  "class($fortranclassname)"
-%typemap(fxget)   SWIGTYPE*, SWIGTYPE&  "$1%ptr"
-
-//%apply SWIGTYPE { const SWIGTYPE*, SWIGTYPE &, const SWIGTYPE& }
-
-// %typemap(out) SWIGTYPE&& %{ *($&1_ltype)&$result = $1; %}
-// %typemap(in)  SWIGTYPE*  %{ $1 = ($1_ltype)$input; %}
-// %typemap(in)  SWIGTYPE&  %{ $1 = *($&1_ltype)&$input; assert($1); %}
-
-// Array handling
-// %typemap(in)      SWIGTYPE[] %{ $1 = *($&1_ltype)&$input; %}
-// %typemap(out)     SWIGTYPE[] %{ *($&1_ltype)&$result = $1; %}
-// %typemap(freearg) SWIGTYPE[ANY], SWIGTYPE [] ""
-
-#if 0
-%typemap(out) SWIGTYPE
-#ifdef __cplusplus
-%{
-    // Return object passed by value
-    *($&1_ltype*)&$result = new $1_ltype((const $1_ltype &)$1); /* pass-by-value */
-%}
-#else
-{
-  $&1_ltype $1ptr = ($&1_ltype) malloc(sizeof($1_ltype));
-  memmove($1ptr, &$1, sizeof($1_type));
-  *($&1_ltype*)&$result = $1ptr;
-}
-#endif
-#endif
+%typemap(ctype)  SWIGTYPE*, SWIGTYPE&  %{void*%}
+%typemap(imtype, out="type(C_PTR)") SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
+%typemap(ftype)  SWIGTYPE*, SWIGTYPE&  "class($fortranclassname)"
+%typemap(fxget)    SWIGTYPE*, SWIGTYPE&  "$1%ptr"
 
 // Type checking on pointers
 %{
@@ -149,6 +118,7 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
    SWIGTYPE[],
    SWIGTYPE(CLASS::*)
    ""
+
 //---------------------------------------------------------------------------//
 // end of fortran/fortran.swg
 //---------------------------------------------------------------------------//
