@@ -63,7 +63,7 @@
   %typemap(ftype)        CTYPE&  FTYPE ", intent(inout)"
   %typemap(ftype,  out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
 
-  %typemap(fin)  CTYPE, CTYPE*, CTYPE&, const CTYPE*, const CTYPE& %{$1%}
+  %typemap(fin)  CTYPE, CTYPE*, CTYPE&, const CTYPE*, const CTYPE& %{$1_name%}
 %enddef
 
 FORTRAN_TYPEMAP(bool       , "logical(C_BOOL)"     )
@@ -98,13 +98,12 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 // POINTER/CLASS TYPES
 //---------------------------------------------------------------------------//
 
-%typemap(in)     SWIGTYPE* %{ $1 = ($1_ltype)($input); %}
-%typemap(in)     SWIGTYPE& %{ $1 = ($1_ltype)($input); assert($1); %}
+%typemap(in)     SWIGTYPE*, SWIGTYPE& %{ $1 = ($1_ltype)($input); %}
 %typemap(out)    SWIGTYPE*, const SWIGTYPE& %{ $result = $1; %}
 %typemap(ctype)  SWIGTYPE*, SWIGTYPE&  %{void*%}
 %typemap(imtype, out="type(C_PTR)") SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
 %typemap(ftype)  SWIGTYPE*, SWIGTYPE&  "class($fortranclassname)"
-%typemap(fin)    SWIGTYPE*, SWIGTYPE&  "$1%ptr"
+%typemap(fin)    SWIGTYPE*, SWIGTYPE&  "$1_name%ptr"
 
 //---------------------------------------------------------------------------//
 // ARRAY TYPES
@@ -114,7 +113,7 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %apply int { (std::size_t SIZE) };
 
 // Automatically add "size" parameter from a Fortran array
-%typemap(fin, noblock=1) (const SWIGTYPE* ARRAY, std::size_t SIZE)
+%typemap(fin, noblock=1) (SWIGTYPE* ARRAY, std::size_t SIZE)
 { $1_name, size($1_name) }
 
 //---------------------------------------------------------------------------//
