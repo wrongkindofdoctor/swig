@@ -630,7 +630,6 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
 
         // Add parameter to function call
         String *fin_tm = get_typemap("fin", p);
-        Printf(stderr, "Got fin=%s\n", fin_tm);
         Printv(callcmd, call_prepend_comma, fin_tm, NULL);
         Delete(fin_tm);
 

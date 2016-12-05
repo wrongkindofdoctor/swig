@@ -58,8 +58,8 @@
   %typemap(imtype)       CTYPE&  FTYPE ", intent(inout)"
   %typemap(imtype, out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
 
-  %typemap(ftype)        CTYPE*  FTYPE ", dimension(*), intent(inout)"
-  %typemap(ftype)  const CTYPE*  FTYPE ", dimension(*), intent(in)"
+  %typemap(ftype)        CTYPE*  FTYPE ", dimension(:), intent(inout)"
+  %typemap(ftype)  const CTYPE*  FTYPE ", dimension(:), intent(in)"
   %typemap(ftype)        CTYPE&  FTYPE ", intent(inout)"
   %typemap(ftype,  out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
 
@@ -105,6 +105,17 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %typemap(imtype, out="type(C_PTR)") SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
 %typemap(ftype)  SWIGTYPE*, SWIGTYPE&  "class($fortranclassname)"
 %typemap(fin)    SWIGTYPE*, SWIGTYPE&  "$1%ptr"
+
+//---------------------------------------------------------------------------//
+// ARRAY TYPES
+//---------------------------------------------------------------------------//
+
+// Cast integer to size_t whenever it shows up as a 'count' argument
+%apply int { (std::size_t SIZE) };
+
+// Automatically add "size" parameter from a Fortran array
+%typemap(fin, noblock=1) (const SWIGTYPE* ARRAY, std::size_t SIZE)
+{ $1_name, size($1_name) }
 
 //---------------------------------------------------------------------------//
 // end of fortran/fortrantypemaps.swg
