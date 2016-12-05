@@ -16,8 +16,10 @@
  * imtype : Fortran type in interface code (equivalent to C argument type)
  * imtype:out : Fortran return type in interface code (overrides imtype)
  * ftype  : Fortran proxy (shadow) code type
- * fxget   : Code used in proxy 'call' argument to convert proxy code type to
- *           interface type
+ * fin : Fortran proxy code used to translate a Fortan argument to a wrapper
+ *       argument
+ * fin:pre : Proxy code inserted before the wrapper call
+ * fin:post : Proxy code inserted after the wrapper call
  */
 
 //---------------------------------------------------------------------------//
@@ -31,16 +33,17 @@
  * (so \c ctype is a pointer, and we use a \c typemap(in) to dereference the
  * argument).
  *
- * - We can't return by reference-value in Fortran; you'll get a build-time
- *   error in your wrapper code if you try.
+ * - We can't return mutable references in Fortran; you'll get a build-time
+ *   error in your wrapper code if you try. Const references will get converted
+ *   into values for fundamental types.
  * - Returning by const reference is automatically turned into return-by-value.
  *   (this is the 'out=CTYPE' argument)
  */
 %define FORTRAN_TYPEMAP(CTYPE, FTYPE)
   %typemap(ctype, out="CTYPE") CTYPE, CTYPE*, CTYPE& %{CTYPE*%}
 
-  %typemap(in)  CTYPE          %{$1 = *$input;%}
-  %typemap(in)  CTYPE*, CTYPE& %{$1 = $input;%}
+  %typemap(in) CTYPE          %{$1 = *$input;%}
+  %typemap(in) CTYPE*, CTYPE& %{$1 = $input;%}
 
   %typemap(out) CTYPE, const CTYPE* %{$result = $1;%}
   %typemap(out) const CTYPE&        %{$result = *$1;%}
@@ -48,19 +51,19 @@
     #error "Can't return by mutable reference in Fortran"
   %}
 
-  %typemap(imtype, out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
-  %typemap(ftype,  out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
-  %typemap(fxget)             CTYPE, const CTYPE&  %{$1%}
-
+  // Note: FTYPE is a string, it gets preprocessor-concatenated to the
+  // dimension/intent string
   %typemap(imtype)       CTYPE*  FTYPE ", dimension(*), intent(inout)"
   %typemap(imtype) const CTYPE*  FTYPE ", dimension(*), intent(in)"
   %typemap(imtype)       CTYPE&  FTYPE ", intent(inout)"
+  %typemap(imtype, out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
 
   %typemap(ftype)        CTYPE*  FTYPE ", dimension(*), intent(inout)"
   %typemap(ftype)  const CTYPE*  FTYPE ", dimension(*), intent(in)"
   %typemap(ftype)        CTYPE&  FTYPE ", intent(inout)"
+  %typemap(ftype,  out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
 
-  %typemap(fxget)  CTYPE*, CTYPE&, const CTYPE*  %{$1%}
+  %typemap(fin)  CTYPE, CTYPE*, CTYPE&, const CTYPE*, const CTYPE& %{$1%}
 %enddef
 
 FORTRAN_TYPEMAP(bool       , "logical(C_BOOL)"     )
@@ -73,12 +76,12 @@ FORTRAN_TYPEMAP(size_t     , "integer(C_SIZE_T)"   )
 FORTRAN_TYPEMAP(float      , "real(C_FLOAT)"       )
 FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 
-// Apply
+// Apply unsigned equivalent types
 %apply char   { signed char, unsigned char };
 %apply short  { unsigned short };
 %apply int    { unsigned int };
 %apply long   { unsigned long };
-%apply size_t { unsigned long long };
+%apply size_t { unsigned long long, std::size_t };
 
 // Instead of applying chars specifically, could do:
 // FORTRAN_TYPEMAP(signed char, "integer(C_SIGNED_CHAR)")
@@ -101,21 +104,7 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %typemap(ctype)  SWIGTYPE*, SWIGTYPE&  %{void*%}
 %typemap(imtype, out="type(C_PTR)") SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
 %typemap(ftype)  SWIGTYPE*, SWIGTYPE&  "class($fortranclassname)"
-%typemap(fxget)  SWIGTYPE*, SWIGTYPE&  "$1%ptr"
-
-// Type checking on pointers
-%{
-#include <cassert>
-%}
-%typecheck(SWIG_TYPECHECK_POINTER)
-   SWIGTYPE,
-   SWIGTYPE*,
-   SWIGTYPE&,
-   SWIGTYPE&&,
-   const SWIGTYPE&,
-   SWIGTYPE[],
-   SWIGTYPE(CLASS::*)
-   ""
+%typemap(fin)    SWIGTYPE*, SWIGTYPE&  "$1%ptr"
 
 //---------------------------------------------------------------------------//
 // end of fortran/fortrantypemaps.swg
