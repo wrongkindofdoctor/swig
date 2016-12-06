@@ -25,6 +25,16 @@ void reverse(T* ARRAY, int SIZE)
 
 //---------------------------------------------------------------------------//
 /*!
+ * \brief Sort the contents of an array in-place
+ */
+template<class T>
+void sort(T* ARRAY, int SIZE)
+{
+    std::sort(ARRAY, ARRAY + SIZE);
+}
+
+//---------------------------------------------------------------------------//
+/*!
  * \brief Do a binary search on the array
  *
  * \return The fortran index (starts with 1) or zero if not found
