@@ -30,15 +30,12 @@ class string
     %apply (char* STRING, int SIZE) {
         (const_pointer s, size_type count),
         (pointer s, size_type count) };
-    %rename(create_char) string(const_pointer, size_type);
-    //%rename(resize_fill) resize(size_type, value_type);
 
     // >>> Construct and assign
 
     string();
     string(const_pointer s, size_type count);
     void resize(size_type count);
-    //void resize(size_type count, value_type ch);
     void clear();
 
     // >>> ACCESS

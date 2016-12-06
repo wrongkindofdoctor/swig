@@ -35,9 +35,7 @@ class vector
 
     // Constructors
     vector();
-    %rename(create_count) vector(size_type);
     vector(size_type count);
-    %rename(create_fill)  vector(size_type, const value_type&);
     vector(size_type count, const value_type& v);
 
     // Accessors
@@ -49,7 +47,6 @@ class vector
     // Modify
     void reserve(size_type count);
     void resize(size_type count);
-    %rename(resize_fill)  resize(size_type, const value_type&);
     void resize(size_type count, const value_type& v);
     void push_back(const value_type& v);
 

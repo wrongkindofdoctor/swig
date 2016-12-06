@@ -12,8 +12,6 @@
 
 %module simple
 
-//%rename(create_dbl) SimpleClass(double);
-
 #ifdef SWIGFORTRAN
 
 %fortranappend SimpleClass::SimpleClass %{
@@ -27,8 +25,9 @@
 %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"
 
-%template(action_dbl) SimpleClass::action<double>;
-%template(action_int) SimpleClass::action<int>;
+// Overloaded instantiation
+%template(action) SimpleClass::action<double>;
+%template(action) SimpleClass::action<int>;
 
 //---------------------------------------------------------------------------//
 // end of simple_class/simple.i

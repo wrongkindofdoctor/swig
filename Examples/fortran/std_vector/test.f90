@@ -26,7 +26,7 @@ program main
     call v%resize(4)
     call print_vec(v)
     write(0, *) "Resizing with fill..."
-    call v%resize_fill(10, 1.5d0)
+    call v%resize(10, 1.5d0)
 
     write(0, *) "Setting"
     do i = 0, 7

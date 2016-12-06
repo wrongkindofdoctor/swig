@@ -42,7 +42,8 @@ class FORTRAN : public Language
     Hash* d_overloads; //!< Overloaded subroutine -> overload names
 
     // Current class parameters
-    String* f_cur_methods; //!< Method strings inside the current class
+    Hash* d_method_overloads; //!< Overloaded subroutine -> overload names
+    String* f_methods; //!< Method strings inside the current class
     bool d_in_constructor; //!< Whether we're being called inside a constructor
     bool d_in_destructor; //!< Whether we're being called inside a constructor
 
@@ -63,7 +64,7 @@ class FORTRAN : public Language
         , d_outpath(NULL)
         , d_use_proxy(true)
         , d_use_final(false)
-        , f_cur_methods(NULL)
+        , f_methods(NULL)
         , d_in_constructor(false)
         , d_in_destructor(false)
     {
@@ -763,19 +764,39 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
 
     // >>> WRITE TYPE OR ALIASES
 
-    if (is_wrapping_class())
+    const bool is_overloaded = Getattr(n, "sym:overloaded");
+    if (is_overloaded && is_wrapping_class())
+    {
+        // Create overloaded aliased name
+        String* alias = Getattr(n, "fortran:membername");
+        String* overalias = Copy(alias);
+        Append(overalias, Getattr(n, "sym:overname"));
+
+        // Add name to method overload list
+        List* overloads = Getattr(d_method_overloads, alias);
+        if (!overloads)
+        {
+            overloads = NewList();
+            Setattr(d_method_overloads, alias, overloads);
+        }
+        Append(overloads, overalias);
+
+        // Print remapping
+        Printv(f_methods,
+               "  procedure, private :: ", overalias, " => ", imfuncname, "\n",
+               NULL);
+    }
+    else if (is_wrapping_class())
     {
         // Get aliased name
         String* alias = Getattr(n, "fortran:membername");
-        assert(alias);
 
         // Print remapping
-        assert(f_cur_methods);
-        Printv(f_cur_methods,
+        Printv(f_methods,
                "  procedure :: ", alias, " => ", imfuncname, "\n",
                NULL);
     }
-    else if (Getattr(n, "sym:overloaded"))
+    else if (is_overloaded)
     {
         // Append this function name to the list of overloaded names for the
         // symbol
@@ -841,8 +862,9 @@ int FORTRAN::classHandler(Node *n)
     }
 
     // Initialize output strings that will be added by 'functionHandler'
-    assert(!f_cur_methods);
-    f_cur_methods = NewString("");
+    assert(!f_methods);
+    f_methods = NewString("");
+    d_method_overloads = NewHash();
 
     // Emit class members
     Language::classHandler(n);
@@ -881,11 +903,28 @@ int FORTRAN::classHandler(Node *n)
     Printv(f_types, " type ", symname, "\n"
                     "  type(C_PTR), private :: ptr = C_NULL_PTR\n"
                     " contains\n",
-                    f_cur_methods,
-                    " end type\n",
+                    f_methods, NULL);
+    // Write overloads
+    for (Iterator kv = First(d_method_overloads); kv.key; kv = Next(kv))
+    {
+        const char* prepend_comma = "";
+        Printv(f_types, "  generic :: ", kv.key, " => ", NULL);
+
+        // Write overloaded procedure names
+        for (Iterator it = First(kv.item); it.item; it = Next(it))
+        {
+            Printv(f_types, prepend_comma, it.item, NULL);
+            prepend_comma = ", ";
+        }
+        Printv(f_types, "\n", NULL);
+    }
+    
+    // Close out the type
+    Printv(f_types, " end type\n",
                     NULL);
 
-    Delete(f_cur_methods); f_cur_methods = NULL;
+    Delete(d_method_overloads);
+    Delete(f_methods); f_methods = NULL;
 
     return SWIG_OK;
 }
@@ -944,7 +983,7 @@ int FORTRAN::destructorHandler(Node* n)
         String* classname = Getattr(getCurrentClass(), "sym:name");
 
         // Add the 'final' subroutine to the methods
-        Printv(f_cur_methods, "  final     :: ", imfuncname, "\n",
+        Printv(f_methods, "  final     :: ", imfuncname, "\n",
                NULL);
 
         // Add the 'final' implementation

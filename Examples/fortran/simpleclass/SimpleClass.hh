@@ -37,7 +37,7 @@ class SimpleClass
     SimpleClass();
 
     // Other constructor
-    //explicit SimpleClass(double d);
+    explicit SimpleClass(double d);
 
     // Destructor
     ~SimpleClass();
