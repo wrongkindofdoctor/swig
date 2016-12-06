@@ -16,8 +16,8 @@ class FORTRAN : public Language
   private:
     // >>> ATTRIBUTES AND OPTIONS
 
-    String *d_module; //!< Module name
-    String *d_outpath; //!< WRAP.cxx output
+    String* d_module; //!< Module name
+    String* d_outpath; //!< WRAP.cxx output
 
     bool d_use_proxy; //!< Whether to generate proxy classes
     bool d_use_final; //!< Whether to use the 'final' keyword for destructors
@@ -25,21 +25,24 @@ class FORTRAN : public Language
     // >>> OUTPUT FILES
 
     // Injected into .cxx file
-    String *f_begin; //!< Very beginning of output file
-    String *f_runtime; //!< SWIG runtime code
-    String *f_header; //!< Declarations and inclusions from .i
-    String *f_wrapper; //!< C++ Wrapper code
-    String *f_init; //!< C++ initalization functions
+    String* f_begin; //!< Very beginning of output file
+    String* f_runtime; //!< SWIG runtime code
+    String* f_header; //!< Declarations and inclusions from .i
+    String* f_wrapper; //!< C++ Wrapper code
+    String* f_init; //!< C++ initalization functions
 
     // Injected into module file
-    String *f_imports;     //!< Fortran "use" directives generated from %import
-    String *f_public;      //!< List of public interface functions and mapping
-    String *f_types;       //!< Generated class types
-    String *f_interfaces;  //!< Fortran interface declarations to SWIG functions
-    String *f_proxy;    //!< Fortran subroutine wrapper functions
+    String* f_imports;     //!< Fortran "use" directives generated from %import
+    String* f_public;      //!< List of public interface functions and mapping
+    String* f_types;       //!< Generated class types
+    String* f_interfaces;  //!< Fortran interface declarations to SWIG functions
+    String* f_proxy;    //!< Fortran subroutine wrapper functions
+
+    // Temporary mappings
+    Hash* d_overloads; //!< Overloaded subroutine -> overload names
 
     // Current class parameters
-    String *f_cur_methods; //!< Method strings inside the current class
+    String* f_cur_methods; //!< Method strings inside the current class
     bool d_in_constructor; //!< Whether we're being called inside a constructor
     bool d_in_destructor; //!< Whether we're being called inside a constructor
 
@@ -122,7 +125,7 @@ void FORTRAN::main(int argc, char *argv[])
     SWIG_config_file("fortran.swg");
 
     /* TODO: Allow function overloads */
-    //allow_overloading();
+    allow_overloading();
 }
 
 //---------------------------------------------------------------------------//
@@ -183,6 +186,8 @@ int FORTRAN::top(Node *n)
     Swig_name_register("wrapper", wrapper_name);
     Delete(wrapper_name);
 
+    d_overloads = NewHash();
+
     /* Emit all other wrapper code */
     Language::top(n);
 
@@ -190,7 +195,8 @@ int FORTRAN::top(Node *n)
     write_wrapper();
     write_module();
 
-    /* Cleanup files */
+    // Clean up files and other data
+    Delete(d_overloads);
     Delete(f_proxy);
     Delete(f_interfaces);
     Delete(f_types);
@@ -264,23 +270,46 @@ void FORTRAN::write_module()
     Swig_banner_target_lang(out, "!");
 
     // Write module
-    Printf(out, "module %s\n", d_module);
-    Printf(out, " use, intrinsic :: ISO_C_BINDING\n");
-    Printv(out, f_imports, NULL);
-    Printf(out, " implicit none\n");
-    Printf(out, " ! PUBLIC METHODS AND TYPES\n");
-    Printv(out, f_public, NULL);
-    Printf(out, " ! TYPES\n");
-    Printv(out, f_types, NULL);
-    Printf(out, " ! INTERFACES\n");
-    Printf(out, " private\n");
-    Printf(out, " interface\n");
-    Printv(out, f_interfaces, NULL);
-    Printf(out, " end interface\n");
-    Printf(out, "contains\n");
-    Printf(out, "  ! FORTRAN PROXY CODE\n");
-    Printv(out, f_proxy, NULL);
-    Printf(out, "end module %s\n", d_module);
+    Printv(out, "module ", d_module, "\n"
+                " use, intrinsic :: ISO_C_BINDING\n",
+                f_imports,
+                " implicit none\n"
+                "\n"
+                " ! PUBLIC METHODS AND TYPES\n",
+                f_public, NULL);
+
+    // Write overloads
+    for (Iterator kv = First(d_overloads); kv.key; kv = Next(kv))
+    {
+        const char* prepend_comma = "";
+        Printv(out, " public :: ", kv.key, "\n"
+                    " interface ", kv.key, "\n"
+                    "  module procedure :: ", NULL);
+
+        // Write overloaded procedure names
+        for (Iterator it = First(kv.item); it.item; it = Next(it))
+        {
+            Printv(out, prepend_comma, it.item, NULL);
+            prepend_comma = ", ";
+        }
+        Printv(out, "\n"
+                    " end interface\n", NULL);
+    }
+    
+    Printv(out, " ! TYPES\n",
+                f_types,
+                "\n"
+                " ! WRAPPER DECLARATIONS\n"
+                " private\n"
+                " interface\n",
+                f_interfaces,
+                " end interface\n"
+                "\n"
+                "contains\n"
+                "  ! FORTRAN PROXY CODE\n",
+                f_proxy,
+                "end module ", d_module, "\n",
+                NULL);
 
     // Close file
     Delete(out);
@@ -305,6 +334,7 @@ int FORTRAN::functionWrapper(Node *n)
     const bool is_overloaded = Getattr(n, "sym:overloaded");
     if (is_overloaded)
     {
+        //Swig_print_node(n);
         Append(wname, Getattr(n, "sym:overname"));
     }
     else
@@ -326,6 +356,10 @@ int FORTRAN::functionWrapper(Node *n)
     {
         // Use actual symbolic function name
         imfuncname = Copy(symname);
+        if (is_overloaded)
+        {
+            Append(imfuncname, Getattr(n, "sym:overname"));
+        }
     }
     Setattr(n, "wrap:name", wname);
     Setattr(n, "imfuncname", imfuncname);
@@ -727,7 +761,8 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
            "  end ", sub_or_func_str, "\n",
            NULL);
 
-    /* Write type or public aliases */
+    // >>> WRITE TYPE OR ALIASES
+
     if (is_wrapping_class())
     {
         // Get aliased name
@@ -739,6 +774,19 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         Printv(f_cur_methods,
                "  procedure :: ", alias, " => ", imfuncname, "\n",
                NULL);
+    }
+    else if (Getattr(n, "sym:overloaded"))
+    {
+        // Append this function name to the list of overloaded names for the
+        // symbol
+        String* symname = Getattr(n, "sym:name");
+        List* overloads = Getattr(d_overloads, symname);
+        if (!overloads)
+        {
+            overloads = NewList();
+            Setattr(d_overloads, symname, overloads);
+        }
+        Append(overloads, Copy(imfuncname));
     }
     else
     {

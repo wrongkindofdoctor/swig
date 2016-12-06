@@ -15,35 +15,35 @@
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Reverse the contents of an array in-place
+ * \brief Reverse the contents of an arr in-place
  */
 template<class T>
-void reverse(T* ARRAY, int SIZE)
+void reverse(T* arr, int count)
 {
-    std::reverse(ARRAY, ARRAY + SIZE);
+    std::reverse(arr, arr + count);
 }
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Sort the contents of an array in-place
+ * \brief Sort the contents of an arr in-place
  */
 template<class T>
-void sort(T* ARRAY, int SIZE)
+void sort(T* arr, int count)
 {
-    std::sort(ARRAY, ARRAY + SIZE);
+    std::sort(arr, arr + count);
 }
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Do a binary search on the array
+ * \brief Do a binary search on the arr
  *
  * \return The fortran index (starts with 1) or zero if not found
  */
 template<class T>
-int find_sorted(const T* ARRAY, int SIZE, T val)
+int find_sorted(const T* arr, int count, T val)
 {
-    const T* start = ARRAY;
-    const T* stop  = ARRAY + SIZE;
+    const T* start = arr;
+    const T* stop  = arr + count;
     const T* iter  = std::lower_bound(start, stop, val);
     if (iter == stop || *iter != val)
         return 0;

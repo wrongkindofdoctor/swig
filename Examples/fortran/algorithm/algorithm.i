@@ -13,27 +13,20 @@
 #include "algorithm.hh"
 %}
 
-%apply (SWIGTYPE* ARRAY, int SIZE) { (      int* ARRAY, int SIZE),
-                                     (const int* ARRAY, int SIZE),
-                                     (      float* ARRAY, int SIZE),
-                                     (const float* ARRAY, int SIZE),
-                                     (      double* ARRAY, int SIZE),
-                                     (const double* ARRAY, int SIZE) }
+%define TEMPLATE_ALGORITHMS(TYPE)
+    %apply (SWIGTYPE* ARRAY, int SIZE) { (      TYPE* arr, int count),
+                                         (const TYPE* arr, int count) }
 
-%define TEMPLATE_ALGORITHMS(EXT, TYPE)
-    %apply (SWIGTYPE* ARRAY, int SIZE) { (TYPE* ARRAY, int SIZE),
-                                         (const TYPE* ARRAY, int SIZE) }
-
-    %template(sort_ ## EXT)        sort< TYPE >;
-    %template(reverse_ ## EXT)     reverse< TYPE >;
-    %template(find_sorted_ ## EXT) find_sorted< TYPE >;
+    %template(sort)        sort< TYPE >;
+    %template(reverse)     reverse< TYPE >;
+    %template(find_sorted) find_sorted< TYPE >;
 %enddef
 
 %include "algorithm.hh"
 
-TEMPLATE_ALGORITHMS(integer, int)
-TEMPLATE_ALGORITHMS(real4,   float)
-TEMPLATE_ALGORITHMS(real8,   double)
+TEMPLATE_ALGORITHMS(int)
+TEMPLATE_ALGORITHMS(float)
+TEMPLATE_ALGORITHMS(double)
 
 //---------------------------------------------------------------------------//
 // end of algorithms/algorithm.i
