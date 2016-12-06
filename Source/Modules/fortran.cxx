@@ -807,7 +807,7 @@ int FORTRAN::constructorHandler(Node* n)
     String* symname = Getattr(n, "sym:name");
     String* classname = Getattr(classn, "sym:name");
 
-    const_String_or_char_ptr alias = "ctor";
+    const_String_or_char_ptr alias = "create";
     if (Cmp(symname, classname))
     {
         // User provided a custom name (it differs from the class name)
@@ -835,7 +835,7 @@ int FORTRAN::constructorHandler(Node* n)
  */
 int FORTRAN::destructorHandler(Node* n)
 {
-    Setattr(n, "fortran:alias", "dtor");
+    Setattr(n, "fortran:alias", "release");
     d_in_destructor = true;
     Language::destructorHandler(n);
     d_in_destructor = false;
