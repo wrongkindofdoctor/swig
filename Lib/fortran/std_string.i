@@ -44,6 +44,7 @@ class string
     size_type length() const;
 
 %extend {
+#if 0
     void set(size_type pos, value_type v)
     {
         // TODO: check range
@@ -55,6 +56,7 @@ class string
         // TODO: check range
         return (*$self)[pos];
     }
+#endif
 
     void assign_from(const_pointer s, size_type count)
     {

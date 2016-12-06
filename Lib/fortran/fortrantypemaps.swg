@@ -122,12 +122,14 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 //---------------------------------------------------------------------------//
 
 // Single characters: differentiate from char pointers by using value semantics
+#if 0
 %typemap(ctype, out="char") char %{char*%}
 %typemap(in)    char %{ $1 = *$input; %}
 %typemap(out)   char %{ $result = $1; %}
 %typemap(imtype, out="character") char "character, value"
 %typemap(ftype,  out="character") char "character, value, intent(in)"
 %typemap(fin) char "$1_name"
+#endif
 
 %typemap(ctype)  char* %{ char* %}
 %typemap(in)     char* %{ $1 = $input; %}
