@@ -141,10 +141,16 @@ function(MAKE_SWIG)
     SET(SWIG_LIBRARY_TYPE MODULE)
   endif()
 
-  # add the new target
+  # Set up compiler flags
+  SET(_ORIG_CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS})
   LIST(APPEND CMAKE_SWIG_FLAGS "${CMAKE_SWIG_${PARSE_LANGUAGE}_FLAGS}")
+
+  # Create the SWIG module
   swig_add_module(${PARSE_MODULE} ${PARSE_LANGUAGE}
     ${SRC_FILE} ${PARSE_EXTRASRC})
+
+  # Restore original SWIG flags
+  SET(CMAKE_SWIG_FLAGS _ORIG_CMAKE_SWIG_FLAGS)
 
   # Mangled name of the SWIG target
   set(BUILT_LIBRARY ${SWIG_MODULE_${PARSE_MODULE}_REAL_NAME})

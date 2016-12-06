@@ -1,13 +1,26 @@
 #include "swigmod.h"
 #include "cparse.h"
 
+namespace
+{
+const char usage[] = "\
+Fotran Options (available with -fortran)\n\
+     -noproxy    - Expose the low-level functional interface instead\n\
+                   of generatingproxy classes\n\
+     -final      - Generate 'final' statement to call C++ destructors\n\
+\n";
+}
+
 class FORTRAN : public Language
 {
   private:
-    // >>> ATTRIBUTES
+    // >>> ATTRIBUTES AND OPTIONS
 
     String *d_module; //!< Module name
     String *d_outpath; //!< WRAP.cxx output
+
+    bool d_use_proxy; //!< Whether to generate proxy classes
+    bool d_use_final; //!< Whether to use the 'final' keyword for destructors
 
     // >>> OUTPUT FILES
 
@@ -43,7 +56,11 @@ class FORTRAN : public Language
                                       bool is_setter = false) const;
 
     FORTRAN()
-        : f_cur_methods(NULL)
+        : d_module(NULL)
+        , d_outpath(NULL)
+        , d_use_proxy(true)
+        , d_use_final(false)
+        , f_cur_methods(NULL)
         , d_in_constructor(false)
         , d_in_destructor(false)
     {
@@ -73,10 +90,27 @@ class FORTRAN : public Language
  */
 void FORTRAN::main(int argc, char *argv[])
 {
-    (void)argc; (void)argv;
-
     /* Set language-specific subdirectory in SWIG library */
     SWIG_library_directory("fortran");
+
+    // Set command-line options
+    for (int i = 1; i < argc; ++i)
+    {
+        if ((strcmp(argv[i], "-noproxy") == 0))
+        {
+            Swig_mark_arg(i);
+            d_use_proxy = false;
+        }
+        else if ((strcmp(argv[i], "-final") == 0))
+        {
+            Swig_mark_arg(i);
+            d_use_final = true;
+        }
+        else if ((strcmp(argv[i], "-help") == 0))
+        {
+            Printv(stdout, usage, NULL);
+        }
+    }
 
     /* Set language-specific preprocessing symbol */
     Preprocessor_define("SWIGFORTRAN 1", 0);
@@ -267,33 +301,35 @@ int FORTRAN::functionWrapper(Node *n)
     // >>> INITIALIZE
 
     // Create wrapper name, taking into account overloaded functions
-    String* wname = Copy(Swig_name_wrapper(symname));
-    if (Getattr(n, "sym:overloaded"))
+    String* wname  = Copy(Swig_name_wrapper(symname));
+    const bool is_overloaded = Getattr(n, "sym:overloaded");
+    if (is_overloaded)
     {
-        String* overname = Getattr(n, "sym:overname");
-        Append(wname, overname);
+        Append(wname, Getattr(n, "sym:overname"));
     }
     else
     {
         if (!addSymbol(symname, n))
             return SWIG_ERROR;
     }
-    Setattr(n, "wrap:name", wname);
 
-    // Determine fortran proxy function name
-    String* fwname;
+    String* imfuncname = NULL;
     if (is_wrapping_class())
     {
-        // Use mangled name, which will be renamed to class member
-        fwname = Copy(wname);
-        Replace(fwname, "swigc", "swigf", DOH_REPLACE_FIRST);
+        imfuncname = NewStringf("swigf_%s", symname);
+        if (is_overloaded)
+        {
+            Append(imfuncname, Getattr(n, "sym:overname"));
+        }
     }
     else
     {
-        // Use actual function name
-        fwname = Copy(symname);
+        // Use actual symbolic function name
+        imfuncname = Copy(symname);
     }
-    Setattr(n, "imfuncname", fwname);
+    Setattr(n, "wrap:name", wname);
+    Setattr(n, "imfuncname", imfuncname);
+    Delete(imfuncname);
 
     // A new wrapper function object
     Wrapper* f = NewWrapper();
@@ -314,7 +350,7 @@ int FORTRAN::functionWrapper(Node *n)
 #endif
 
     // Function attributes
-    bool is_subroutine = (Cmp(c_return_type, "void") == 0);
+    const bool is_subroutine = (Cmp(c_return_type, "void") == 0);
 
     // Add local variable for result
     if (!is_subroutine)
@@ -524,7 +560,6 @@ int FORTRAN::functionWrapper(Node *n)
     Delete(args);
     Delete(params);
     Delete(wname);
-    Delete(fwname);
 
     // >>> WRITE PROXY CODE
 
@@ -538,13 +573,13 @@ int FORTRAN::functionWrapper(Node *n)
  * \brief Write the proxy subroutine/function code.
  *
  * \param[in] n Function node
- * \param[in] fwname Wrapped function name
+ * \param[in] imfuncname Wrapped function name
  * \param[in] is_subroutine Whether the function has 'void' return type
  */
 void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
 {
     String* wname  = Getattr(n, "wrap:name");
-    String* fwname = Getattr(n, "imfuncname");
+    String* imfuncname = Getattr(n, "imfuncname");
 
     // Set up proxy subroutine label.
     const char* sub_or_func_str = NULL;
@@ -668,9 +703,22 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     // Get code to append
     Printv(append, fortranappend(n), NULL);
 
+    if (d_in_constructor)
+    {
+        // Deallocate if we're already allocated
+        Printv(prepend, "   if (c_associated(self%ptr)) call self%release()\n",
+               NULL);
+
+    }
+    if (d_in_destructor)
+    {
+        // Zero the pointer for safety
+        Printv(append, "   self%ptr = C_NULL_PTR\n", NULL);
+    }
+
     // Write
     Printv(f_proxy,
-           "  ", sub_or_func_str, " ", fwname, "(", args, ")",
+           "  ", sub_or_func_str, " ", imfuncname, "(", args, ")",
            result_str,
            params,
            prepend,
@@ -683,13 +731,13 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     if (is_wrapping_class())
     {
         // Get aliased name
-        String* alias = Getattr(n, "fortran:alias");
+        String* alias = Getattr(n, "fortran:membername");
         assert(alias);
 
         // Print remapping
         assert(f_cur_methods);
         Printv(f_cur_methods,
-               "  procedure :: ", alias, " => ", fwname, "\n",
+               "  procedure :: ", alias, " => ", imfuncname, "\n",
                NULL);
     }
     else
@@ -735,23 +783,23 @@ int FORTRAN::classHandler(Node *n)
     if (!addSymbol(symname, n))
         return SWIG_ERROR;
 
-    /* No base classes are currently supported */
+    // Process base classes
     List *baselist = Getattr(n, "bases");
     if (baselist && Len(baselist))
     {
         Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
                 "Inheritance (class '%s') currently unimplemented.\n",
-                SwigType_namestr(Char(symname)));
+                SwigType_namestr(symname));
     }
 
-    /* Initialize strings that will be populated by class members */
+    // Initialize output strings that will be added by 'functionHandler'
     assert(!f_cur_methods);
     f_cur_methods = NewString("");
 
-    /* Emit class members */
+    // Emit class members
     Language::classHandler(n);
 
-    /* Add types */
+    // Process smart pointers
     String *smartptr = Getattr(n, "feature:smartptr");
     SwigType *smart = 0;
     if (smartptr)
@@ -777,11 +825,11 @@ int FORTRAN::classHandler(Node *n)
     Delete(ct);
     Delete(realct);
 
-    /* Write public accessibility */
+    // Make the class publically accessible
     Printv(f_public, " public :: ", symname, "\n",
                     NULL);
 
-    /* Write fortran class header */
+    // Write Fortran class header
     Printv(f_types, " type ", symname, "\n"
                     "  type(C_PTR), private :: ptr = C_NULL_PTR\n"
                     " contains\n",
@@ -821,7 +869,7 @@ int FORTRAN::constructorHandler(Node* n)
         Setattr(n, "sym:name", mrename);
         Delete(mrename);
     }
-    Setattr(n, "fortran:alias", alias);
+    Setattr(n, "fortran:membername", alias);
 
     d_in_constructor = true;
     Language::constructorHandler(n);
@@ -835,10 +883,36 @@ int FORTRAN::constructorHandler(Node* n)
  */
 int FORTRAN::destructorHandler(Node* n)
 {
-    Setattr(n, "fortran:alias", "release");
+    Setattr(n, "fortran:membername", "release");
     d_in_destructor = true;
     Language::destructorHandler(n);
     d_in_destructor = false;
+
+    if (d_use_final)
+    {
+        // Create 'final' name wrapper
+        String* imfuncname = NewStringf("swigf_final_%s",
+                                        Getattr(n, "sym:name"));
+        String* classname = Getattr(getCurrentClass(), "sym:name");
+
+        // Add the 'final' subroutine to the methods
+        Printv(f_cur_methods, "  final     :: ", imfuncname, "\n",
+               NULL);
+
+        // Add the 'final' implementation
+        Printv(f_proxy, 
+           "  subroutine ", imfuncname, "(self)\n"
+           "   use, intrinsic :: ISO_C_BINDING\n"
+           "   type(", classname, ") :: self\n"
+           "   call ", Getattr(n, "wrap:name"), "(self%ptr)\n"
+           "   self%ptr = C_NULL_PTR\n"
+           "  end subroutine\n",
+           NULL);
+
+        // Add implementation
+        Delete(imfuncname);
+    }
+    
     return SWIG_OK;
 }
 
@@ -848,7 +922,7 @@ int FORTRAN::destructorHandler(Node* n)
  */
 int FORTRAN::memberfunctionHandler(Node *n)
 {
-    Setattr(n, "fortran:alias", Getattr(n, "sym:name"));
+    Setattr(n, "fortran:membername", Getattr(n, "sym:name"));
     Language::memberfunctionHandler(n);
     return SWIG_OK;
 }
@@ -975,25 +1049,6 @@ bool FORTRAN::substitute_classname(SwigType *pt, String *tm)
     {
         substitute_classname_impl(strippedtype, tm, "$fortranclassname");
         substitution_performed = true;
-    }
-    if (Strstr(tm, "$*fortranclassname"))
-    {
-        SwigType *classnametype = Copy(strippedtype);
-        Delete(SwigType_pop(classnametype));
-        if (Len(classnametype) > 0)
-        {
-            substitute_classname_impl(classnametype, tm, "$*fortranclassname");
-            substitution_performed = true;
-        }
-        Delete(classnametype);
-    }
-    if (Strstr(tm, "$&fortranclassname"))
-    {
-        SwigType *classnametype = Copy(strippedtype);
-        SwigType_add_pointer(classnametype);
-        substitute_classname_impl(classnametype, tm, "$&fortranclassname");
-        substitution_performed = true;
-        Delete(classnametype);
     }
 
     Delete(strippedtype);
