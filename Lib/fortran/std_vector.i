@@ -70,13 +70,13 @@ class vector
     { (pointer       arr, size_type arrsize),
       (const_pointer arr, size_type arrsize) };
 
-    void set_all(const_pointer arr, size_type arrsize)
+    void assign_from(const_pointer arr, size_type arrsize)
     {
         $self->assign(arr, arr + arrsize);
     }
 
     // Copy the C++ data to the given Fortran arr. Sizes must match.
-    void get_all(pointer arr, size_type arrsize)
+    void copy_to(pointer arr, size_type arrsize)
     {
         if ($self->size() != arrsize)
             throw std::range_error("arr/vector size mismatch");

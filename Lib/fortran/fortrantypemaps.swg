@@ -67,7 +67,6 @@
 %enddef
 
 FORTRAN_TYPEMAP(bool       , "logical(C_BOOL)"     )
-FORTRAN_TYPEMAP(char       , "character(C_CHAR)"   )
 FORTRAN_TYPEMAP(short      , "integer(C_SHORT)"    )
 FORTRAN_TYPEMAP(int        , "integer(C_INT)"      )
 FORTRAN_TYPEMAP(long       , "integer(C_LONG)"     )
@@ -77,7 +76,6 @@ FORTRAN_TYPEMAP(float      , "real(C_FLOAT)"       )
 FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 
 // Apply unsigned equivalent types
-%apply char   { signed char, unsigned char };
 %apply short  { unsigned short };
 %apply int    { unsigned int };
 %apply long   { unsigned long };
@@ -89,6 +87,7 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 //---------------------------------------------------------------------------//
 // VOID TYPES
 //---------------------------------------------------------------------------//
+
 %typemap(ctype)  void %{void%}
 %typemap(out)    void %{%}
 %typemap(imtype) void ""
@@ -98,9 +97,9 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 // POINTER/CLASS TYPES
 //---------------------------------------------------------------------------//
 
+%typemap(ctype)  SWIGTYPE*, SWIGTYPE&  %{void*%}
 %typemap(in)     SWIGTYPE*, SWIGTYPE& %{ $1 = ($1_ltype)($input); %}
 %typemap(out)    SWIGTYPE*, const SWIGTYPE& %{ $result = $1; %}
-%typemap(ctype)  SWIGTYPE*, SWIGTYPE&  %{void*%}
 %typemap(imtype, out="type(C_PTR)") SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
 %typemap(ftype)  SWIGTYPE*, SWIGTYPE&  "class($fortranclassname)"
 %typemap(fin)    SWIGTYPE*, SWIGTYPE&  "$1_name%ptr"
@@ -115,6 +114,28 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 // Automatically add "size" parameter from a Fortran array
 %typemap(fin, noblock=1) (SWIGTYPE* ARRAY, std::size_t SIZE)
 { $1_name, size($1_name) }
+
+//---------------------------------------------------------------------------//
+// STRING TYPES
+//---------------------------------------------------------------------------//
+
+// Single characters: differentiate from char pointers by using value semantics
+%typemap(ctype, out="char") char %{char*%}
+%typemap(in)    char %{ $1 = *$input; %}
+%typemap(out)   char %{ $result = $1; %}
+%typemap(imtype, out="character") char "character, value"
+%typemap(ftype,  out="character") char "character, value, intent(in)"
+%typemap(fin) char "$1_name"
+
+%typemap(ctype)  char* %{ char* %}
+%typemap(in)     char* %{ $1 = $input; %}
+%typemap(imtype) char* "character(C_CHAR)"
+%typemap(ftype)  char* "character(len=*)"
+%typemap(fin)    char* "$1_name"
+
+// Automatically add "size" parameter from a Fortran array
+%typemap(fin, noblock=1) (char* STRING, int SIZE)
+{ $1_name, len($1_name) }
 
 //---------------------------------------------------------------------------//
 // end of fortran/fortrantypemaps.swg
