@@ -58,6 +58,7 @@ class FORTRAN : public Language
 
     virtual String *makeParameterName(Node *n, Parm *p, int arg_num,
                                       bool is_setter = false) const;
+    virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm);
 
     FORTRAN()
         : d_module(NULL)
@@ -791,6 +792,12 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         // Get aliased name
         String* alias = Getattr(n, "fortran:membername");
 
+        if (!alias)
+        {
+            // This can happen when class member data is exposed?
+            alias = Getattr(n, "sym:name");
+        }
+
         // Print remapping
         Printv(f_methods,
                "  procedure :: ", alias, " => ", imfuncname, "\n",
@@ -847,7 +854,6 @@ int FORTRAN::classHandler(Node *n)
 {
     // Basic attributes
     String *symname = Getattr(n, "sym:name");
-    String *real_classname = Getattr(n, "name");
 
     if (!addSymbol(symname, n))
         return SWIG_ERROR;
@@ -868,32 +874,6 @@ int FORTRAN::classHandler(Node *n)
 
     // Emit class members
     Language::classHandler(n);
-
-    // Process smart pointers
-    String *smartptr = Getattr(n, "feature:smartptr");
-    SwigType *smart = 0;
-    if (smartptr)
-    {
-        SwigType *cpt = Swig_cparse_type(smartptr);
-        if (cpt)
-        {
-            smart = SwigType_typedef_resolve_all(cpt);
-            Delete(cpt);
-        }
-        else
-        {
-            // TODO: report line number of where the feature comes from
-            Swig_error(Getfile(n), Getline(n), "Invalid type (%s) in 'smartptr' "
-                     " feature for class %s.\n", smartptr, real_classname);
-        }
-    }
-    SwigType *ct = Copy(smart ? smart : real_classname);
-    SwigType_add_pointer(ct);
-    SwigType *realct = Copy(real_classname);
-    SwigType_add_pointer(realct);
-    Delete(smart);
-    Delete(ct);
-    Delete(realct);
 
     // Make the class publically accessible
     Printv(f_public, " public :: ", symname, "\n",
@@ -1019,6 +999,9 @@ int FORTRAN::memberfunctionHandler(Node *n)
 // substitutions performed on the result
 String* FORTRAN::get_typemap(const char* tmname, Node* n)
 {
+    // NOTE: for some reason, using Swig_typemap_lookup here breaks things
+    // (algorithm.i); just look up the typemap key directly. I think it should
+    // already be bound?
     //String* tm = Swig_typemap_lookup(tmname, n, var, NULL);
     String* tmkey = NewStringf("tmap:%s", tmname);
     String* tm = Getattr(n, tmkey);
@@ -1204,6 +1187,16 @@ void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
     }
     Replaceall(tm, classnamespecialvariable, replacementname);
     Delete(replacementname);
+}
+
+//---------------------------------------------------------------------------//
+// Overloaded to support "$fortranclassname" in "$typemap(X,Y)" typemap usage
+
+void FORTRAN::replaceSpecialVariables(String *method, String *tm, Parm *parm)
+{
+    (void)method;
+    SwigType *type = Getattr(parm, "type");
+    this->substitute_classname(type, tm);
 }
 
 //---------------------------------------------------------------------------//

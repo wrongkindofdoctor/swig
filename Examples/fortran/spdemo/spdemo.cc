@@ -31,14 +31,34 @@ Foo::~Foo()
 {
     cout << "Destroyed Foo at " << this << endl;
 }
+double Foo::get() const { return d_val; }
+void Foo::set(double v) { d_val = v; }
+
+
+void print_sp(std::shared_ptr<Foo> f)
+{
+    cout << "Shared pointer at " << &f
+        << " with reference count "
+        << f.use_count() << ": ";
+    print_crsp(f);
+}
 
 void print_crsp(const std::shared_ptr<Foo>& f)
 {
+    cout << "Shared pointer at " << &f
+        << " with reference count "
+        << f.use_count() << ": ";
     print_crspc(f);
 }
 
-//void print_sp(std::shared_ptr<Foo> f);
-//void print_spc(std::shared_ptr<const Foo> f);
+void print_spc(std::shared_ptr<const Foo> f)
+{
+    cout << "Shared pointer at " << &f
+        << " with reference count "
+        << f.use_count() << ": ";
+    print_crspc(f);
+}
+
 void print_crspc(const std::shared_ptr<const Foo>& f)
 {
     if (!f)

@@ -24,16 +24,14 @@ class Foo
     Foo(double val);
     ~Foo();
 
-    double get() const { return d_val; }
-    void set(double v) { d_val = v; }
+    double get() const; // { return d_val; }
+    void set(double v); // { d_val = v; }
 };
 
-#ifndef SWIG
 void print_crsp(const std::shared_ptr<Foo>& f);
 void print_sp(std::shared_ptr<Foo> f);
 void print_spc(std::shared_ptr<const Foo> f);
 void print_crspc(const std::shared_ptr<const Foo>& f);
-#endif
 void print_cr(const Foo& f);
 
 //---------------------------------------------------------------------------//
