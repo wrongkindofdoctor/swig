@@ -2990,7 +2990,9 @@ int Language::constantWrapper(Node *n) {
   SwigType *type = Getattr(n, "type");
   String *value = Getattr(n, "value");
   String *str = SwigType_str(type, name);
+#ifdef SWIG_DEBUG
   Printf(stdout, "constantWrapper   : %s = %s\n", str, value);
+#endif
   Delete(str);
   return SWIG_OK;
 }
