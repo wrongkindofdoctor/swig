@@ -12,9 +12,8 @@
 
 // Automatically expand a Fortran array into a pointer/size pair with the
 // correct type
-%apply (std::size_t SIZE) { ( std::size_t count) };
-%apply (SWIGTYPE* ARRAY, std::size_t SIZE) {
-       (const double* arr, std::size_t count) };
+%apply (SWIGTYPE* ARRAY, int SIZE) {
+       (const double* arr, int count) };
 
 // Ignore function incompatible with Fortran language (return-by-nonconst-ref)
 %ignore get_something_rref;

@@ -66,7 +66,7 @@ class vector
         return (*$self)[pos];
     }
 
-    %apply (SWIGTYPE* ARRAY, std::size_t SIZE)
+    %apply (SWIGTYPE* ARRAY, int SIZE)
     { (pointer       arr, size_type arrsize),
       (const_pointer arr, size_type arrsize) };
 

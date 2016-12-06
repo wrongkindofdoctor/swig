@@ -152,8 +152,9 @@ function(MAKE_SWIG)
   # Restore original SWIG flags
   SET(CMAKE_SWIG_FLAGS _ORIG_CMAKE_SWIG_FLAGS)
 
-  # Mangled name of the SWIG target
+  # Mangled name of the SWIG target (export to parent)
   set(BUILT_LIBRARY ${SWIG_MODULE_${PARSE_MODULE}_REAL_NAME})
+  set(SWIG_MODULE_${PARSE_MODULE}_REAL_NAME ${BUILT_LIBRARY} PARENT_SCOPE)
 
   # It's not always necessary to link against python libraries, but doing so
   # can turn unfortunate run-time errors (dlopen) into link-time errors.

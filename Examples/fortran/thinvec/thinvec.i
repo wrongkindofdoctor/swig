@@ -30,7 +30,7 @@
 // Works with void obtain(double* p, size_type count)
 // and (T* p, size_type count)
 // but not (pointer p, size_type count)
-%apply (SWIGTYPE* ARRAY, std::size_t SIZE) {
+%apply (SWIGTYPE* ARRAY, int SIZE) {
        (double* p, unsigned int count),
        (const double* p, unsigned int count),
        (int* p, unsigned int count),

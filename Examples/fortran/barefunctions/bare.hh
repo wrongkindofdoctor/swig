@@ -21,7 +21,7 @@ void get_something_ptr(int x, double* y);
 double& get_something_rref(int x);
 const double& get_something_rcref(int x);
 
-void print_array(const double* arr, std::size_t count);
+void print_array(const double* arr, int count);
 
 //---------------------------------------------------------------------------//
 #endif // swig_dev_bare_function_foo_hh

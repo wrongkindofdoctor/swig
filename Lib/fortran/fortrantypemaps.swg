@@ -112,8 +112,10 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %apply int { (std::size_t SIZE) };
 
 // Automatically add "size" parameter from a Fortran array
-%typemap(fin, noblock=1) (SWIGTYPE* ARRAY, std::size_t SIZE)
-{ $1_name, size($1_name) }
+%typemap(fin, noblock=1) (SWIGTYPE* ARRAY, int SIZE)
+    { $1_name, size($1_name) }
+%apply (SWIGTYPE* ARRAY, int SIZE) { (SWIGTYPE* ARRAY, int SIZE),
+                                     (const SWIGTYPE* ARRAY, int SIZE) };
 
 //---------------------------------------------------------------------------//
 // STRING TYPES

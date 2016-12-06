@@ -55,7 +55,7 @@ void get_something_ptr(int x, double* y)
 }
 
 //---------------------------------------------------------------------------//
-void print_array(const double* data, std::size_t count)
+void print_array(const double* data, int count)
 {
     cout << "{";
     const char* sep = "";

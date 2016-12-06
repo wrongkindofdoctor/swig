@@ -1,12 +1,13 @@
 ##---------------------------------------------------------------------------##
-## File  : std_vector/CMakeLists.txt
+## File  : algorithm/CMakeLists.txt
 ## Author: Seth R Johnson
-## Date  : Mon Dec 05 09:05:31 2016
+## Date  : Tue Dec 06 11:46:55 2016
+## Brief : TriBITS package file for algorithm/
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
 ##---------------------------------------------------------------------------##
 
 cmake_minimum_required(VERSION 3.0)
-project(stdvec CXX Fortran)
+project(algorithm CXX Fortran)
 
 # SWIG setup
 find_package(SWIG REQUIRED)
@@ -17,18 +18,16 @@ include(SwigModules)
 
 # Build C++ library
 include_directories(${CMAKE_PROJECT_SOURCE_DIR})
-add_library(stdveclib stdvec.cc)
 
 # Generate SWIG module
-MAKE_SWIG(MODULE stdvec
-  DEPLIBS stdveclib)
+MAKE_SWIG(MODULE algorithm)
+MESSAGE("swig name: ${SWIG_MODULE_algorithm_REAL_NAME}")
 
 # Create test executable
 add_executable(test.exe test.f90)
 # It depends on the compiled fortran module
-target_link_libraries(test.exe stdvec)
-
+target_link_libraries(test.exe ${SWIG_MODULE_algorithm_REAL_NAME})
 
 ##---------------------------------------------------------------------------##
-## end of std_vector/CMakeLists.txt
+## end of algorithm/CMakeLists.txt
 ##---------------------------------------------------------------------------##
