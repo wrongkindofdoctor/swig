@@ -20,6 +20,13 @@
  *       argument
  * fin:pre : Proxy code inserted before the wrapper call
  * fin:post : Proxy code inserted after the wrapper call
+ * fdata : Proxy code for member data inserted into fortran code
+ */
+
+/*! SPECIAL TYPEMAP VARIABLES.
+ *
+ * $imcall : in the proxy class, the function call into the interface wrapper
+ * $fclassname : the fortran proxy class name
  */
 
 //---------------------------------------------------------------------------//
@@ -94,15 +101,36 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %typemap(ftype)  void ""
 
 //---------------------------------------------------------------------------//
-// POINTER/CLASS TYPES
+// PROXY CLASS DEFINITIONS
 //---------------------------------------------------------------------------//
 
-%typemap(ctype)  SWIGTYPE*, SWIGTYPE&  %{void*%}
-%typemap(in)     SWIGTYPE*, SWIGTYPE& %{ $1 = ($1_ltype)($input); %}
-%typemap(out)    SWIGTYPE*, const SWIGTYPE& %{ $result = $1; %}
-%typemap(imtype, out="type(C_PTR)") SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
-%typemap(ftype)  SWIGTYPE*, SWIGTYPE&  "class($fortranclassname)"
-%typemap(fin)    SWIGTYPE*, SWIGTYPE&  "$1_name%ptr"
+%typemap(fdata) SWIGTYPE %{
+   type(C_PTR), private :: ptr = C_NULL_PTR
+   logical, private :: own = .false.
+%}
+
+%typemap(fcreate) SWIGTYPE %{
+   if (c_associated(self%ptr)) call self%release()
+%}
+
+%typemap(frelease) SWIGTYPE %{
+   if (self%own) then
+     $imcall
+     self%own = .false.
+   end if
+   self%ptr = C_NULL_PTR
+%}
+
+//---------------------------------------------------------------------------//
+// POINTER/REFERENCES TO CLASSES
+//---------------------------------------------------------------------------//
+
+%typemap(ctype)  SWIGTYPE, SWIGTYPE*, SWIGTYPE&  %{void*%}
+%typemap(in)     SWIGTYPE, SWIGTYPE*, SWIGTYPE& %{ $1 = ($1_ltype)($input); %}
+%typemap(out)    SWIGTYPE, SWIGTYPE*, const SWIGTYPE& %{ $result = $1; %}
+%typemap(imtype, out="type(C_PTR)") SWIGTYPE, SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
+%typemap(ftype)  SWIGTYPE, SWIGTYPE*, SWIGTYPE&  "class($fclassname)"
+%typemap(fin)    SWIGTYPE, SWIGTYPE*, SWIGTYPE&  "$1_name%ptr"
 
 //---------------------------------------------------------------------------//
 // ARRAY TYPES

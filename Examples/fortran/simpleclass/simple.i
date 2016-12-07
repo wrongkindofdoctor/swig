@@ -15,19 +15,23 @@
 #ifdef SWIGFORTRAN
 
 %fortranappend SimpleClass::SimpleClass %{
-   write(0, "(a, z16)") "Constructed at ", self%ptr
+   write(0, "(a, z16)") "F Constructed ", self%ptr
 %}
 %fortranprepend SimpleClass::~SimpleClass %{
-   write(0, "(a, z16)") "Destroying at ", self%ptr
+   write(0, "(a, z16)") "F Destroying  ", self%ptr
 %}
 #endif
 
-%rename(SimpleClassDerp) SimpleClass;
+%newobject make_class;
+
+int global_int;
+
+// %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"
 
 // Overloaded instantiation
-%template(action) SimpleClass::action<double>;
-%template(action) SimpleClass::action<int>;
+// %template(action) SimpleClass::action<double>;
+// %template(action) SimpleClass::action<int>;
 
 //---------------------------------------------------------------------------//
 // end of simple_class/simple.i

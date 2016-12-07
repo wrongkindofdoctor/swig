@@ -13,21 +13,36 @@ program main
 end program
 
 subroutine test_class()
-    use simple, SimpleClass => SimpleClassDerp
+    use simple
     implicit none
     type(SimpleClass) :: orig
-    ! type(SimpleClass) :: copy
+    type(SimpleClass) :: made
 
     write(0, *) "Constructing..."
     call orig%create()
     ! write(0, "(a, z16)") "Orig:", orig%ptr, "Copy:", copy%ptr
     write(0, *) "Setting..."
-    call orig%set(123.0d0)
+    call orig%set(1)
     write(0, *) "Current value ", orig%get()
     call orig%double_it()
     write(0, *) "Current value ", orig%get()
     write(0, *) "Quadrupled: ", orig%get_multiplied(4)
     call print_value(orig)
+    call orig%set(1)
+
+    ! Pass a class by value
+    call set_class_by_copy(orig)
+    write(0, *) "Set by copy: ", get_class()%get()
+
+    ! Create
+    made = make_class(2)
+    call print_value(made)
+    ! TODO: this should release 'orig'; maybe transfer ownership??
+    orig = made
+    ! TODO: this should release 'made'
+    made = make_class(3)
+    orig%release()
+    made%release()
 
     ! If this is commented out and the '-final' code generation option is used,
     ! no memory leak will occur. Otherwise, the class is never deallocated.

@@ -26,8 +26,8 @@ struct BasicStruct
 class SimpleClass
 {
   public:
-    typedef double storage_type;
-    typedef int    multiple_type;
+    typedef int  storage_type;
+    typedef int  multiple_type;
 
   private:
     // >>> DATA
@@ -38,6 +38,9 @@ class SimpleClass
 
     // Constructor
     SimpleClass();
+
+    // Copy constructor
+    SimpleClass(const SimpleClass& rhs);
 
     // Other constructor
     explicit SimpleClass(double d);
@@ -63,6 +66,15 @@ class SimpleClass
 
 // Free function
 void print_value(const SimpleClass& c);
+
+// Return by value should be converted to set-by-reference
+SimpleClass make_class(SimpleClass::storage_type val);
+
+// Return by reference
+const SimpleClass& get_class();
+
+// Pass class as a parameter
+void set_class_by_copy(SimpleClass c);
 
 //---------------------------------------------------------------------------//
 #endif // simple_class_SimpleClass_hh
