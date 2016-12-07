@@ -408,8 +408,8 @@ int FORTRAN::functionWrapper(Node *n)
     if (!is_subroutine)
     {
         // Get Fortran interface return type
-        String* f_return_type = get_typemap_out(n, "imtype",
-                                                WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
+        String* f_return_type
+            = get_typemap_out(n, "imtype", WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
         Printf(params, "   %s :: fresult\n", f_return_type);
     }
 
@@ -633,8 +633,9 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         Printv(callcmd, wname, "(", NULL);
         Printv(args, "self", NULL);
 
-        String* f_return_type = get_typemap_out(n, "ftype",
-                                                WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
+        String* f_return_type
+            = get_typemap(n, "ftype", Getattr(n, "type"),
+                          WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
         substitute_classname(classtype, f_return_type);
         Printv(params, "   ", f_return_type, " :: self\n", NULL);
 
@@ -650,8 +651,8 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
 
         // Get Fortran proxy return type (for constructors, this is
         // repurposed as a dummy argument)
-        String* f_return_type = get_typemap_out(n, "ftype",
-                                                WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
+        String* f_return_type
+            = get_typemap_out(n, "ftype", WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
         substitute_classname(classtype, f_return_type);
         Printv(params, "   ", f_return_type, " :: output\n", NULL);
     }
@@ -884,8 +885,21 @@ int FORTRAN::classHandler(Node *n)
                     NULL);
 
     // Write Fortran class header
+    String* spclassname = Getattr(n, "feature:smartptr");
+    SwigType* type = NULL;
+    if (!spclassname)
+    {
+        // Typical case
+        type = Getattr(n, "classtypeobj");
+    }
+    else
+    {
+        type = SwigType_typedef_resolve_all(spclassname);
+    }
+
+    Swig_print_node(n);
     Printv(f_types, " type ", symname, "\n",
-                    get_typemap(n, "fdata", Getattr(n, "classtypeobj"),
+                    get_typemap(n, "fdata", type,
                                 WARN_FORTRAN_TYPEMAP_FDATA_UNDEF),
                     NULL);
     Printv(f_types, " contains\n",

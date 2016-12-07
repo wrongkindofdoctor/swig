@@ -40,9 +40,9 @@
  * (so \c ctype is a pointer, and we use a \c typemap(in) to dereference the
  * argument).
  *
- * - We can't return mutable references in Fortran; you'll get a build-time
- *   error in your wrapper code if you try. Const references will get converted
- *   into values for fundamental types.
+ * - We can't return mutable references to fundamental types; you'll get a
+ *   build-time error in your wrapper code if you try. Const references will
+ *   get converted into values for fundamental types.
  * - Returning by const reference is automatically turned into return-by-value.
  *   (this is the 'out=CTYPE' argument)
  */
@@ -125,16 +125,42 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %}
 
 //---------------------------------------------------------------------------//
-// CLASSES
+// CLASSES BY VALUE
 //---------------------------------------------------------------------------//
 
-%typemap(ctype)  SWIGTYPE, SWIGTYPE*, SWIGTYPE&  %{void*%}
-%typemap(in)     SWIGTYPE             %{ $1 = *($&1_ltype)($input); %}
+// TODO: 'out' by value needs to take ownership
+%typemap(ctype)  SWIGTYPE %{void*%}
+%typemap(in)     SWIGTYPE %{ $1 = *($&1_ltype)($input); %}
+%typemap(out)    SWIGTYPE 
+#ifdef __cplusplus
+%{
+#if __cplusplus >= 201103L
+    $result = new $1_ltype(std::move($1));
+#endif
+%}
+#else
+{
+  $&1_ltype $1ptr = ($&1_ltype) malloc(sizeof($1_ltype));
+  memmove($1ptr, &$1, sizeof($1_type));
+  $result = $1ptr;
+}
+#endif
+
+%typemap(imtype, out="type(C_PTR)") SWIGTYPE "type(C_PTR), value"
+%typemap(ftype)  SWIGTYPE "type($fclassname)"
+%typemap(fin)    SWIGTYPE "$1_name%ptr"
+
+//---------------------------------------------------------------------------//
+// CLASSES BY REFERENCE/POINTER
+//---------------------------------------------------------------------------//
+
+%typemap(ctype)  SWIGTYPE*, SWIGTYPE& %{void*%}
 %typemap(in)     SWIGTYPE*, SWIGTYPE& %{ $1 = ($1_ltype)($input); %}
-%typemap(out)    SWIGTYPE, SWIGTYPE*, const SWIGTYPE& %{ $result = $1; %}
-%typemap(imtype, out="type(C_PTR)") SWIGTYPE, SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
-%typemap(ftype)  SWIGTYPE, SWIGTYPE*, SWIGTYPE&  "class($fclassname)"
-%typemap(fin)    SWIGTYPE, SWIGTYPE*, SWIGTYPE&  "$1_name%ptr"
+%typemap(out)    SWIGTYPE*, SWIGTYPE& %{ $result = $1; %}
+%typemap(imtype, out="type(C_PTR)") SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
+%typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&
+    "class($fclassname)"
+%typemap(fin)    SWIGTYPE*, SWIGTYPE& "$1_name%ptr"
 
 //---------------------------------------------------------------------------//
 // ARRAY TYPES

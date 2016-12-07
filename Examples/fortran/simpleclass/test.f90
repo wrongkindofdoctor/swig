@@ -32,7 +32,7 @@ subroutine test_class()
 
     ! Pass a class by value
     call set_class_by_copy(orig)
-    !write(0, *) "Set by copy: ", get_class()%get()
+    write(0, *) "Set by copy: ", get_class()%get()
 
 !    ! Create
 !    made = make_class(2)

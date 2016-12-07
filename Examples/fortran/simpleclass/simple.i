@@ -22,8 +22,8 @@
 %}
 #endif
 
-%ignore make_class;
-%ignore get_class;
+// %ignore make_class;
+// %ignore get_class;
 
 // %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"
