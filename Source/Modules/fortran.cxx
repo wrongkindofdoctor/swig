@@ -342,7 +342,6 @@ int FORTRAN::functionWrapper(Node *n)
     const bool is_overloaded = Getattr(n, "sym:overloaded");
     if (is_overloaded)
     {
-        //Swig_print_node(n);
         Append(wname, Getattr(n, "sym:overname"));
     }
     else
@@ -375,16 +374,6 @@ int FORTRAN::functionWrapper(Node *n)
 
     // A new wrapper function object
     Wrapper* f = NewWrapper();
-
-#if 0
-    if (Cmp(symname, "make_class") == 0)
-    {
-        Printv(stdout, "**** MAKE_CLASS ****\n", NULL);
-        if (n) Swig_print_node(n);
-        if (parmlist) Swig_print_node(parmlist);
-        Printv(stdout, "********************\n", NULL);
-    }
-#endif
 
     // Attach the non-standard typemaps to the parameter list.
     Swig_typemap_attach_parms("ctype",  parmlist, f);
@@ -641,7 +630,7 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     const char* call_prepend_comma = "";
     if (d_in_constructor)
     {
-        Printv(callcmd, "self%ptr = ", wname, "(", NULL);
+        Printv(callcmd, wname, "(", NULL);
         Printv(args, "self", NULL);
 
         String* f_return_type = get_typemap_out(n, "ftype",
@@ -726,15 +715,11 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     Printv(append, fortranappend(n), NULL);
 
     String* body = callcmd;
-#if 0
     if (d_in_constructor)
     {
-        Swig_print_node(n);
-        Swig_print_node(getCurrentClass());
         // Replace body with typemapped constructor
-        assert(getCurrentClass());
         String* fcreate = get_typemap(n, "fcreate",
-                                      Getattr(getCurrentClass(), "classtypeobj"),
+                                      Getattr(n, "type"),
                                       WARN_FORTRAN_TYPEMAP_FCREATE_UNDEF);
         Replaceall(fcreate, "$imcall", callcmd);
         body = Copy(fcreate);
@@ -743,15 +728,13 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     else if (d_in_destructor)
     {
         // Replace body with typemapped destructor
-        assert(getCurrentClass());
         String* frelease = get_typemap(n, "frelease",
-                                       Getattr(getCurrentClass(), "classtypeobj"),
+                                       Getattr(n, "type"),
                                        WARN_FORTRAN_TYPEMAP_FRELEASE_UNDEF);
         Replaceall(frelease, "$imcall", callcmd);
         body = Copy(frelease);
         Delete(callcmd); callcmd = NULL;
     }
-#endif
 
     // Write
     Printv(f_proxy,
@@ -901,11 +884,10 @@ int FORTRAN::classHandler(Node *n)
                     NULL);
 
     // Write Fortran class header
-#if 0
     Printv(f_types, " type ", symname, "\n",
-                    get_typemap(n, "fdata", getCurrentClass(), WARN_FORTRAN_TYPEMAP_FDATA_UNDEF),
+                    get_typemap(n, "fdata", Getattr(n, "classtypeobj"),
+                                WARN_FORTRAN_TYPEMAP_FDATA_UNDEF),
                     NULL);
-#endif
     Printv(f_types, " contains\n",
                     f_methods, NULL);
 

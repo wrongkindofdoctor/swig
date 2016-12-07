@@ -32,17 +32,17 @@ subroutine test_class()
 
     ! Pass a class by value
     call set_class_by_copy(orig)
-    write(0, *) "Set by copy: ", get_class()%get()
+    !write(0, *) "Set by copy: ", get_class()%get()
 
-    ! Create
-    made = make_class(2)
-    call print_value(made)
-    ! TODO: this should release 'orig'; maybe transfer ownership??
-    orig = made
-    ! TODO: this should release 'made'
-    made = make_class(3)
-    orig%release()
-    made%release()
+!    ! Create
+!    made = make_class(2)
+!    call print_value(made)
+!    ! TODO: this should release 'orig'; maybe transfer ownership??
+!    orig = made
+!    ! TODO: this should release 'made'
+!    made = make_class(3)
+!    orig%release()
+!    made%release()
 
     ! If this is commented out and the '-final' code generation option is used,
     ! no memory leak will occur. Otherwise, the class is never deallocated.

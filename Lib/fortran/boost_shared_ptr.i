@@ -119,7 +119,7 @@
 // C/Fortran interface (pass as pointers)
 //---------------------------------------------------------------------------//
 
-%typemap(ftype) CONST TYPE "class($fortranclassname)"
+%typemap(ftype) CONST TYPE "class($fclassname)"
 %typemap(fin)   CONST TYPE "$1_name%ptr"
 
 %typemap(ctype)

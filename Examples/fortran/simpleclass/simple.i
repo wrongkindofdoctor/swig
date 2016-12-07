@@ -22,9 +22,8 @@
 %}
 #endif
 
-%newobject make_class;
-
-int global_int;
+%ignore make_class;
+%ignore get_class;
 
 // %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"

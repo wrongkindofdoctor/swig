@@ -105,12 +105,15 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 //---------------------------------------------------------------------------//
 
 %typemap(fdata) SWIGTYPE %{
-   type(C_PTR), private :: ptr = C_NULL_PTR
-   logical, private :: own = .false.
+  type(C_PTR), private :: ptr = C_NULL_PTR
+  logical, private :: own = .false.
 %}
 
-%typemap(fcreate) SWIGTYPE %{
+%typemap(fcreate) SWIGTYPE
+%{
    if (c_associated(self%ptr)) call self%release()
+   self%ptr = $imcall
+   self%own = .true.
 %}
 
 %typemap(frelease) SWIGTYPE %{
@@ -122,11 +125,12 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %}
 
 //---------------------------------------------------------------------------//
-// POINTER/REFERENCES TO CLASSES
+// CLASSES
 //---------------------------------------------------------------------------//
 
 %typemap(ctype)  SWIGTYPE, SWIGTYPE*, SWIGTYPE&  %{void*%}
-%typemap(in)     SWIGTYPE, SWIGTYPE*, SWIGTYPE& %{ $1 = ($1_ltype)($input); %}
+%typemap(in)     SWIGTYPE             %{ $1 = *($&1_ltype)($input); %}
+%typemap(in)     SWIGTYPE*, SWIGTYPE& %{ $1 = ($1_ltype)($input); %}
 %typemap(out)    SWIGTYPE, SWIGTYPE*, const SWIGTYPE& %{ $result = $1; %}
 %typemap(imtype, out="type(C_PTR)") SWIGTYPE, SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
 %typemap(ftype)  SWIGTYPE, SWIGTYPE*, SWIGTYPE&  "class($fclassname)"

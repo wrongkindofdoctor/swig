@@ -85,6 +85,17 @@ SimpleClass make_class(double val)
     return SimpleClass(val);
 }
 
+void set_class_by_copy(SimpleClass c)
+{
+    g_globalclass = c;
+}
+
+const SimpleClass& get_class()
+{
+    return g_globalclass;
+}
+
+
 //---------------------------------------------------------------------------//
 // end of simple_class/SimpleClass.cc
 //---------------------------------------------------------------------------//
