@@ -183,10 +183,10 @@ int FORTRAN::top(Node *n)
     f_proxy = NewString("");
     Swig_register_filebyname("fproxy", f_proxy);
 
-    // Substitution code
-    String *wrapper_name = NewString("swigc_%f");
-    Swig_name_register("wrapper", wrapper_name);
-    Delete(wrapper_name);
+    // Tweak substitution code
+    Swig_name_register("wrapper", "swigc_%f");
+    Swig_name_register("set", "set_%n%v");
+    Swig_name_register("get", "get_%n%v");
 
     d_overloads = NewHash();
 
@@ -378,13 +378,6 @@ int FORTRAN::functionWrapper(Node *n)
     String* c_return_type = get_typemap_out("ctype", n);
     Printv(f->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
 
-#if 0
-    for (Parm* p = parmlist; p; p = nextSibling(p))
-    {
-        Swig_print_node(p);
-    }
-#endif
-
     // Function attributes
     const bool is_subroutine = (Cmp(c_return_type, "void") == 0);
 
@@ -398,20 +391,6 @@ int FORTRAN::functionWrapper(Node *n)
     emit_parameter_variables(parmlist, f);
     emit_attach_parmmaps(parmlist, f);
     Setattr(n, "wrap:parms", parmlist);
-
-#if 0
-    // Wrappers not wanted for some methods where the parameters cannot be overloaded in Fortran
-    if (Getattr(n, "sym:overloaded"))
-    {
-        // Emit warnings for the few cases that can't be overloaded in Fortran and give up on generating wrapper
-        Swig_overload_check(n);
-        if (Getattr(n, "overload:ignore"))
-        {
-            DelWrapper(f);
-            return SWIG_OK;
-        }
-    }
-#endif
 
     // >>> BUILD WRAPPER FUNCTION AND INTERFACE CODE
 
@@ -789,19 +768,39 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     }
     else if (is_wrapping_class())
     {
-        // Get aliased name
+        // Get aliased member function name
         String* alias = Getattr(n, "fortran:membername");
 
-        if (!alias)
+        if (alias)
+        {
+            // Print remapping
+            Printv(f_methods,
+                   "  procedure :: ", alias, " => ", imfuncname, "\n",
+                   NULL);
+        }
+        else
         {
             // This can happen when class member data is exposed?
-            alias = Getattr(n, "sym:name");
+            String* varname = Getattr(n, "membervariableHandler:sym:name");
+            assert(varname);
+            if (Getattr(n, "memberset"))
+            {
+                alias = Swig_name_set(getNSpace(), varname);
+            }
+            else if (Getattr(n, "memberget"))
+            {
+                alias = Swig_name_get(getNSpace(), varname);
+            }
+            else
+            {
+                assert(0);
         }
-
         // Print remapping
         Printv(f_methods,
                "  procedure :: ", alias, " => ", imfuncname, "\n",
                NULL);
+            Delete(alias);
+        }
     }
     else if (is_overloaded)
     {
