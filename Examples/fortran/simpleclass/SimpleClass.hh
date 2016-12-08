@@ -32,6 +32,7 @@ class SimpleClass
   private:
     // >>> DATA
 
+    int d_id;
     storage_type d_storage;
 
   public:
@@ -41,6 +42,9 @@ class SimpleClass
 
     // Copy constructor
     SimpleClass(const SimpleClass& rhs);
+
+    // assignment
+    SimpleClass& operator=(const SimpleClass& rhs);
 
     // Other constructor
     explicit SimpleClass(double d);

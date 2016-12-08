@@ -17,6 +17,7 @@ subroutine test_class()
     implicit none
     type(SimpleClass) :: orig
     type(SimpleClass) :: made
+    type(SimpleClass) :: ref
 
     write(0, *) "Constructing..."
     call orig%create()
@@ -31,18 +32,34 @@ subroutine test_class()
     call orig%set(1)
 
     ! Pass a class by value
+    write(0, *) "Setting by copy"
     call set_class_by_copy(orig)
-    write(0, *) "Set by copy: ", get_class()%get()
+    write(0, *) "Getting by reference"
+    ref = get_class()
+    write(0, *) "Got", ref%get()
 
-!    ! Create
-!    made = make_class(2)
-!    call print_value(made)
-!    ! TODO: this should release 'orig'; maybe transfer ownership??
-!    orig = made
-!    ! TODO: this should release 'made'
-!    made = make_class(3)
-!    orig%release()
-!    made%release()
+    ! Create
+    write(0, *) "Making class "
+    made = make_class(2)
+    write(0, *) "printing value"
+    call print_value(made)
+    ! ! TODO: this should release 'orig'; maybe transfer ownership??
+    write(0, *) "Assigning"
+    orig = made
+    ! TODO: this should release 'made'
+    write(0, *) "Returning by value"
+    made = make_class(3)
+
+    ! Shouldn't do anything since we don't own
+    write(0, *) "Releasing ref"
+    call ref%release()
+    ! Release orig
+    write(0, *) "Releasing orig"
+    call orig%release()
+    ! Release created
+    write(0, *) "Releasing ret-by-val"
+    call made%release()
+    write(0, *) "Done!"
 
     ! If this is commented out and the '-final' code generation option is used,
     ! no memory leak will occur. Otherwise, the class is never deallocated.

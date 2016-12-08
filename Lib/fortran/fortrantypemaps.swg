@@ -71,6 +71,8 @@
   %typemap(ftype,  out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
 
   %typemap(fin)  CTYPE, CTYPE*, CTYPE&, const CTYPE*, const CTYPE& %{$1_name%}
+  %typemap(fout) CTYPE, CTYPE*, CTYPE&, const CTYPE*, const CTYPE&
+  %{ $result = $imcall %}
 %enddef
 
 FORTRAN_TYPEMAP(bool       , "logical(C_BOOL)"     )
@@ -99,6 +101,7 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %typemap(out)    void %{%}
 %typemap(imtype) void ""
 %typemap(ftype)  void ""
+%typemap(fout)   void %{call $imcall%}
 
 //---------------------------------------------------------------------------//
 // PROXY CLASS DEFINITIONS
@@ -118,8 +121,8 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 
 %typemap(frelease) SWIGTYPE %{
    if (self%own) then
-     $imcall
-     self%own = .false.
+    call $imcall
+    self%own = .false.
    end if
    self%ptr = C_NULL_PTR
 %}
@@ -128,7 +131,6 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 // CLASSES BY VALUE
 //---------------------------------------------------------------------------//
 
-// TODO: 'out' by value needs to take ownership
 %typemap(ctype)  SWIGTYPE %{void*%}
 %typemap(in)     SWIGTYPE %{ $1 = *($&1_ltype)($input); %}
 %typemap(out)    SWIGTYPE 
@@ -136,6 +138,8 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %{
 #if __cplusplus >= 201103L
     $result = new $1_ltype(std::move($1));
+#else
+    $result = new $1_ltype($1);
 #endif
 %}
 #else
@@ -149,6 +153,10 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %typemap(imtype, out="type(C_PTR)") SWIGTYPE "type(C_PTR), value"
 %typemap(ftype)  SWIGTYPE "type($fclassname)"
 %typemap(fin)    SWIGTYPE "$1_name%ptr"
+%typemap(fout)   SWIGTYPE %{
+   $result%ptr = $imcall
+   $result%own = .true.
+%}
 
 //---------------------------------------------------------------------------//
 // CLASSES BY REFERENCE/POINTER
@@ -161,6 +169,10 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&
     "class($fclassname)"
 %typemap(fin)    SWIGTYPE*, SWIGTYPE& "$1_name%ptr"
+%typemap(fout)   SWIGTYPE*, SWIGTYPE& %{
+   $result%ptr = $imcall
+   $result%own = $owner
+%}
 
 //---------------------------------------------------------------------------//
 // ARRAY TYPES

@@ -1,5 +1,6 @@
 #include "swigmod.h"
 #include "cparse.h"
+#include <ctype.h>
 
 namespace
 {
@@ -9,6 +10,18 @@ Fotran Options (available with -fortran)\n\
                    of generatingproxy classes\n\
      -final      - Generate 'final' statement to call C++ destructors\n\
 \n";
+
+//! Return a const char* with leading whitespace stripped
+const char* lstrip(const_String_or_char_ptr s)
+{
+    const char* trimmed = Char(s);
+    while (trimmed && isspace(*trimmed))
+    {
+        ++trimmed;
+    }
+    return trimmed;
+}
+
 }
 
 class FORTRAN : public Language
@@ -44,6 +57,7 @@ class FORTRAN : public Language
     // Current class parameters
     Hash* d_method_overloads; //!< Overloaded subroutine -> overload names
     String* f_methods; //!< Method strings inside the current class
+    SwigType* d_classtype; //!< Class type
     bool d_in_constructor; //!< Whether we're being called inside a constructor
     bool d_in_destructor; //!< Whether we're being called inside a constructor
 
@@ -66,6 +80,7 @@ class FORTRAN : public Language
         , d_use_proxy(true)
         , d_use_final(false)
         , f_methods(NULL)
+        , d_classtype(NULL)
         , d_in_constructor(false)
         , d_in_destructor(false)
     {
@@ -424,10 +439,11 @@ int FORTRAN::functionWrapper(Node *n)
         }
 
         // Construct conversion argument name
-        String *arg = NewStringf("f%s", Getattr(p, "lname"));
+        String* arg = NewStringf("f%s", Getattr(p, "lname"));
 
         // Get the C type
-        String* tm = get_attached_typemap(p, "ctype", WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+        String* tm = get_attached_typemap(p, "ctype",
+                                          WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
         Printv(f->def, prepend_comma, tm, " ", arg, NULL);
 
         // Get typemap for this argument
@@ -556,7 +572,8 @@ int FORTRAN::functionWrapper(Node *n)
     // >>> WRITE INTERFACE CODE
 
     const char* sub_or_func_str = (is_subroutine ? "subroutine" : "function");
-    const char* result_str = (is_subroutine ? "\n" : " &\n     result(fresult)\n");
+    const char* result_str = (is_subroutine ? "\n"
+                                            : " &\n     result(fresult)\n");
 
     /* Write the Fortran interface to the C routine */
     Printv(f_interfaces,
@@ -589,7 +606,7 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
 {
     String* wname  = Getattr(n, "wrap:name");
     String* imfuncname = Getattr(n, "imfuncname");
-    SwigType* classtype = Getattr(n, "type");
+    SwigType* returntype = Getattr(n, "type");
 
     // Set up proxy subroutine label.
     const char* sub_or_func_str = NULL;
@@ -612,18 +629,19 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     else
     {
         sub_or_func_str = "function";
-        result_str = " &\n     result(output)\n";
+        result_str = " &\n     result(fresult)\n";
     }
 
     // Get strings to append and prepend if needed
     String* prepend = NewString("");
     String* append = NewString("");
     Printv(prepend, fortranprepend(n), NULL);
+    Chop(prepend);
 
     // Set up function call, parameter list, and input arguments
     String* params = NewString(
         "   use, intrinsic :: ISO_C_BINDING\n");
-    String* callcmd = NewString("   ");
+    String* callcmd = NewString("");
     String* args = NewString("");
 
     const char* arg_prepend_comma = "";
@@ -634,27 +652,27 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         Printv(args, "self", NULL);
 
         String* f_return_type
-            = get_typemap(n, "ftype", Getattr(n, "type"),
+            = get_typemap(n, "ftype", returntype,
                           WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
-        substitute_classname(classtype, f_return_type);
+        substitute_classname(returntype, f_return_type);
         Printv(params, "   ", f_return_type, " :: self\n", NULL);
 
         arg_prepend_comma = ", ";
     }
     else if (is_subroutine)
     {
-        Printv(callcmd, "call ", wname, "(", NULL);
+        Printv(callcmd, wname, "(", NULL);
     }
     else
     {
-        Printv(callcmd, "output = ", wname, "(", NULL);
+        Printv(callcmd, wname, "(", NULL);
 
         // Get Fortran proxy return type (for constructors, this is
         // repurposed as a dummy argument)
         String* f_return_type
             = get_typemap_out(n, "ftype", WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
-        substitute_classname(classtype, f_return_type);
-        Printv(params, "   ", f_return_type, " :: output\n", NULL);
+        substitute_classname(returntype, f_return_type);
+        Printv(params, "   ", f_return_type, " :: fresult\n", NULL);
     }
 
     // Get parameters and bind our wrapper typemaps
@@ -678,28 +696,32 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         Printv(args, arg_prepend_comma, argname, NULL);
 
         // Add parameter to function call
-        String *fin_tm = Getattr(p, "tmap:fin");
+        String* fin_tm = get_attached_typemap(
+                p, "fin", WARN_FORTRAN_TYPEMAP_FIN_UNDEF);
         substitute_classname(param_type, fin_tm);
         Printv(callcmd, call_prepend_comma, fin_tm, NULL);
 
         // Add parameter type to the fortran interface parameters list
-        String* ftype = Getattr(p, "tmap:ftype");
-        substitute_classname(param_type, ftype);
-        Printv(params, "   ", ftype, " :: ", argname, "\n", NULL);
+        String* ftype_tm = get_attached_typemap(
+                p, "ftype", WARN_FORTRAN_TYPEMAP_FIN_UNDEF);
+        substitute_classname(param_type, ftype_tm);
+        Printv(params, "   ", ftype_tm, " :: ", argname, "\n", NULL);
         Delete(argname);
 
         // Check for insertion code
-        if (String *tm = Getattr(p, "tmap:fin:pre"))
+        if (String* tm = Getattr(p, "tmap:fin:pre"))
         {
             substitute_classname(param_type, tm);
+            Chop(tm);
             if (Len(tm) > 0)
             {
                 Printv(prepend, "   ", tm, "\n", NULL);
             }
         }
-        if (String *tm = Getattr(p, "tmap:fin:post"))
+        if (String* tm = Getattr(p, "tmap:fin:post"))
         {
             substitute_classname(param_type, tm);
+            Chop(tm);
             if (Len(tm) > 0)
             {
                 Printv(append, "   ", tm, "\n", NULL);
@@ -710,32 +732,42 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         arg_prepend_comma = call_prepend_comma = ", ";
         p = Getattr(p, "tmap:fin:next");
     }
-    Printv(callcmd, ")\n", NULL);
+    Printv(callcmd, ")", NULL);
 
     // Get code to append
     Printv(append, fortranappend(n), NULL);
+    Chop(append);
 
-    String* body = callcmd;
+    String* body = NULL;
     if (d_in_constructor)
     {
         // Replace body with typemapped constructor
-        String* fcreate = get_typemap(n, "fcreate",
-                                      Getattr(n, "type"),
-                                      WARN_FORTRAN_TYPEMAP_FCREATE_UNDEF);
-        Replaceall(fcreate, "$imcall", callcmd);
-        body = Copy(fcreate);
-        Delete(callcmd); callcmd = NULL;
+        body = get_typemap(n, "fcreate",
+                           d_classtype,
+                           WARN_FORTRAN_TYPEMAP_FCREATE_UNDEF);
     }
     else if (d_in_destructor)
     {
         // Replace body with typemapped destructor
-        String* frelease = get_typemap(n, "frelease",
-                                       Getattr(n, "type"),
-                                       WARN_FORTRAN_TYPEMAP_FRELEASE_UNDEF);
-        Replaceall(frelease, "$imcall", callcmd);
-        body = Copy(frelease);
-        Delete(callcmd); callcmd = NULL;
+        body = get_typemap(n, "frelease",
+                           d_classtype,
+                           WARN_FORTRAN_TYPEMAP_FRELEASE_UNDEF);
     }
+    else
+    {
+        body = get_typemap(n, "fout",
+                           returntype,
+                           WARN_FORTRAN_TYPEMAP_FOUT_UNDEF);
+    }
+    Replaceall(body, "$result", (is_subroutine ? "" : "fresult"));
+    Replaceall(body, "$imcall", callcmd);
+    Replaceall(body, "$owner", (GetFlag(n, "feature:new")
+                                ? ".true." : ".false."));
+    Chop(body);
+
+    // If there's any extra code, make sure it ends with a newline
+    if (*Char(prepend)) Append(prepend, "\n");
+    if (*Char(append))  Append(append, "\n");
 
     // Write
     Printv(f_proxy,
@@ -743,7 +775,7 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
            result_str,
            params,
            prepend,
-           body,
+           "   ", lstrip(body), "\n",
            append,
            "  end ", sub_or_func_str, "\n",
            NULL);
@@ -877,6 +909,9 @@ int FORTRAN::classHandler(Node *n)
     f_methods = NewString("");
     d_method_overloads = NewHash();
 
+    // Write Fortran class header
+    d_classtype = Getattr(n, "classtypeobj");
+
     // Emit class members
     Language::classHandler(n);
 
@@ -884,26 +919,12 @@ int FORTRAN::classHandler(Node *n)
     Printv(f_public, " public :: ", symname, "\n",
                     NULL);
 
-    // Write Fortran class header
-    String* spclassname = Getattr(n, "feature:smartptr");
-    SwigType* type = NULL;
-    if (!spclassname)
-    {
-        // Typical case
-        type = Getattr(n, "classtypeobj");
-    }
-    else
-    {
-        type = SwigType_typedef_resolve_all(spclassname);
-    }
-
-    Swig_print_node(n);
-    Printv(f_types, " type ", symname, "\n",
-                    get_typemap(n, "fdata", type,
-                                WARN_FORTRAN_TYPEMAP_FDATA_UNDEF),
-                    NULL);
+    Printv(f_types, " type ", symname, "\n"
+           "  ", lstrip(get_typemap(n, "fdata", d_classtype,
+                                    WARN_FORTRAN_TYPEMAP_FDATA_UNDEF)),
+           NULL);
     Printv(f_types, " contains\n",
-                    f_methods, NULL);
+           f_methods, NULL);
 
     // Write overloads
     for (Iterator kv = First(d_method_overloads); kv.key; kv = Next(kv))
@@ -926,6 +947,7 @@ int FORTRAN::classHandler(Node *n)
 
     Delete(d_method_overloads);
     Delete(f_methods); f_methods = NULL;
+    d_classtype = NULL;
 
     return SWIG_OK;
 }
@@ -1179,14 +1201,24 @@ String* FORTRAN::fortranappend(Node* n)
 bool FORTRAN::substitute_classname(SwigType *pt, String *tm)
 {
     bool substitution_performed = false;
+#if 0
+    Printf(stdout, "calling substitute_classname(%s, %s)\n", pt, tm);
+#endif
+    
     SwigType *type = Copy(SwigType_typedef_resolve_all(pt));
     SwigType *strippedtype = SwigType_strip_qualifiers(type);
-
+        
     if (Strstr(tm, "$fclassname"))
     {
         substitute_classname_impl(strippedtype, tm, "$fclassname");
         substitution_performed = true;
     }
+
+#if 0
+    Printf(stdout, "substitute_classname (%c): %s => %s\n",
+           substitution_performed ? 'X' : ' ',
+           pt, strippedtype);
+#endif
 
     Delete(strippedtype);
     Delete(type);
@@ -1257,9 +1289,8 @@ void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
 }
 
 //---------------------------------------------------------------------------//
-// Overloaded to support "$fclassname" in "$typemap(X,Y)" typemap usage
 
-void FORTRAN::replaceSpecialVariables(String *method, String *tm, Parm *parm)
+void FORTRAN::replaceSpecialVariables(String* method, String* tm, Parm* parm)
 {
     (void)method;
     SwigType *type = Getattr(parm, "type");

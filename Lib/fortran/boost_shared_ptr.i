@@ -118,42 +118,35 @@
 //---------------------------------------------------------------------------//
 // C/Fortran interface (pass as pointers)
 //---------------------------------------------------------------------------//
+#define ALL_SWIGSP__ SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
 
-%typemap(ftype) CONST TYPE "class($fclassname)"
-%typemap(fin)   CONST TYPE "$1_name%ptr"
+%typemap(ctype) ALL_SWIGSP__ "void *"
+%typemap(imtype, out="type(C_PTR)") ALL_SWIGSP__ "type(C_PTR), value"
+%typemap(ftype) ALL_SWIGSP__ "$typemap(ftype, TYPE)"
+%typemap(fin) ALL_SWIGSP__ "$1_name%ptr"
 
-%typemap(ctype)
-    SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
-    "void *"
-%typemap(imtype, out="type(C_PTR)")
-    SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
-    "type(C_PTR), value"
-%typemap(ftype)
-    SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
-    "$typemap(ftype, TYPE)"
-%typemap(fin)
-    SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
-    "$1_name%ptr"
-
-%typemap(fdata) SWIGSP__ {
+%typemap(fdata) CONST TYPE
+%{
   type(C_PTR), private :: ptr = C_NULL_PTR
-}
+%}
 
-%typemap(fcreate) SWIGSP__
-{
+%typemap(fcreate) CONST TYPE
+%{
    if (c_associated(self%ptr)) call self%release()
    self%ptr = $imcall
-}
+%}
 
-%typemap(frelease) SWIGSP__ {
-   $imcall
+%typemap(frelease) CONST TYPE
+%{
+   call $imcall
    self%ptr = C_NULL_PTR
-}
+%}
 
 // Instantiate shared pointer
 %template() SWIGSP__;
 
 #undef SWIGSP__
+#undef ALL_SWIGSP__
 
 %enddef
 

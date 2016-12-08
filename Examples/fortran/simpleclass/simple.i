@@ -18,12 +18,13 @@
    write(0, "(a, z16)") "F Constructed ", self%ptr
 %}
 %fortranprepend SimpleClass::~SimpleClass %{
-   write(0, "(a, z16)") "F Destroying  ", self%ptr
+   write(0, "(a, z16)") "F Releasing   ", self%ptr
 %}
 #endif
 
 // %ignore make_class;
 // %ignore get_class;
+%ignore BasicStruct;
 
 // %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"

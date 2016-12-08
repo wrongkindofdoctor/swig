@@ -17,32 +17,50 @@ using std::endl;
 //---------------------------------------------------------------------------//
 namespace
 {
-SimpleClass g_globalclass;
+int g_counter = 0;
+int g_next_id = 0;
+SimpleClass g_globalclass(0);
 }
 
 //---------------------------------------------------------------------------//
 SimpleClass::SimpleClass()
-    : d_storage(-1)
+    : d_id(g_next_id++)
+    , d_storage(0)
 {
-    cout << "Constructing at " << this << endl;
+    cout << "Constructing " << d_id << " at " << this << endl;
+    ++g_counter;
 }
 
 SimpleClass::SimpleClass(const SimpleClass& rhs)
-    : d_storage(rhs.d_storage + 10)
+    : d_id(rhs.d_id * 10 + (g_next_id++))
+    , d_storage(rhs.d_storage + 10)
 {
-    cout << "Copy-constructing " << rhs.get() << "=>" << get()
+    cout << "Copy-constructing " << rhs.d_id << "=>" << d_id
          << " at " << this << endl;
+    ++g_counter;
 }
 
 SimpleClass::SimpleClass(double d)
-    : d_storage(d)
+    : d_id(g_next_id++)
+    , d_storage(d)
 {
-    cout << "Constructing " << get() << " at " << this << endl;
+    cout << "Constructing " << d_id << " at " << this << endl;
+    ++g_counter;
+}
+
+SimpleClass& SimpleClass::operator=(const SimpleClass& rhs)
+{
+    int orig_id = d_id;
+    d_id = 10 * rhs.d_id + (g_next_id++);
+    cout << "Assigning " << rhs.d_id << "=>" << d_id
+         << " at " << this <<  " (replaces " << orig_id << ")" << endl;
 }
 
 SimpleClass::~SimpleClass()
 {
-    cout << "Destroying   " << get() << " at " << this << endl;
+    --g_counter;
+    cout << "Destroying   " << d_id << " at " << this
+        << ": " << g_counter << " remaining " << endl;
 }
 
 void SimpleClass::set(storage_type val)
@@ -80,7 +98,7 @@ void dumb_copy(SimpleClass c)
 }
 
 //---------------------------------------------------------------------------//
-SimpleClass make_class(double val)
+SimpleClass make_class(SimpleClass::storage_type val)
 {
     return SimpleClass(val);
 }
