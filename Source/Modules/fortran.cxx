@@ -818,9 +818,17 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         }
         else
         {
-            // This can happen when class member data is exposed?
+            // This can happen when class member or static data is exposed?
             String* varname = Getattr(n, "membervariableHandler:sym:name");
-            assert(varname);
+            if (!varname)
+            {
+                varname = Getattr(n, "staticmemberfunctionHandler:sym:name");
+            }
+            if (!varname)
+            {
+                Swig_print_node(n);
+                assert(varname);
+            }
             if (Getattr(n, "memberset"))
             {
                 alias = Swig_name_set(getNSpace(), varname);

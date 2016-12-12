@@ -24,8 +24,8 @@ class Foo
     Foo(double val);
     ~Foo();
 
-    double get() const; // { return d_val; }
-    void set(double v); // { d_val = v; }
+    double get() const;
+    void set(double v);
 };
 
 void print_crsp(const std::shared_ptr<Foo>& f);
