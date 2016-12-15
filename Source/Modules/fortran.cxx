@@ -913,7 +913,6 @@ int FORTRAN::classHandler(Node *n)
                 "limited.\n",
                 SwigType_namestr(symname));
         basename = Getitem(baselist, 0);
-        std::cout << "Base name: " << Char(basename) << "\n";
     }
     if (baselist && Len(baselist) > 1)
     {
