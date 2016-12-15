@@ -2988,9 +2988,9 @@ int Language::usingDeclaration(Node *n) {
 int Language::constantWrapper(Node *n) {
   String *name = Getattr(n, "sym:name");
   SwigType *type = Getattr(n, "type");
-  String *value = Getattr(n, "value");
   String *str = SwigType_str(type, name);
 #ifdef SWIG_DEBUG
+  String *value = Getattr(n, "value");
   Printf(stdout, "constantWrapper   : %s = %s\n", str, value);
 #endif
   Delete(str);
