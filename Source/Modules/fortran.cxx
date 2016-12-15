@@ -899,18 +899,30 @@ int FORTRAN::classHandler(Node *n)
 {
     // Basic attributes
     String *symname = Getattr(n, "sym:name");
+    String *basename = NULL;
 
     if (!addSymbol(symname, n))
         return SWIG_ERROR;
 
     // Process base classes
-    List *baselist = Getattr(n, "bases");
-    if (baselist && Len(baselist))
+    List *baselist = Getattr(n, "baselist");
+    if (baselist && Len(baselist) > 0)
     {
         Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
-                "Inheritance (class '%s') currently unimplemented.\n",
+                "Inheritance (class '%s') support is under development and "
+                "limited.\n",
+                SwigType_namestr(symname));
+        basename = Getitem(baselist, 0);
+        std::cout << "Base name: " << Char(basename) << "\n";
+    }
+    if (baselist && Len(baselist) > 1)
+    {
+        Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
+                "Multiple inheritance (class '%s') is not supported in Fortran",
+                "\n",
                 SwigType_namestr(symname));
     }
+
 
     // Initialize output strings that will be added by 'functionHandler'
     assert(!f_methods);
@@ -927,10 +939,21 @@ int FORTRAN::classHandler(Node *n)
     Printv(f_public, " public :: ", symname, "\n",
                     NULL);
 
-    Printv(f_types, " type ", symname, "\n"
-           "  ", lstrip(get_typemap(n, "fdata", d_classtype,
+    Printv(f_types, " type ", NULL);
+    if (basename)
+    {
+        Printv(f_types, ", extends(", basename, ")", NULL);
+    }
+
+    Printv(f_types, " :: ", symname, "\n", NULL);
+
+    // Insert the class data. Only do this if the class has no base classes
+    if (!basename)
+    {
+           Printv(f_types, "  ", lstrip(get_typemap(n, "fdata", d_classtype,
                                     WARN_FORTRAN_TYPEMAP_FDATA_UNDEF)),
            NULL);
+    }
     Printv(f_types, " contains\n",
            f_methods, NULL);
 
