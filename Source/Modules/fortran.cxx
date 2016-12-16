@@ -938,10 +938,15 @@ int FORTRAN::classHandler(Node *n)
     Printv(f_public, " public :: ", symname, "\n",
                     NULL);
 
-    Printv(f_types, " type ", NULL);
+    Printv(f_types, " type", NULL);
     if (basename)
     {
         Printv(f_types, ", extends(", basename, ")", NULL);
+    }
+
+    if(Abstract)
+    {
+        Printv(f_types, ", abstract", NULL);
     }
 
     Printv(f_types, " :: ", symname, "\n", NULL);
