@@ -20,16 +20,12 @@
 %rename(create_fill)   ThinVec::ThinVec(size_type, value_type);
 
 // Rename a function that's the same as a Fortran keyword
-// NOTE: this appears to be broken in SWIG 3.0.11; we have to explicitly rename
-// the instances, and we'll still get warnings even though we shouldn't
-// see https://github.com/swig/swig/issues/845
-// %rename(ass) ThinVec::assign;
-%rename(ass) ThinVec<double>::assign;
-%rename(ass) ThinVec<int>::assign;
+%rename(ass) ThinVec::assign;
 
 // Works with void obtain(double* p, size_type count)
 // and (T* p, size_type count)
 // but not (pointer p, size_type count)
+// see https://github.com/swig/swig/issues/846
 %apply (SWIGTYPE* ARRAY, int SIZE) {
        (double* p, unsigned int count),
        (const double* p, unsigned int count),
@@ -42,7 +38,6 @@
 %rename(resize_fill) ThinVec::resize(size_type, value_type);
 
 // Ignore return of types we don't understand
-// NOTE: SWIG bug causes this to still emit a warning
 %ignore ThinVec::data() const;
 
 // Load the thinvec class definition
