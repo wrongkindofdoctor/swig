@@ -136,13 +136,19 @@ FORTRAN_TYPEMAP(float      , "real(C_FLOAT)"       )
 FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 
 // Apply unsigned equivalent types
-%apply short  { unsigned short };
-%apply int    { unsigned int };
-%apply long   { unsigned long };
-%apply size_t { unsigned long long, std::size_t };
+%define FORTRAN_EQUIV(CTYPE, CTYPE2)
+ %apply       CTYPE  {       CTYPE2  };
+ %apply       CTYPE* {       CTYPE2* };
+ %apply       CTYPE& {       CTYPE2& };
+ %apply const CTYPE* { const CTYPE2* };
+ %apply const CTYPE& { const CTYPE2& };
+%enddef
 
-// Instead of applying chars specifically, could do:
-// FORTRAN_TYPEMAP(signed char, "integer(C_SIGNED_CHAR)")
+FORTRAN_EQUIV(short , unsigned short );
+FORTRAN_EQUIV(int   , unsigned int   );
+FORTRAN_EQUIV(long  , unsigned long  );
+FORTRAN_EQUIV(size_t, unsigned long long);
+FORTRAN_EQUIV(size_t, std::size_t);
 
 //---------------------------------------------------------------------------//
 // VOID TYPES

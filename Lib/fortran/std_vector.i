@@ -8,6 +8,10 @@
  */
 //---------------------------------------------------------------------------//
 
+#ifndef SWIG_FORTRAN_STD_SIZETYPE
+#define SWIG_FORTRAN_STD_SIZETYPE int
+#endif
+
 %{
 #include <vector>
 #include <stdexcept>
@@ -22,8 +26,7 @@ class vector
 {
   public:
     // NOTE: using int rather than size_t for fortran compatibility
-    typedef int               size_type;
-
+    typedef SWIG_FORTRAN_STD_SIZETYPE  size_type;
     typedef _Tp               value_type;
     typedef value_type*       pointer;
     typedef const value_type* const_pointer;
@@ -50,20 +53,23 @@ class vector
     void resize(size_type count, const value_type& v);
     void push_back(const value_type& v);
 
+    const_reference front() const;
+    const_reference back() const;
+
     // Extend for Fortran: c indexing!
 %extend {
-    void set(size_type pos, const_reference v)
+    void set(size_type index, const_reference v)
     {
         // TODO: check range
-        (*$self)[pos] = v;
+        (*$self)[index] = v;
     }
 
-    value_type get(size_type pos)
+    value_type get(size_type index)
     {
-        return (*$self)[pos];
+        return (*$self)[index];
     }
 
-    %apply (SWIGTYPE* ARRAY, int SIZE)
+    %apply (SWIGTYPE* ARRAY, SWIG_FORTRAN_STD_SIZETYPE SIZE)
     { (pointer       arr, size_type arrsize),
       (const_pointer arr, size_type arrsize) };
 
