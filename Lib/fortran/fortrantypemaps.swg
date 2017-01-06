@@ -55,20 +55,22 @@
   %typemap(out) CTYPE, const CTYPE* %{$result = $1;%}
   %typemap(out) const CTYPE&        %{$result = *$1;%}
   %typemap(out) CTYPE& %{
-    #error "Can't return by mutable reference in Fortran"
+    #error "Can't return primitive types by mutable reference in Fortran"
   %}
 
   // Note: FTYPE is a string, it gets preprocessor-concatenated to the
   // dimension/intent string
   %typemap(imtype)       CTYPE*  FTYPE ", dimension(*), intent(inout)"
   %typemap(imtype) const CTYPE*  FTYPE ", dimension(*), intent(in)"
-  %typemap(imtype)       CTYPE&  FTYPE ", intent(inout)"
+  %typemap(imtype, out=FTYPE) CTYPE&  FTYPE ", intent(inout)"
   %typemap(imtype, out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
 
-  %typemap(ftype)        CTYPE*  FTYPE ", dimension(:), intent(inout)"
-  %typemap(ftype)  const CTYPE*  FTYPE ", dimension(:), intent(in)"
-  %typemap(ftype)        CTYPE&  FTYPE ", intent(inout)"
-  %typemap(ftype,  out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
+  %typemap(ftype, out="type(C_PTR)")        CTYPE*
+    FTYPE ", dimension(:), intent(inout)"
+  %typemap(ftype, out="type(C_PTR)")  const CTYPE*
+    FTYPE ", dimension(:), intent(in)"
+  %typemap(ftype, out=FTYPE)              CTYPE&  FTYPE ", intent(inout)"
+  %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
 
   %typemap(fin)  CTYPE, CTYPE*, CTYPE&, const CTYPE*, const CTYPE& %{$1_name%}
   %typemap(fout) CTYPE, CTYPE*, CTYPE&, const CTYPE*, const CTYPE&
@@ -133,7 +135,7 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
 
 %typemap(ctype)  SWIGTYPE %{void*%}
 %typemap(in)     SWIGTYPE %{ $1 = *($&1_ltype)($input); %}
-%typemap(out)    SWIGTYPE 
+%typemap(out)    SWIGTYPE
 #ifdef __cplusplus
 %{
 #if __cplusplus >= 201103L
