@@ -4,6 +4,7 @@
 
 namespace
 {
+
 const char usage[] = "\
 Fotran Options (available with -fortran)\n\
      -noproxy    - Expose the low-level functional interface instead\n\
@@ -21,6 +22,9 @@ const char* lstrip(const_String_or_char_ptr s)
     }
     return trimmed;
 }
+
+//! Maximum line length
+const int g_max_line_length = 128;
 
 }
 
@@ -964,12 +968,22 @@ int FORTRAN::classHandler(Node *n)
     // Write overloads
     for (Iterator kv = First(d_method_overloads); kv.key; kv = Next(kv))
     {
-        const char* prepend_comma = "";
         Printv(f_types, "  generic :: ", kv.key, " => ", NULL);
+        // Note: subtract 2 becaues this first line is an exception to
+        // prepend_comma, added inside the iterator
+        int line_length = 13 + Len(kv.key) + 4 - 2;
+        const char* prepend_comma = "";
 
         // Write overloaded procedure names
         for (Iterator it = First(kv.item); it.item; it = Next(it))
         {
+            line_length += 2 + Len(it.item);
+            if (line_length >= g_max_line_length)
+            {
+                Printv(f_types, prepend_comma, NULL);
+                prepend_comma = "&\n    ";
+                line_length = 4;
+            }
             Printv(f_types, prepend_comma, it.item, NULL);
             prepend_comma = ", ";
         }
