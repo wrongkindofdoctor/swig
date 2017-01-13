@@ -11,23 +11,72 @@
 //---------------------------------------------------------------------------//
 /*! CUSTOM TYPEMAP DESCRIPTIONS.
  *
- * ctype : type in C wrapper code (input parameter, default return value)
- * ctype:out : *return* type (overrides ctype)
- * imtype : Fortran type in interface code (equivalent to C argument type)
+ * ctype      : type in C wrapper code (input parameter, default return value)
+ * ctype:out  : *return* type (overrides ctype)
+ * imtype     : Fortran type in interface code (equivalent to C argument type)
  * imtype:out : Fortran return type in interface code (overrides imtype)
- * ftype  : Fortran proxy (shadow) code type
- * fin : Fortran proxy code used to translate a Fortan argument to a wrapper
- *       argument
- * fin:pre : Proxy code inserted before the wrapper call
- * fin:post : Proxy code inserted after the wrapper call
- * fdata : Proxy code for member data inserted into fortran code
+ * ftype      : Fortran proxy (shadow) code type
+ * fin        : Fortran proxy code used to translate a Fortan argument to a
+ *              wrapper argument
+ * fin:pre    : Proxy code inserted before the wrapper call
+ * fin:post   : Proxy code inserted after the wrapper call
+ * fdata      : Proxy code for member data inserted into fortran code
  */
 
 /*! SPECIAL TYPEMAP VARIABLES.
  *
- * $imcall : in the proxy class, the function call into the interface wrapper
- * $fclassname : the fortran proxy class name
+ * $imcall    : in the proxy class, the function call into the interface wrapper
+ * $fclassname: the fortran proxy class name
  */
+
+ /*! PSEUDO CODE USING TYPEMAPS
+  *
+  * C WRAPPER PSEUDOCODE
+  * --------------------
+  * /ctype:out/ swigc_hello(/ctype/ farg) {
+  *   /ctype:out/ fresult;
+  *   /in/        arg;
+  *   /out/       result;
+  *   arg = farg;
+  *   result = hello(arg);
+  *   fresult = result;
+  * }
+  *
+  * FORTRAN BINDINGS PSEUDOCODE
+  * ---------------------------
+  * interface
+  *  function swigc_hello(farg) &
+  *      bind(C, name="swigc_function") &
+  *      result(fresult)
+  *    use, intrinsic ::ISO_C_BINDING
+  *    /imtype:out/   :: fresult
+  *    /imtype/       :: farg
+  *  end function
+  * end interface
+  *
+  * FORTRAN PROXY PSEUDOCODE
+  * ------------------------
+  * contains
+  *   function hello(x) &
+  *      result(fresult)
+  *    use, intrinsic :: ISO_C_BINDING
+  *    /ftype:out ($proxy_name) / :: fresult
+  *    /ftype/                    :: arg
+  *    /fin:pre/
+  *    /fout (result)/ = $imcall  ! swigc_hello
+  *    /fin:post/
+  *   end function
+  *  /fcreate/
+  *  /frelease/
+  * end module
+  *
+  * FORTRAN INTERFACE PSEUDOCODE
+  * ----------------------------
+  * type :: ClassName
+  *  /fdata/
+  * contains
+  * end type
+  */
 
 //---------------------------------------------------------------------------//
 // FUNDAMENTAL TYPES
