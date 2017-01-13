@@ -96,34 +96,47 @@
  *   (this is the 'out=CTYPE' argument)
  */
 %define FORTRAN_TYPEMAP(CTYPE, FTYPE)
-  %typemap(ctype, out="CTYPE") CTYPE, CTYPE*, CTYPE& %{CTYPE*%}
+  %typemap(ctype, out="CTYPE") CTYPE, CTYPE*, CTYPE&, CTYPE[]
+    %{CTYPE*%}
 
-  %typemap(in) CTYPE          %{$1 = *$input;%}
-  %typemap(in) CTYPE*, CTYPE& %{$1 = $input;%}
+  %typemap(in) CTYPE
+    %{$1 = *$input;%}
+  %typemap(in) CTYPE*, CTYPE&, CTYPE[]
+    %{$1 = $input;%}
 
-  %typemap(out) CTYPE, const CTYPE* %{$result = $1;%}
-  %typemap(out) const CTYPE&        %{$result = *$1;%}
-  %typemap(out) CTYPE& %{
+  %typemap(out) CTYPE, const CTYPE*
+    %{$result = $1;%}
+  %typemap(out) const CTYPE&
+    %{$result = *$1;%}
+  %typemap(out) CTYPE&
+    %{
     #error "Can't return primitive types by mutable reference in Fortran"
-  %}
+    %}
 
   // Note: FTYPE is a string, it gets preprocessor-concatenated to the
   // dimension/intent string
-  %typemap(imtype)       CTYPE*  FTYPE ", dimension(*), intent(inout)"
-  %typemap(imtype) const CTYPE*  FTYPE ", dimension(*), intent(in)"
-  %typemap(imtype, out=FTYPE) CTYPE&  FTYPE ", intent(inout)"
-  %typemap(imtype, out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
+  %typemap(imtype)       CTYPE*, CTYPE[]
+    FTYPE ", dimension(*), intent(inout)"
+  %typemap(imtype) const CTYPE*, const CTYPE[]
+    FTYPE ", dimension(*), intent(in)"
+  %typemap(imtype, out=FTYPE) CTYPE&
+    FTYPE ", intent(inout)"
+  %typemap(imtype, out=FTYPE) CTYPE, const CTYPE&
+    FTYPE ", intent(in)"
 
-  %typemap(ftype, out="type(C_PTR)")        CTYPE*
+  %typemap(ftype, out="type(C_PTR)")        CTYPE*, CTYPE[]
     FTYPE ", dimension(:), intent(inout)"
-  %typemap(ftype, out="type(C_PTR)")  const CTYPE*
+  %typemap(ftype, out="type(C_PTR)")  const CTYPE*, const CTYPE[]
     FTYPE ", dimension(:), intent(in)"
-  %typemap(ftype, out=FTYPE)              CTYPE&  FTYPE ", intent(inout)"
-  %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&  FTYPE ", intent(in)"
+  %typemap(ftype, out=FTYPE)              CTYPE&
+    FTYPE ", intent(inout)"
+  %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&
+    FTYPE ", intent(in)"
 
-  %typemap(fin)  CTYPE, CTYPE*, CTYPE&, const CTYPE*, const CTYPE& %{$1_name%}
-  %typemap(fout) CTYPE, CTYPE*, CTYPE&, const CTYPE*, const CTYPE&
-  %{ $result = $imcall %}
+  %typemap(fin)  CTYPE, CTYPE[], CTYPE*, CTYPE&, const CTYPE*, const CTYPE&
+    %{$1_name%}
+  %typemap(fout) CTYPE, CTYPE[], CTYPE*, CTYPE&, const CTYPE*, const CTYPE&
+    %{ $result = $imcall %}
 %enddef
 
 FORTRAN_TYPEMAP(bool       , "logical(C_BOOL)"     )
