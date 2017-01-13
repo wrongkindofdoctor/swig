@@ -902,21 +902,22 @@ String* FORTRAN::makeParameterName(Node *n, Parm *p,
 int FORTRAN::classHandler(Node *n)
 {
     // Basic attributes
-    String *symname = Getattr(n, "sym:name");
-    String *basename = NULL;
+    String* symname = Getattr(n, "sym:name");
+    String* basename = NULL;
 
     if (!addSymbol(symname, n))
         return SWIG_ERROR;
 
     // Process base classes
-    List *baselist = Getattr(n, "baselist");
+    List *baselist = Getattr(n, "bases");
     if (baselist && Len(baselist) > 0)
     {
         Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
                 "Inheritance (class '%s') support is under development and "
                 "limited.\n",
                 SwigType_namestr(symname));
-        basename = Getitem(baselist, 0);
+        Node* base = Getitem(baselist, 0);
+        basename = Getattr(base, "sym:name");
     }
     if (baselist && Len(baselist) > 1)
     {
