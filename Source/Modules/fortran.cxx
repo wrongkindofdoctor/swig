@@ -97,7 +97,9 @@ class FORTRAN : public Language
     virtual int importDirective(Node *n);
     virtual int enumDeclaration(Node *n);
     virtual int enumvalueDeclaration(Node *n);
-    
+    virtual int staticmemberfunctionHandler(Node *n);
+    virtual int staticmembervariableHandler(Node *n);
+
 
     virtual String *makeParameterName(Node *n, Parm *p, int arg_num,
                                       bool is_setter = false) const;
@@ -348,7 +350,7 @@ void FORTRAN::write_module()
         Printv(out, "\n"
                     " end interface\n", NULL);
     }
-    
+
     Printv(out, " ! TYPES\n",
                 f_types,
                 "\n"
@@ -383,7 +385,7 @@ int FORTRAN::functionWrapper(Node *n)
     // >>> INITIALIZE
 
     // Create wrapper name, taking into account overloaded functions
-    String* wname  = Copy(Swig_name_wrapper(symname));
+    String* wname = Copy(Swig_name_wrapper(symname));
     const bool is_overloaded = Getattr(n, "sym:overloaded");
     if (is_overloaded)
     {
@@ -416,6 +418,15 @@ int FORTRAN::functionWrapper(Node *n)
     Setattr(n, "wrap:name", wname);
     Setattr(n, "imfuncname", imfuncname);
     Delete(imfuncname);
+
+    // Update parameter names for static variables
+    // Otherwise, argument names will be like "BaseClass::i"
+    String* staticName = Getattr(n, "staticmembervariableHandler:sym:name");
+    if (staticName && ParmList_len(parmlist))
+    {
+        assert(ParmList_len(parmlist) == 1);
+        Setattr(parmlist, "name", staticName);
+    }
 
     // A new wrapper function object
     Wrapper* f = NewWrapper();
@@ -837,40 +848,48 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     else if (is_wrapping_class())
     {
         // Get aliased member function name
-        String* alias = Getattr(n, "fortran:membername");
+        String* alias = Copy(Getattr(n, "fortran:membername"));
 
-        if (!alias)
-        {
-            // This can happen when class member or static data is exposed?
-            String* varname = Getattr(n, "membervariableHandler:sym:name");
-            if (!varname)
-            {
-                varname = Getattr(n, "staticmemberfunctionHandler:sym:name");
-            }
-            if (varname && Getattr(n, "memberset"))
-            {
-                alias = Swig_name_set(getNSpace(), varname);
-            }
-            else if (varname && Getattr(n, "memberget"))
-            {
-                alias = Swig_name_get(getNSpace(), varname);
-            }
-        }
+         if (alias)
+         {
+             // Print remapping
+            bool is_static = Getattr(n, "staticmemberfunctionHandler:sym:name") ||
+                             Getattr(n, "staticmembervariableHandler:sym:name");
 
-        if (alias)
-        {
-            // Print remapping
-            Printv(f_methods,
-                   "  procedure :: ", alias, " => ", imfuncname, "\n",
-                   NULL);
+            char prefix[5] = {0};
+            if (Getattr(n, "staticmembervariableHandler:sym:name"))
+            {
+                // Member variable, rename the methods to set_ or get_
+                String* sym_name = Getattr(n, "sym:name");
+                assert(Len(sym_name) > 3);
+
+                char* c = Char(sym_name);
+                strncpy(prefix, c, 4);
+            }
+
+            if (is_static)
+            {
+                // Static member function
+                Printv(f_methods,
+                       "  procedure, nopass :: ", prefix, alias, " => ", imfuncname, "\n",
+                       NULL);
+            }
+            else
+            {
+                Printv(f_methods,
+                       "  procedure :: ", prefix, alias, " => ", imfuncname, "\n",
+                       NULL);
+            }
             Delete(alias);
         }
         else
         {
-            //Swig_print_node(n);
-            Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
-                    "Static class members and data are not implemented.\n",
-                    SwigType_namestr(Getattr(n, "sym:name")));
+            // This can happen when class member or static data is exposed?
+            if (!Getattr(n, "membervariableHandler:sym:name"))
+            {
+                Swig_print_node(n);
+                 assert(0);
+             }
         }
     }
     else if (is_overloaded)
@@ -999,7 +1018,7 @@ int FORTRAN::classHandler(Node *n)
         print_wrapped_line(f_types, First(kv.item), line_length);
         Printv(f_types, "\n", NULL);
     }
-    
+
     // Close out the type
     Printv(f_types, " end type\n",
                     NULL);
@@ -1069,7 +1088,7 @@ int FORTRAN::destructorHandler(Node* n)
                NULL);
 
         // Add the 'final' implementation
-        Printv(f_proxy, 
+        Printv(f_proxy,
            "  subroutine ", imfuncname, "(self)\n"
            "   use, intrinsic :: ISO_C_BINDING\n"
            "   type(", classname, ") :: self\n"
@@ -1081,7 +1100,7 @@ int FORTRAN::destructorHandler(Node* n)
         // Add implementation
         Delete(imfuncname);
     }
-    
+
     return SWIG_OK;
 }
 
@@ -1152,7 +1171,7 @@ int FORTRAN::enumDeclaration(Node *n)
     {
         // End enumeration
         Printv(f_types, " end enum\n", NULL);
-        
+
         // Make the enum values public
         Printv(f_public, " public :: ", NULL);
         print_wrapped_line(f_public, First(d_enumvalues), 11);
@@ -1181,7 +1200,7 @@ int FORTRAN::enumvalueDeclaration(Node *n)
         // Implicit enum value (no value specified: PREVIOUS + 1)
         value = Getattr(n, "enumvalueex");
     }
-    
+
     if (name && value)
     {
         Append(d_enumvalues, name);
@@ -1212,6 +1231,26 @@ int FORTRAN::constantWrapper(Node *n)
 
 //---------------------------------------------------------------------------//
 // HELPER FUNCTIONS
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Extra things for static member functions
+ */
+int FORTRAN::staticmemberfunctionHandler(Node *n) {
+    Setattr(n, "fortran:membername", Getattr(n, "sym:name"));
+    Language::staticmemberfunctionHandler(n);
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Extra things for static member variables
+ */
+int FORTRAN::staticmembervariableHandler(Node *n) {
+    Setattr(n, "fortran:membername", Getattr(n, "sym:name"));
+    Language::staticmembervariableHandler(n);
+    return SWIG_OK;
+}
+
 //---------------------------------------------------------------------------//
 /*!
  * Get a typemap that should already be attached.
@@ -1261,7 +1300,7 @@ String* FORTRAN::get_typemap_out(
 //---------------------------------------------------------------------------//
 /*!
  * \brief Returns a new string for a typemap that accepts no arguments
- * 
+ *
  * If 'attributes' is null, we assume the typemap has already been bound.
  * Otherwise we call Swig_typemap_lookup to bind to the given attributes.
  *
@@ -1322,7 +1361,7 @@ String* FORTRAN::get_typemap(
         SwigType *type = Getattr(n, "type");
         tm = NewStringf("SWIGTYPE%s", SwigType_manglestr(type));
         Swig_warning(warning,
-                     Getfile(n), Getline(n), 
+                     Getfile(n), Getline(n),
                      "No '%s' typemap defined for %s\n", tmname,
                      SwigType_str(type, 0));
         // Save the mangled typemap
@@ -1379,10 +1418,10 @@ bool FORTRAN::substitute_classname(SwigType *pt, String *tm)
 #if 0
     Printf(stdout, "calling substitute_classname(%s, %s)\n", pt, tm);
 #endif
-    
+
     SwigType *type = Copy(SwigType_typedef_resolve_all(pt));
     SwigType *strippedtype = SwigType_strip_qualifiers(type);
-        
+
     if (Strstr(tm, "$fclassname"))
     {
         substitute_classname_impl(strippedtype, tm, "$fclassname");
