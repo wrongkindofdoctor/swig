@@ -7,7 +7,7 @@
  */
 //---------------------------------------------------------------------------//
 
-#define FORTRANKW(x) %keywordwarn("'" `x` "' is a Fortran keyword, renaming to '" `x` "_'", rename="%s_")  `x`
+#define FORTRANKW(x) %keywordwarn("'" `x` "' is a Fortran keyword")  `x`
 
 // FORTRAN 77
 FORTRANKW(assign);
@@ -78,8 +78,8 @@ FORTRANKW(write);
 // FORTRANKW(sequence);
 // FORTRANKW(target);
 // FORTRANKW(use);
-FORTRANKW(while);
-//FORTRANKW(where);
+// FORTRANKW(while);
+// FORTRANKW(where);
 
 // Fortran 95
 // FORTRANKW(elemental);
