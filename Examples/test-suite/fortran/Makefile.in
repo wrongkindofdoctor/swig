@@ -47,10 +47,9 @@ CPP_TEST_CASES = cpp_basic
 # Runs the testcase.
 run_testcase_cpp = \
 	if test -f $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX); then \
-	  if $(FORTRAN); then \
-	    $(COMPILETOOL) $(FORTRAN) $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX) -c && \
+	    $(COMPILETOOL) $(FORTRAN) $*.f90 -c; \
+	    $(COMPILETOOL) $(FORTRAN) $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX) -c; \
 	    $(COMPILETOOL) $(FORTRAN) -o $*_runme $(SCRIPTPREFIX)$*_runme.@OBJEXT@ $*.a; \
-	  fi && \
 	  env LD_LIBRARY_PATH=.:$$LD_LIBRARY_PATH $(RUNTOOL) ./$*_runme; \
 	fi
 
