@@ -2064,6 +2064,37 @@ go_clean:
 	rm -f *.@OBJEXT@ *.[568] *.a *@SO@
 
 ##################################################################
+#####                      Fortran                          ######
+##################################################################
+FORTRAN = @FORTRAN@
+SWIGFORT = $(SWIG) -fortran
+
+
+fortran: $(SRCDIR_SRCS)
+	$(SWIGFORT) $(SWIGOPT) -o $(ISRCS) $(INTERFACEPATH)
+	$(CC) -c $(CCSHARED) $(CPPFLAGS) $(CFLAGS) $(EXTRA_CFLAGS) $(SRCDIR_SRCS) $(ISRCS) $(INCLUDES)
+	$(LDSHARED) $(CFLAGS) $(LDFLAGS) $(EXTRA_LDFLAGS) $(OBJS) $(IOBJS) $(LIBS) -o $(FORTRANLIBPREFIX)$(TARGET)$(SO)
+
+fortran_cpp: $(SRCDIR_SRCS)
+	echo $(SRCDIR_SRCS)
+	$(SWIGFORT) $(SWIGOPT) -c++ -o $(ISRCS) $(INTERFACEPATH)
+	$(CXX) -c $(CCSHARED) $(CPPFLAGS) $(CFLAGS) $(EXTRA_CFLAGS) $(SRCDIR_CXXSRCS) $(ISRCS) $(INCLUDES)
+	$(CXXSHARED) $(CFLAGS) $(LDFLAGS) $(EXTRA_LDFLAGS) $(OBJS) $(IOBJS) $(LIBS) -o $(FORTRANLIBPREFIX)$(TARGET)$(SO)
+	$(FORTRAN) -c $(TARGET).f90 -o $(TARGET)_fort.o
+
+fortran_run: $(SRCDIR_SRCS)
+	env LD_LIBRARY_PATH=$$PWD $(RUNTOOL) ./$(RUNME) $(RUNPIPE)
+
+fortran_compile: $(SRCDIR_SRCS)
+	$(COMPILETOOL) $(FORTRAN) $(FORTFLAGS) $(TARGET)_fort.o $(FORTRANLIBPREFIX)$(TARGET)$(SO) $(addprefix $(SRCDIR),$(FORTSRCS))
+
+fortran_clean:
+	rm -f *.mod *_wrap* *.o *$(SO) *.f90
+	rm -f $(RUNME)
+
+
+
+##################################################################
 #####                         D                             ######
 ##################################################################
 

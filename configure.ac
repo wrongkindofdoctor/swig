@@ -2652,6 +2652,36 @@ AC_SUBST(GCCGOOPT)
 AC_SUBST(GOVERSIONOPTION)
 
 #----------------------------------------------------------------
+# Look for Fortran
+#----------------------------------------------------------------
+AC_ARG_WITH(fortran, AS_HELP_STRING([--without-fortran], [Disable Fortran])
+AS_HELP_STRING([--with-fortran=path], [Set location of Fortran compiler]),
+[FORTRANBIN="$withval"], [FORTRANBIN="$alllang_default"])
+
+if test x"${FORTRANBIN}" = xno; then
+  AC_MSG_NOTICE([Disabling Fortran])
+  FORTRAN=
+  FC=
+else
+
+  if test "x$FORTRANBIN" = xyes; then
+    AC_CHECK_PROGS(FORTRAN, gfortran)
+  else
+    FORTRAN="$FORTRAN"
+  fi
+  FC=FORTRAN
+
+  if test -n "$FORTRAN" ; then
+      # This is where version or feature checking should go
+      AC_MSG_NOTICE([No version or capablity checks being performed for Fortran compiler])
+  fi
+fi
+
+AC_SUBST(FC)
+AC_SUBST(FORTRAN)
+
+
+#----------------------------------------------------------------
 # Look for D
 #----------------------------------------------------------------
 
@@ -2909,6 +2939,12 @@ if test -z "$DDEFAULTVERSION" ; then
 fi
 AC_SUBST(SKIP_D)
 
+SKIP_FORTRAN=
+if test -z "$FORTRAN" ; then
+    SKIP_FORTRAN="1"
+fi
+AC_SUBST(SKIP_FORTRAN)
+
 #----------------------------------------------------------------
 # Additional language dependencies
 #----------------------------------------------------------------
@@ -3032,6 +3068,7 @@ AC_CONFIG_FILES([
     Examples/test-suite/uffi/Makefile
     Examples/test-suite/r/Makefile
     Examples/test-suite/go/Makefile
+    Examples/test-suite/fortran/Makefile
     Source/Makefile
     Tools/javascript/Makefile
 ])
@@ -3102,6 +3139,7 @@ test -n "$SKIP_RUBY"		|| langs="${langs}ruby "
 test -n "$SKIP_SCILAB"		|| langs="${langs}scilab "
 test -n "$SKIP_TCL"		|| langs="${langs}tcl "
 test -n "$SKIP_UFFI"		|| langs="${langs}uffi "
+test -n "$SKIP_FORTRAN"		|| langs="${langs}fortran "
 
 echo "
 The SWIG test-suite and examples are configured for the following languages:
