@@ -1,19 +1,19 @@
 <html>
 <head>
-<title>SWIG:Examples:python:simple</title>
+<title>SWIG:Examples:fortran:simple</title>
 </head>
 
 <body bgcolor="#ffffff">
 
 
-<tt>SWIG/Examples/python/simple/</tt>
+<tt>SWIG/Examples/fortran/simple/</tt>
 <hr>
 
-<H2>Simple Python Example</H2>
+<H2>Simple Fortran Example</H2>
 
 <p>
-This example illustrates how you can hook Python to a very simple C program containing
-a function and a global variable.
+This example illustrates how you can hook Fortran to a very simple C program
+containing a function and a global variable.
 
 <h2>The C Code</h2>
 
@@ -57,37 +57,46 @@ extern double Foo;
 <h2>Compilation</h2>
 
 <ol>
-<li><tt>swig -python <a href="example.i">example.i</a></tt>
+<li><tt>swig -fortran <a href="example.i">example.i</a></tt>
 <p>
 <li>Compile <tt><a href="example_wrap.c">example_wrap.c</a></tt> and <tt><a href="example.c">example.c</a></tt>
-to create the extension <tt>examplemodule.so</tt>. 
+to create the extension <tt>example.so</tt>. 
 </ol>
 
 <h2>Using the extension</h2>
 
-Click <a href="runme.py">here</a> to see a script that calls our C functions from Python.
+Click <a href="runme.f90">here</a> to see a script that calls our C functions
+from Fortran.
 
 <h2>Key points</h2>
 
 <ul>
-<li>Use the <tt>import</tt> statement to load your extension module from Python. For example:
+<li>Use the <tt>import</tt> statement to load your module from Fortran. For example:
 <blockquote>
 <pre>
-import example
+use example
 </pre>
 </blockquote>
 
-<li>C functions work just like Python functions. For example:
+<li>C functions work similar to Fortran functions and subroutines. For example:
 <blockquote>
 <pre>
-g = example.gcd(42,105)
+g = gcd(42,105)
 </pre>
 </blockquote>
+Void C functions are mapped to Fortran subroutines, while C functions that
+return a value are mapped to Fortran functions.
 
-<li>C global variables are accessed through a special variable called 'cvar'. For example:
+<li>C global variables are accessed through get/set accessor routines. For example:
 <blockquote>
 <pre>
-a = example.cvar.Foo
+a = get_Foo()
+</pre>
+</blockquote>
+or
+<blockquote>
+<pre>
+call set_Foo(a)
 </pre>
 </blockquote>
 </ul>

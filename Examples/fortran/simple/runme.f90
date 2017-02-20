@@ -1,4 +1,4 @@
-program simple
+program simple_runme
   use example
 
   implicit none

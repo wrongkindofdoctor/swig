@@ -81,13 +81,14 @@ like this:
 Note: when creating a C++ extension, you must run SWIG with the <tt>-c++</tt> option like this:
 <blockquote>
 <pre>
-% swig -c++ -python example.i
+% swig -c++ -fortran example.i
 </pre>
 </blockquote>
 
-<h2>A sample Python script</h2>
+<h2>A sample Fortran program</h2>
 
-Click <a href="runme.py">here</a> to see a script that calls the C++ functions from Python.
+Click <a href="runme.f90">here</a> to see a script that calls the C++ functions
+from Fortran.
 
 <h2>Key points</h2>
 
@@ -96,60 +97,39 @@ Click <a href="runme.py">here</a> to see a script that calls the C++ functions f
 
 <blockquote>
 <pre>
-c = example.new_Circle(10.0)
+type(circle) :: c
+...
+call c%create(10.0_8)
 </pre>
 </blockquote>
 
 <p>
-<li>Member variables of the C++ class are wrapped as attributes of the Python class.
-For example:
+<li>Member functions are invoked as you would expect:
 
 <blockquote>
 <pre>
-c.x = 15   # Set member data
-x = c.x    # Get member data
+write(*,*) "The area is ", c%area()
 </pre>
 </blockquote>
 
 <p>
-<li>Member function are invoked as you would expect:
+<li>To invoke a destructor, simply call <code>release()</code> on the object:
 
 <blockquote>
 <pre>
-print "The area is ", c.area()
+call  c%release()    # Deletes a shape
 </pre>
 </blockquote>
 
 <p>
-<li>To invoke a destructor, simply call <code>del</code> on the object:
+<li>Static member variables are accessed through get/set routines. For example:
 
 <blockquote>
 <pre>
-del c    # Deletes a shape
+n = c%get_nshapes()     # Get a static data member
+call c%set_nshapes(13)  # Set a static data member
 </pre>
 </blockquote>
-
-<p>
-<li>Static member variables are wrapped as C global variables.  For example:
-
-<blockquote>
-<pre>
-n = example.cvar.Shape_nshapes     # Get a static data member
-example.cvar.Shapes_nshapes = 13   # Set a static data member
-</pre>
-</blockquote>
-
-</ul>
-
-<h2>General Comments</h2>
-
-<ul>
-<li>SWIG <b>does</b> know how to properly perform upcasting of objects in
-an inheritance hierarchy (including multiple inheritance).  Therefore
-it is perfectly safe to pass an object of a derived class to any
-function involving a base class.
-
-<li>C++ Namespaces - %nspace isn't yet supported for Python.
 
 </ul>
 
