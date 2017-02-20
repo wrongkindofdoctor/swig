@@ -17,6 +17,21 @@
 #include <stdexcept>
 %}
 
+
+%fragment("StdStringCopyout", "header") {
+
+// Fill a Fortran string from a std::string; with whitespace after
+void std_string_copyout(const std::string& str, char* s, size_t count)
+{
+    if (str.size() > count)
+        throw std::range_error("string size too small");
+
+    s = std::copy(str.begin(), str.end(), s);
+    std::fill_n(s, count - str.size(), ' ');
+}
+
+}
+
 namespace std
 {
 class string
@@ -34,6 +49,8 @@ class string
     %apply (char* STRING, int SIZE) {
         (const_pointer s, size_type count),
         (pointer s, size_type count) };
+
+    %fragment("StdStringCopyout");
 
     // >>> Construct and assign
 
@@ -71,12 +88,9 @@ class string
     // spaces so that Fortran 'trim' will work.
     void copy_to(pointer s, size_type count)
     {
-        if ($self->size() > count)
-            throw std::range_error("copy_to string is too small");
-
-        s = std::copy($self->begin(), $self->end(), s);
-        std::fill_n(s, count - $self->size(), ' ');
+        std_string_copyout(*$self, s, count);
     }
+
 } // end %extend
 
 };

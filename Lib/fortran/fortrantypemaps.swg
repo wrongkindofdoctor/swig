@@ -278,6 +278,8 @@ FORTRAN_EQUIV(size_t, std::size_t);
 %typemap(fin)    char* "$1_name"
 
 // Automatically add "size" parameter from a Fortran array
+%typemap(fin, noblock=1) (char* STRING, int SIZE), (const char* STRING, int SIZE)
+{ $1_name, len($1_name) }
 %typemap(fin, noblock=1) (char* STRING, int SIZE)
 { $1_name, len($1_name) }
 
