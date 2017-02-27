@@ -284,5 +284,37 @@ FORTRAN_EQUIV(size_t, std::size_t);
 { $1_name, len($1_name) }
 
 //---------------------------------------------------------------------------//
+// ENUMS
+//---------------------------------------------------------------------------//
+
+%typemap(ctype, out="int")  enum SWIGTYPE
+    %{int*%}
+%typemap(in)     enum SWIGTYPE
+    %{$1 = ($1_ltype)(*$input);%}
+%typemap(out)    enum SWIGTYPE, const enum SWIGTYPE* 
+    %{$result = $1;%}
+
+#define CTYPE enum SWIGTYPE
+#define FTYPE "integer(C_INT)"
+  %typemap(out) CTYPE, const CTYPE*
+    %{$result = $1;%}
+  %typemap(out) const CTYPE&
+    %{$result = *$1;%}
+  %typemap(out) CTYPE&
+    %{
+    #error "Can't return primitive types by mutable reference in Fortran"
+    %}
+  %typemap(imtype, out=FTYPE) CTYPE&
+    FTYPE ", intent(inout)"
+  %typemap(imtype, out=FTYPE) CTYPE, const CTYPE&
+    FTYPE ", intent(in)"
+#undef CTYPE
+#undef FTYPE
+
+%typemap(ftype)  enum SWIGTYPE "integer(kind($fclassname))"
+%typemap(fin)    enum SWIGTYPE "$1_name"
+%typemap(fout)   enum SWIGTYPE %{ $result = $imcall %}
+
+//---------------------------------------------------------------------------//
 // end of fortran/fortrantypemaps.swg
 //---------------------------------------------------------------------------//

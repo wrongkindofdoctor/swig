@@ -61,6 +61,8 @@ subroutine test_class()
     call made%release()
     write(0, *) "Done!"
 
+    call print_color(BLUE)
+
     ! If this is commented out and the '-final' code generation option is used,
     ! no memory leak will occur. Otherwise, the class is never deallocated.
     ! HOWEVER, if the class construction is done in 'program main' it actually

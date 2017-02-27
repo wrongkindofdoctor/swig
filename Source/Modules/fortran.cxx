@@ -26,6 +26,25 @@ const char* lstrip(const_String_or_char_ptr s)
 //! Maximum line length
 const int g_max_line_length = 128;
 
+//! Print a comma-joined line of items to the given output.
+int print_wrapped_line(String* out, Iterator it, int line_length)
+{
+    const char* prepend_comma = "";
+    for (; it.item; it = Next(it))
+    {
+        line_length += 2 + Len(it.item);
+        if (line_length >= g_max_line_length)
+        {
+            Printv(out, prepend_comma, NULL);
+            prepend_comma = "&\n    ";
+            line_length = 4;
+        }
+        Printv(out, prepend_comma, it.item, NULL);
+        prepend_comma = ", ";
+    }
+    return line_length;
+}
+
 }
 
 class FORTRAN : public Language
@@ -65,6 +84,8 @@ class FORTRAN : public Language
     bool d_in_constructor; //!< Whether we're being called inside a constructor
     bool d_in_destructor; //!< Whether we're being called inside a constructor
 
+    List* d_enumvalues; //!< List of enumerator values
+
   public:
     virtual void main(int argc, char *argv[]);
     virtual int top(Node *n);
@@ -74,6 +95,9 @@ class FORTRAN : public Language
     virtual int classHandler(Node *n);
     virtual int memberfunctionHandler(Node *n);
     virtual int importDirective(Node *n);
+    virtual int enumDeclaration(Node *n);
+    virtual int enumvalueDeclaration(Node *n);
+    
 
     virtual String *makeParameterName(Node *n, Parm *p, int arg_num,
                                       bool is_setter = false) const;
@@ -975,21 +999,9 @@ int FORTRAN::classHandler(Node *n)
         // Note: subtract 2 becaues this first line is an exception to
         // prepend_comma, added inside the iterator
         int line_length = 13 + Len(kv.key) + 4 - 2;
-        const char* prepend_comma = "";
 
         // Write overloaded procedure names
-        for (Iterator it = First(kv.item); it.item; it = Next(it))
-        {
-            line_length += 2 + Len(it.item);
-            if (line_length >= g_max_line_length)
-            {
-                Printv(f_types, prepend_comma, NULL);
-                prepend_comma = "&\n    ";
-                line_length = 4;
-            }
-            Printv(f_types, prepend_comma, it.item, NULL);
-            prepend_comma = ", ";
-        }
+        print_wrapped_line(f_types, First(kv.item), line_length);
         Printv(f_types, "\n", NULL);
     }
     
@@ -1115,6 +1127,82 @@ int FORTRAN::importDirective(Node *n)
 
     return Language::importDirective(n);
 }
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Wrap an enum declaration
+ *
+ */
+int FORTRAN::enumDeclaration(Node *n)
+{
+    String* symname = Getattr(n, "sym:name");
+    // Print the enumerator with a placeholder so we can use 'kind(ENUM)'
+    Printv(f_types, " enum, bind(c)\n",
+                    "  enumerator :: ", symname, " = -1\n", NULL);
+
+    d_enumvalues = NewList();
+    Append(d_enumvalues, symname);
+
+    // Emit enum items
+    Language::enumDeclaration(n);
+
+    // End enumeration
+    Printv(f_types, " end enum\n", NULL);
+    
+    // Make the enum values public
+    Printv(f_public, " public :: ", NULL);
+    print_wrapped_line(f_public, First(d_enumvalues), 11);
+    Printv(f_public, "\n", NULL);
+    Delete(d_enumvalues);
+
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Wrap a value in an enum
+ *
+ * This is called inside enumDeclaration
+ */
+int FORTRAN::enumvalueDeclaration(Node *n)
+{
+    Language::enumvalueDeclaration(n);
+    String* name = Getattr(n, "name");
+    String* value = Getattr(n, "enumvalue");
+
+    if (!value)
+    {
+        // Implicit enum value (no value specified: PREVIOUS + 1)
+        value = Getattr(n, "enumvalueex");
+    }
+    
+    if (name && value)
+    {
+        Append(d_enumvalues, name);
+        Printv(f_types, "  enumerator :: ", name, " = ", value, "\n", NULL);
+    }
+    else
+    {
+        Printv(stderr, "Enum is missing a name or value:", NULL);
+        Swig_print_node(n);
+    }
+
+    return SWIG_OK;
+}
+
+#if 0
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Wrap constant values
+ *
+ * This covers the following:
+ *  - \c #define
+ *  - \c %constant
+ */
+int FORTRAN::constantWrapper(Node *n)
+{
+}
+#endif
 
 //---------------------------------------------------------------------------//
 // HELPER FUNCTIONS
@@ -1310,63 +1398,44 @@ bool FORTRAN::substitute_classname(SwigType *pt, String *tm)
 void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
                                         const char *classnamespecialvariable)
 {
-    String *replacementname;
+    String *replacementname = NULL;
 
     if (SwigType_isenum(classnametype))
     {
-        replacementname = NewStringf("SWIGENUMTYPE%s",
-                                     SwigType_manglestr(classnametype));
-        Replace(replacementname, "enum ", "", DOH_REPLACE_ANY);
-#if 0
-        String *enumname = getEnumName(classnametype);
-        if (enumname)
+        Node *lookup = enumLookup(classnametype);
+        if (lookup)
         {
-            replacementname = Copy(enumname);
+            replacementname = Getattr(lookup, "sym:name");
         }
-        else
-        {
-            bool anonymous_enum = (Cmp(classnametype, "enum ") == 0);
-            if (anonymous_enum)
-            {
-                replacementname = NewString("int");
-            }
-            else
-            {
-                // An unknown enum - one that has not been parsed (neither a C enum forward reference nor a definition) or an ignored enum
-                replacementname = NewStringf("SWIGTYPE%s", SwigType_manglestr(classnametype));
-                Replace(replacementname, "enum ", "", DOH_REPLACE_ANY);
-            }
-        }
-#endif
     }
     else
     {
-        Node *n = classLookup(classnametype);
-        String *classname = NULL;
-        if (n)
+        Node* lookup = classLookup(classnametype);
+        if (lookup)
         {
-            classname = Getattr(n, "sym:name");
-        }
-
-        if (classname)
-        {
-            replacementname = Copy(classname);
-        }
-        else
-        {
-            // use $descriptor if SWIG does not know anything about this type.
-            // Note that any typedefs are resolved.
-            Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF,
-                         input_file, line_number,
-                         "No class type found for %s\n",
-                         SwigType_str(classnametype, 0));
-
-            replacementname = NewStringf("SWIGTYPE%s",
-                                         SwigType_manglestr(classnametype));
+            replacementname = Getattr(lookup, "sym:name");
         }
     }
-    Replaceall(tm, classnamespecialvariable, replacementname);
-    Delete(replacementname);
+
+    if (replacementname)
+    {
+        Replaceall(tm, classnamespecialvariable, replacementname);
+    }
+    else
+    {
+        // use $descriptor if SWIG does not know anything about this type.
+        // Note that any typedefs are resolved.
+        Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF,
+                     input_file, line_number,
+                     "No class type found for %s\n",
+                     SwigType_str(classnametype, 0));
+
+        replacementname = NewStringf("SWIGTYPE%s",
+                                     SwigType_manglestr(classnametype));
+
+        Replaceall(tm, classnamespecialvariable, replacementname);
+        Delete(replacementname);
+    }
 }
 
 //---------------------------------------------------------------------------//
