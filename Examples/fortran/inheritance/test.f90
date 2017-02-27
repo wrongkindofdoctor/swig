@@ -26,7 +26,7 @@ class(BaseClass), pointer :: base_p => null()
 call derived_a%create(4, 3.14)
 ASSERT(derived_a%foo() == 4*3.14)
 ASSERT(use_base(derived_a) == 4*3.14)
-call derived_a%print_()
+call derived_a%print()
 
 ! Derived B
 call derived_b%create(7, 5)

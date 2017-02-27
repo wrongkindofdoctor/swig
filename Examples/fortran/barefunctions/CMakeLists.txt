@@ -15,14 +15,14 @@ include(SwigModules)
 
 # Build C++ library
 include_directories(${CMAKE_PROJECT_SOURCE_DIR})
-add_library(barelib bare.cc)
+add_library(barelib bare.cxx)
 
 # Generate SWIG module
 MAKE_SWIG(MODULE bare
   DEPLIBS barelib)
 
 # Create test executable
-add_executable(test.exe test.f90)
+add_executable(test.exe runme.f90)
 # It depends on the compiled fortran module
 target_link_libraries(test.exe bare)
 
