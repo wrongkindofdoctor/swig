@@ -272,18 +272,22 @@ FORTRAN_EQUIV(size_t, std::size_t);
 #endif
 
 %define CHAR_TYPEMAP(CTYPE, FTYPE)
-    %typemap(fin, noblock=1) (CTYPE STRING, int SIZE),
-                             (CTYPE STRING, size_t SIZE)
+    %typemap(fin, noblock=1) (const char* STRING, int SIZE)
     { $1_name, len($1_name) }
+    
     %typemap(ctype)  CTYPE %{ CTYPE %}
-    %typemap(in)     CTYPE %{ $1 = $input; %}
+    %typemap(in)     CTYPE %{ $1 = ($1_ltype)$input; %}
+    %typemap(out)    CTYPE
+    %{
+    #error "Can't return strings in Fortran"
+    %}
     %typemap(imtype) CTYPE "character(" FTYPE ")"
     %typemap(ftype)  CTYPE "character(len=*)"
     %typemap(fin)    CTYPE "$1_name"
 %enddef
 
-CHAR_TYPEMAP(char*, "C_CHAR")
 CHAR_TYPEMAP(const char*, "C_CHAR")
+CHAR_TYPEMAP(char*, "C_CHAR")
 CHAR_TYPEMAP(unsigned char*, "C_CHAR")
 CHAR_TYPEMAP(const unsigned char*, "C_CHAR")
 
