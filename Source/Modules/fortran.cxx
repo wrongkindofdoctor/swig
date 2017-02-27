@@ -73,6 +73,7 @@ class FORTRAN : public Language
     virtual int constructorHandler(Node *n);
     virtual int classHandler(Node *n);
     virtual int memberfunctionHandler(Node *n);
+    virtual int importDirective(Node *n);
 
     virtual String *makeParameterName(Node *n, Parm *p, int arg_num,
                                       bool is_setter = false) const;
@@ -843,6 +844,7 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
             }
             else
             {
+                Swig_print_node(n);
                 assert(0);
             }
             // Print remapping
@@ -1087,6 +1089,35 @@ int FORTRAN::memberfunctionHandler(Node *n)
     return SWIG_OK;
 }
 
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Process an '%import' directive.
+ *
+ * Besides importing typedefs, this should add a "use MODULENAME" line inside
+ * the "module" block of the proxy code (before the "contains" line).
+ */
+int FORTRAN::importDirective(Node *n)
+{
+    String* modname = Getattr(n, "module");
+    if (modname)
+    {
+        // The actual module contents should be the first child
+        // of the provided %import node 'n'.
+        Node* mod = firstChild(n);
+        // Swig_print_node(mod);
+        assert(Strcmp(nodeType(mod), "module") == 0);
+
+        // I don't know if the module name could ever be different from the
+        // 'module' attribute of the import node, but just in case... ?
+        modname = Getattr(mod, "name");
+        Printv(f_imports, " use ", modname, "\n", NULL);
+    }
+
+    return Language::importDirective(n);
+}
+
+//---------------------------------------------------------------------------//
+// HELPER FUNCTIONS
 //---------------------------------------------------------------------------//
 /*!
  * Get a typemap that should already be attached.
