@@ -47,8 +47,9 @@ class string
 
     %apply int { (size_type count) };
     %apply (char* STRING, int SIZE) {
-        (const_pointer s, size_type count),
         (pointer s, size_type count) };
+    %apply (const char* STRING, int SIZE) {
+        (const_pointer s, size_type count) };
 
     %fragment("StdStringCopyout");
 

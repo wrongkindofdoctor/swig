@@ -272,7 +272,7 @@ FORTRAN_EQUIV(size_t, std::size_t);
 #endif
 
 %define CHAR_TYPEMAP(CTYPE, FTYPE)
-    %typemap(fin, noblock=1) (const char* STRING, int SIZE)
+    %typemap(fin, noblock=1) (CTYPE STRING, int SIZE)
     { $1_name, len($1_name) }
     
     %typemap(ctype)  CTYPE %{ CTYPE %}
