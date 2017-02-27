@@ -325,5 +325,21 @@ CHAR_TYPEMAP(const unsigned char*, "C_CHAR")
 %typemap(fout)   enum SWIGTYPE %{ $result = $imcall %}
 
 //---------------------------------------------------------------------------//
+// FUNCTION POINTERS
+//
+// To use these, you must explicitly map the function pointer such as:
+//
+//   %apply SWIGFUNPTR { void (*)(int n, const double* x, double* y) } ;
+// 
+//---------------------------------------------------------------------------//
+
+%typemap(imtype) SWIGFUNPTR "type(C_FUNPTR)"
+%typemap(ftype)  SWIGFUNPTR "type(C_FUNPTR), intent(in), value"
+%typemap(fin)    SWIGFUNPTR "$1_name"
+%typemap(fout)   SWIGFUNPTR %{
+   $result = $imcall
+%}
+
+//---------------------------------------------------------------------------//
 // end of fortran/fortrantypemaps.swg
 //---------------------------------------------------------------------------//
