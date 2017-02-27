@@ -839,14 +839,7 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         // Get aliased member function name
         String* alias = Getattr(n, "fortran:membername");
 
-        if (alias)
-        {
-            // Print remapping
-            Printv(f_methods,
-                   "  procedure :: ", alias, " => ", imfuncname, "\n",
-                   NULL);
-        }
-        else
+        if (!alias)
         {
             // This can happen when class member or static data is exposed?
             String* varname = Getattr(n, "membervariableHandler:sym:name");
@@ -854,29 +847,30 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
             {
                 varname = Getattr(n, "staticmemberfunctionHandler:sym:name");
             }
-            if (!varname)
-            {
-                Swig_print_node(n);
-                assert(varname);
-            }
-            if (Getattr(n, "memberset"))
+            if (varname && Getattr(n, "memberset"))
             {
                 alias = Swig_name_set(getNSpace(), varname);
             }
-            else if (Getattr(n, "memberget"))
+            else if (varname && Getattr(n, "memberget"))
             {
                 alias = Swig_name_get(getNSpace(), varname);
             }
-            else
-            {
-                Swig_print_node(n);
-                assert(0);
-            }
+        }
+
+        if (alias)
+        {
             // Print remapping
             Printv(f_methods,
                    "  procedure :: ", alias, " => ", imfuncname, "\n",
                    NULL);
             Delete(alias);
+        }
+        else
+        {
+            Swig_print_node(n);
+            Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
+                    "Static class members and data are not implemented.\n",
+                    SwigType_namestr(Getattr(n, "sym:name")));
         }
     }
     else if (is_overloaded)
