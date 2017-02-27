@@ -178,7 +178,7 @@ FORTRAN_EQUIV(size_t, std::size_t);
 //---------------------------------------------------------------------------//
 
 %typemap(fdata) SWIGTYPE %{
-  type(C_PTR), private :: ptr = C_NULL_PTR
+  type(C_PTR), public :: ptr = C_NULL_PTR
   logical, private :: own = .false.
 %}
 

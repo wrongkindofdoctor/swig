@@ -127,7 +127,7 @@
 
 %typemap(fdata) CONST TYPE
 %{
-  type(C_PTR), private :: ptr = C_NULL_PTR
+  type(C_PTR), public :: ptr = C_NULL_PTR
 %}
 
 %typemap(fcreate) CONST TYPE
