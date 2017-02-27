@@ -108,7 +108,7 @@
     %{$result = $1;%}
   %typemap(out) const CTYPE&
     %{$result = *$1;%}
-  %typemap(out) CTYPE&
+  %typemap(out) CTYPE&, CTYPE*
     %{
     #error "Can't return primitive types by mutable reference in Fortran"
     %}
@@ -271,17 +271,21 @@ FORTRAN_EQUIV(size_t, std::size_t);
 %typemap(fin) char "$1_name"
 #endif
 
-%typemap(ctype)  char* %{ char* %}
-%typemap(in)     char* %{ $1 = $input; %}
-%typemap(imtype) char* "character(C_CHAR)"
-%typemap(ftype)  char* "character(len=*)"
-%typemap(fin)    char* "$1_name"
+%define CHAR_TYPEMAP(CTYPE, FTYPE)
+    %typemap(fin, noblock=1) (CTYPE STRING, int SIZE),
+                             (CTYPE STRING, size_t SIZE)
+    { $1_name, len($1_name) }
+    %typemap(ctype)  CTYPE %{ CTYPE %}
+    %typemap(in)     CTYPE %{ $1 = $input; %}
+    %typemap(imtype) CTYPE "character(" FTYPE ")"
+    %typemap(ftype)  CTYPE "character(len=*)"
+    %typemap(fin)    CTYPE "$1_name"
+%enddef
 
-// Automatically add "size" parameter from a Fortran array
-%typemap(fin, noblock=1) (char* STRING, int SIZE), (const char* STRING, int SIZE)
-{ $1_name, len($1_name) }
-%typemap(fin, noblock=1) (char* STRING, int SIZE)
-{ $1_name, len($1_name) }
+CHAR_TYPEMAP(char*, "C_CHAR")
+CHAR_TYPEMAP(const char*, "C_CHAR")
+CHAR_TYPEMAP(unsigned char*, "C_CHAR")
+CHAR_TYPEMAP(const unsigned char*, "C_CHAR")
 
 //---------------------------------------------------------------------------//
 // ENUMS
@@ -294,9 +298,10 @@ FORTRAN_EQUIV(size_t, std::size_t);
 %typemap(out)    enum SWIGTYPE, const enum SWIGTYPE* 
     %{$result = $1;%}
 
+// Return-by-const-ref becomes return-by-value
 #define CTYPE enum SWIGTYPE
 #define FTYPE "integer(C_INT)"
-  %typemap(out) CTYPE, const CTYPE*
+  %typemap(out, out="CTYPE") CTYPE, const CTYPE*
     %{$result = $1;%}
   %typemap(out) const CTYPE&
     %{$result = *$1;%}

@@ -112,6 +112,7 @@ class FORTRAN : public Language
         , d_classtype(NULL)
         , d_in_constructor(false)
         , d_in_destructor(false)
+        , d_enumvalues(NULL)
     {
         /* * */
     }
@@ -1135,25 +1136,36 @@ int FORTRAN::importDirective(Node *n)
  */
 int FORTRAN::enumDeclaration(Node *n)
 {
+    // Symname is not present if the enum is not being wrapped
+    // (protected/private)
+    // XXX: do we also need to check for 'ignore'?
     String* symname = Getattr(n, "sym:name");
-    // Print the enumerator with a placeholder so we can use 'kind(ENUM)'
-    Printv(f_types, " enum, bind(c)\n",
-                    "  enumerator :: ", symname, " = -1\n", NULL);
 
-    d_enumvalues = NewList();
-    Append(d_enumvalues, symname);
+    if (symname)
+    {
+        // Print the enumerator with a placeholder so we can use 'kind(ENUM)'
+        Printv(f_types, " enum, bind(c)\n",
+                        "  enumerator :: ", symname, " = -1\n", NULL);
+
+        d_enumvalues = NewList();
+        Append(d_enumvalues, symname);
+    }
 
     // Emit enum items
     Language::enumDeclaration(n);
 
-    // End enumeration
-    Printv(f_types, " end enum\n", NULL);
-    
-    // Make the enum values public
-    Printv(f_public, " public :: ", NULL);
-    print_wrapped_line(f_public, First(d_enumvalues), 11);
-    Printv(f_public, "\n", NULL);
-    Delete(d_enumvalues);
+    if (symname)
+    {
+        // End enumeration
+        Printv(f_types, " end enum\n", NULL);
+        
+        // Make the enum values public
+        Printv(f_public, " public :: ", NULL);
+        print_wrapped_line(f_public, First(d_enumvalues), 11);
+        Printv(f_public, "\n", NULL);
+        Delete(d_enumvalues);
+        d_enumvalues = NULL;
+    }
 
     return SWIG_OK;
 }
