@@ -264,14 +264,20 @@ FORTRAN_EQUIV(size_t, std::size_t);
 //---------------------------------------------------------------------------//
 
 // Single characters: differentiate from char pointers by using value semantics
-#if 0
-%typemap(ctype, out="char") char %{char*%}
-%typemap(in)    char %{ $1 = *$input; %}
-%typemap(out)   char %{ $result = $1; %}
-%typemap(imtype, out="character") char "character, value"
-%typemap(ftype,  out="character") char "character, value, intent(in)"
-%typemap(fin) char "$1_name"
-#endif
+%typemap(ctype) char
+  %{ char %}
+%typemap(in)    char
+  %{ $1 = $input; %}
+%typemap(out)   char
+  %{ $result = $1; %}
+%typemap(imtype, out="character") char
+  "character, value"
+%typemap(ftype,  out="character") char
+  "character, value, intent(in)"
+%typemap(fin) char
+  "$1_name"
+%typemap(fout) char
+  %{ $result = $imcall %}
 
 %define CHAR_TYPEMAP(CTYPE, FTYPE)
     %typemap(fin, noblock=1) (CTYPE STRING, int SIZE)

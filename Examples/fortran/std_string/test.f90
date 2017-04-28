@@ -11,6 +11,7 @@ program main
     use, intrinsic :: ISO_C_BINDING
     use stdstr, only : print_str, halve_str, string
     implicit none
+    character :: simply_char
     character(len=16) :: fixedlen
     character(len=:), allocatable :: deferredlen
     character(len=:), allocatable :: varlen
@@ -28,6 +29,11 @@ program main
 
     call s%assign_from(trim(fixedlen))
     write(0, *) "Assigned from trimmed string:"
+    call print_str(s)
+
+    simply_char = s%get(1)
+    write(0, *) "Second character: ", simply_char
+    call s%set(0, 'X')
     call print_str(s)
 
     deferredlen = "short string"
