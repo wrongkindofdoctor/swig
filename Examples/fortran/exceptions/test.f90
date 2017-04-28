@@ -14,13 +14,13 @@ program main
     character(len=128) :: errmsg
 
     call alpha(-4)
-    ! ierr = get_swig_ierr()
-    ! if (ierr /= 0) then
-    !     call get_swig_serr(errmsg)
-    !     write(*,*) "Got error: ", errmsg
-    !     write(*,*) "Aborting..."
-    !     stop 0
-    ! endif
+    ierr = get_swig_ierr()
+    if (ierr /= 0) then
+        call get_swig_serr(errmsg)
+        write(*,*) "Got error: ", errmsg
+        write(*,*) "Aborting..."
+        stop 0
+    endif
 
     val = bravo()
 
