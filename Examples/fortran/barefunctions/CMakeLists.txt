@@ -5,26 +5,21 @@
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
 ##---------------------------------------------------------------------------##
 
-cmake_minimum_required(VERSION 3.0)
-project(bare_function CXX Fortran)
-
-# SWIG setup
-find_package(SWIG REQUIRED)
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../cmake")
-include(SwigModules)
-
 # Build C++ library
-include_directories(${CMAKE_PROJECT_SOURCE_DIR})
-add_library(barelib bare.cxx)
+INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
+ADD_LIBRARY(barelib bare.cxx)
 
 # Generate SWIG module
 MAKE_SWIG(MODULE bare
-  DEPLIBS barelib)
+    DEPLIBS barelib)
 
 # Create test executable
-add_executable(test.exe runme.f90)
+ADD_EXECUTABLE(bare_test.exe runme.f90)
 # It depends on the compiled fortran module
-target_link_libraries(test.exe bare)
+TARGET_LINK_LIBRARIES(bare_test.exe ${SWIG_MODULE_bare_REAL_NAME})
+
+# Create test
+ADD_TEST(NAME bare_test COMMAND bare_test.exe)
 
 ##---------------------------------------------------------------------------##
 ## end of bare_function/CMakeLists.txt
