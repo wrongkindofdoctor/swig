@@ -96,8 +96,10 @@
  *   (this is the 'out=CTYPE' argument)
  */
 %define FORTRAN_TYPEMAP(CTYPE, FTYPE)
+  // Mutable references and pointers are returned as actual pointers
   %typemap(ctype, out="CTYPE*") CTYPE*, CTYPE&
     %{CTYPE*%}
+  // Const references and pointers are returned by value
   %typemap(ctype, out="CTYPE") CTYPE, const CTYPE*, const CTYPE&, CTYPE[]
     %{CTYPE*%}
 
@@ -106,9 +108,11 @@
   %typemap(in) CTYPE*, CTYPE&, CTYPE[]
     %{$1 = $input;%}
 
-  %typemap(out) CTYPE, CTYPE&, CTYPE*, const CTYPE*
+  // Return original type or pointer
+  %typemap(out) CTYPE, CTYPE&, CTYPE*
     %{ $result = $1; %}
-  %typemap(out) const CTYPE&
+  // Convert pointer to value
+  %typemap(out) const CTYPE&, const CTYPE*
     %{ $result = *$1; %}
 
   // Note: FTYPE is a string, it gets preprocessor-concatenated to the
@@ -246,7 +250,7 @@ FORTRAN_EQUIV(size_t, std::size_t);
 
 %typemap(ctype)  SWIGTYPE*, SWIGTYPE& %{void*%}
 %typemap(in)     SWIGTYPE*, SWIGTYPE& %{ $1 = ($1_ltype)($input); %}
-%typemap(out)    SWIGTYPE*, SWIGTYPE& %{ $result = $1; %}
+%typemap(out)    SWIGTYPE*, SWIGTYPE& %{ $result = (void*)$1; %}
 %typemap(imtype, out="type(C_PTR)") SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&
     "class($fclassname)"
@@ -274,22 +278,26 @@ FORTRAN_EQUIV(size_t, std::size_t);
 //---------------------------------------------------------------------------//
 
 // Single characters: differentiate from char pointers by using value semantics
-%typemap(ctype) char
+%typemap(ctype) char, const char&
   %{ char %}
 %typemap(in)    char
   %{ $1 = $input; %}
+%typemap(in)    const char&
+  %{ $1 = &$input; %}
 %typemap(out)   char
   %{ $result = $1; %}
-%typemap(imtype, out="character") char
+%typemap(out)   const char&
+  %{ $result = *$1; %}
+%typemap(imtype, out="character") char, const char&
   "character, value"
-%typemap(ftype,  out="character") char
+%typemap(ftype,  out="character") char, const char&
   "character, value, intent(in)"
-%typemap(fin) char
+%typemap(fin) char, const char&
   "$1_name"
-%typemap(fout) char
+%typemap(fout) char, const char&
   %{ $result = $imcall %}
 
-%apply char { unsigned char };
+%apply char { unsigned char, signed char };
 
 %define CHAR_TYPEMAP(CTYPE, FTYPE)
     %typemap(fin, noblock=1) (CTYPE STRING, int SIZE)
