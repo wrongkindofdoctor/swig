@@ -867,7 +867,7 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         }
         else
         {
-            Swig_print_node(n);
+            //Swig_print_node(n);
             Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
                     "Static class members and data are not implemented.\n",
                     SwigType_namestr(Getattr(n, "sym:name")));
@@ -1190,7 +1190,7 @@ int FORTRAN::enumvalueDeclaration(Node *n)
     else
     {
         Printv(stderr, "Enum is missing a name or value:", NULL);
-        Swig_print_node(n);
+        //Swig_print_node(n);
     }
 
     return SWIG_OK;
