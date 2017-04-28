@@ -5,7 +5,7 @@ class BaseClass {
      static int i;
 
      static double f(int x) {
-         return 2.0;
+         return 2.0 * x;
      }
 
    private:

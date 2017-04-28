@@ -21,7 +21,7 @@ ASSERT(v1%get_i() == 3)
 ASSERT(v2%get_i() == 3)
 
 ASSERT(v1%f(1) == 2.0)
-ASSERT(v2%f(2) == 2.0)
+ASSERT(v2%f(2) == 4.0)
 
 call v1%release()
 call v2%release()

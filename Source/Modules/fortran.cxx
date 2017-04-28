@@ -848,63 +848,63 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     else if (is_wrapping_class())
     {
         // Get aliased member function name
-        String* alias = Copy(Getattr(n, "fortran:membername"));
+        String* alias = Getattr(n, "fortran:membername");
 
+        bool is_static = false;
         if (alias)
         {
-            // Print remapping
-            bool is_static = Getattr(n, "staticmemberfunctionHandler:sym:name") ||
-                    Getattr(n, "staticmembervariableHandler:sym:name");
-
-            char prefix[5] = {0};
+            String* new_alias = NULL;
             if (Getattr(n, "staticmembervariableHandler:sym:name"))
             {
                 // Member variable, rename the methods to set_ or get_
-                String* sym_name = Getattr(n, "sym:name");
-                assert(Len(sym_name) > 3);
+                is_static = true;
 
-                char* c = Char(sym_name);
-                strncpy(prefix, c, 4);
+                if (Getattr(n, "varset"))
+                {
+                    new_alias = Swig_name_set(getNSpace(), alias);
+                }
+                else if (Getattr(n, "varget"))
+                {
+                    new_alias = Swig_name_get(getNSpace(), alias);
+                }
+                else
+                {
+                    Swig_print_node(n);
+                }
             }
-
-            if (is_static)
+            else if (Getattr(n, "staticmemberfunctionHandler:sym:name"))
             {
-                // Static member function
-                Printv(f_methods,
-                       "  procedure, nopass :: ", prefix, alias, " => ", imfuncname, "\n",
-                       NULL);
+                is_static = true;
             }
             else
             {
-                Printv(f_methods,
-                       "  procedure :: ", prefix, alias, " => ", imfuncname, "\n",
-                       NULL);
-            }
-        }
-        else
-        {
-            String* varname = Getattr(n, "membervariableHandler:sym:name");
+                String* varname = Getattr(n, "membervariableHandler:sym:name");
 
-            if (varname && Getattr(n, "memberset"))
-            {
-                alias = Swig_name_set(getNSpace(), varname);
-            }
-            else if (varname && Getattr(n, "memberget"))
-            {
-                alias = Swig_name_get(getNSpace(), varname);
-            }
-            else
-            {
-                Swig_print_node(n);
-                assert(0);
+                if (varname && Getattr(n, "memberset"))
+                {
+                    new_alias = Swig_name_set(getNSpace(), varname);
+                }
+                else if (varname && Getattr(n, "memberget"))
+                {
+                    new_alias = Swig_name_get(getNSpace(), varname);
+                }
+                else
+                {
+                    // Standard function method
+                }
             }
 
-            // Print remapping
+            if (new_alias)
+            {
+                alias = new_alias;
+            }
+
             Printv(f_methods,
-                   "  procedure :: ", alias, " => ", imfuncname, "\n",
+                   "  procedure", (is_static ? ", nopass" : ""),
+                   " :: ", alias, " => ", imfuncname, "\n",
                    NULL);
 
-            Delete(alias);
+            Delete(new_alias);
         }
     }
     else if (is_overloaded)
@@ -1230,27 +1230,12 @@ int FORTRAN::enumvalueDeclaration(Node *n)
     return SWIG_OK;
 }
 
-#if 0
-//---------------------------------------------------------------------------//
-/*!
- * \brief Wrap constant values
- *
- * This covers the following:
- *  - \c #define
- *  - \c %constant
- */
-int FORTRAN::constantWrapper(Node *n)
-{
-}
-#endif
-
-//---------------------------------------------------------------------------//
-// HELPER FUNCTIONS
 //---------------------------------------------------------------------------//
 /*!
  * \brief Extra things for static member functions
  */
-int FORTRAN::staticmemberfunctionHandler(Node *n) {
+int FORTRAN::staticmemberfunctionHandler(Node *n)
+{
     Setattr(n, "fortran:membername", Getattr(n, "sym:name"));
     Language::staticmemberfunctionHandler(n);
     return SWIG_OK;
@@ -1260,12 +1245,15 @@ int FORTRAN::staticmemberfunctionHandler(Node *n) {
 /*!
  * \brief Extra things for static member variables
  */
-int FORTRAN::staticmembervariableHandler(Node *n) {
+int FORTRAN::staticmembervariableHandler(Node *n)
+{
     Setattr(n, "fortran:membername", Getattr(n, "sym:name"));
     Language::staticmembervariableHandler(n);
     return SWIG_OK;
 }
 
+//---------------------------------------------------------------------------//
+// HELPER FUNCTIONS
 //---------------------------------------------------------------------------//
 /*!
  * Get a typemap that should already be attached.
