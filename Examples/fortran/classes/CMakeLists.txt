@@ -1,28 +1,26 @@
 ##---------------------------------------------------------------------------##
-## File  : std_string/CMakeLists.txt
+## File  : classes/CMakeLists.txt
 ## Author: Seth R Johnson
-## Date  : Mon Dec 05 18:31:18 2016
+## Date  : Tue Dec 06 14:55:04 2016
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
 ##---------------------------------------------------------------------------##
 
-#SET(CMAKE_CXX_FLAGS "-std=c++11")
-
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(std_stringlib stdstr.cc)
+ADD_LIBRARY(classeslib classes.cc)
 
 # Generate SWIG module
-MAKE_SWIG(MODULE stdstr
-  DEPLIBS std_stringlib)
+MAKE_SWIG(MODULE classes
+  DEPLIBS classeslib)
 
 # Create test executable
-add_executable(std_string_test.exe test.f90)
+ADD_EXECUTABLE(classes_test.exe runme.f90)
 # It depends on the compiled fortran module
-target_link_libraries(std_string_test.exe ${SWIG_MODULE_stdstr_REAL_NAME})
+TARGET_LINK_LIBRARIES(classes_test.exe  ${SWIG_MODULE_classes_REAL_NAME})
 
 # Create test
-ADD_TEST(NAME std_string_test COMMAND std_string_test.exe)
+ADD_TEST(NAME classes_test COMMAND classes_test.exe)
 
 ##---------------------------------------------------------------------------##
-## end of std_string/CMakeLists.txt
+## end of classes/CMakeLists.txt
 ##---------------------------------------------------------------------------##

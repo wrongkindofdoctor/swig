@@ -1,5 +1,5 @@
 program class_runme
-  use example
+  use classes
 
   implicit none
 

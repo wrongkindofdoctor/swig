@@ -1,5 +1,5 @@
 program simple_runme
-  use example
+  use simple
 
   implicit none
 

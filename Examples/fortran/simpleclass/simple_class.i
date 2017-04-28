@@ -6,11 +6,11 @@
  * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
  */
 //---------------------------------------------------------------------------//
+%module simple_class
+
 %{
 #include "SimpleClass.hh"
 %}
-
-%module simple
 
 #ifdef SWIGFORTRAN
 

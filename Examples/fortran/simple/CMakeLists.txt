@@ -1,7 +1,7 @@
 ##---------------------------------------------------------------------------##
-## File  : std_string/CMakeLists.txt
+## File  : simple/CMakeLists.txt
 ## Author: Seth R Johnson
-## Date  : Mon Dec 05 18:31:18 2016
+## Date  : Mon Dec 05 09:05:31 2016
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
 ##---------------------------------------------------------------------------##
 
@@ -9,20 +9,20 @@
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(std_stringlib stdstr.cc)
+ADD_LIBRARY(simplelib simple.cc)
 
 # Generate SWIG module
-MAKE_SWIG(MODULE stdstr
-  DEPLIBS std_stringlib)
+MAKE_SWIG(MODULE simple
+  DEPLIBS simplelib)
 
 # Create test executable
-add_executable(std_string_test.exe test.f90)
+add_executable(simple_test.exe runme.f90)
 # It depends on the compiled fortran module
-target_link_libraries(std_string_test.exe ${SWIG_MODULE_stdstr_REAL_NAME})
+target_link_libraries(simple_test.exe ${SWIG_MODULE_simple_REAL_NAME})
 
 # Create test
-ADD_TEST(NAME std_string_test COMMAND std_string_test.exe)
+ADD_TEST(NAME simple_test COMMAND simple_test.exe)
 
 ##---------------------------------------------------------------------------##
-## end of std_string/CMakeLists.txt
+## end of simple/CMakeLists.txt
 ##---------------------------------------------------------------------------##

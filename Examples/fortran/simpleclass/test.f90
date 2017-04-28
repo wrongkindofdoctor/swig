@@ -13,7 +13,7 @@ program main
 end program
 
 subroutine test_class()
-    use simple
+    use simple_class
     implicit none
     type(SimpleClass) :: orig
     type(SimpleClass) :: made

@@ -1,9 +1,9 @@
 /* File : example.i */
-%module example
+%module classes
 
 %{
-#include "example.h"
+#include "classes.hh"
 %}
 
 /* Let's just grab the original header file here */
-%include "example.h"
+%include "classes.hh"

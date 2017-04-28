@@ -1,5 +1,5 @@
-/* File : example.i */
-%module example
+/* File : simple.i */
+%module simple
 
 %inline %{
 extern int    gcd(int x, int y);

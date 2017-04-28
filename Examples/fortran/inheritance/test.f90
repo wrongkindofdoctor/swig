@@ -5,7 +5,7 @@ endif
 
 
 program test_inheritance
-use classes
+use inheritance
 
 type(DerivedA), target :: derived_a
 type(DerivedB), target :: derived_b

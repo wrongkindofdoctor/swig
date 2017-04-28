@@ -5,29 +5,24 @@
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
 ##---------------------------------------------------------------------------##
 
-cmake_minimum_required(VERSION 3.0)
-project(inheritance CXX Fortran)
-
-# SWIG setup
-find_package(SWIG REQUIRED)
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/../cmake")
-include(SwigModules)
+SET(CMAKE_Fortran_FLAGS "-cpp ${CMAKE_Fortran_FLAGS}")
+SET(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # Build C++ library
-include_directories(${CMAKE_PROJECT_SOURCE_DIR})
-add_library(classeslib classes.cc)
-
-set(CMAKE_Fortran_FLAGS "-cpp ${CMAKE_Fortran_FLAGS}")
-set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
+INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
+ADD_LIBRARY(inheritancelib inheritance.cc)
 
 # Generate SWIG module
-MAKE_SWIG(MODULE classes
-  DEPLIBS classeslib)
+MAKE_SWIG(MODULE inheritance
+  DEPLIBS inheritancelib)
 
 # Create test executable
-add_executable(test.exe test.f90)
+add_executable(inheritance_test.exe test.f90)
 # It depends on the compiled fortran module
-target_link_libraries(test.exe classes)
+target_link_libraries(inheritance_test.exe ${SWIG_MODULE_inheritance_REAL_NAME})
+
+# Create test
+ADD_TEST(NAME inheritance_test COMMAND inheritance_test.exe)
 
 ##---------------------------------------------------------------------------##
 ## end of inheritance/CMakeLists.txt
