@@ -205,9 +205,17 @@ FORTRAN_EQUIV(size_t, std::size_t);
 // CLASSES BY VALUE
 //---------------------------------------------------------------------------//
 
+%fragment ("utility_header", "header") %{
+#ifdef __cplusplus
+#if __cplusplus >= 201103L
+#include <utility>
+#endif
+#endif
+%}
+
 %typemap(ctype)  SWIGTYPE %{void*%}
 %typemap(in)     SWIGTYPE %{ $1 = *($&1_ltype)($input); %}
-%typemap(out)    SWIGTYPE
+%typemap(out, fragment="utility_header")    SWIGTYPE
 #ifdef __cplusplus
 %{
 #if __cplusplus >= 201103L
