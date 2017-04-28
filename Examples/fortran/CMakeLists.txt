@@ -31,7 +31,7 @@ ADD_SUBDIRECTORY(${DIR}/inheritance)
 # ADD_SUBDIRECTORY(${DIR}/static_members)
 ADD_SUBDIRECTORY(${DIR}/std_string)
 ADD_SUBDIRECTORY(${DIR}/std_vector)
-# ADD_SUBDIRECTORY(${DIR}/thinvec)
+ADD_SUBDIRECTORY(${DIR}/thinvec)
 
 ##---------------------------------------------------------------------------##
 ## end of algorithm/CMakeLists.txt
