@@ -850,11 +850,11 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         // Get aliased member function name
         String* alias = Copy(Getattr(n, "fortran:membername"));
 
-         if (alias)
-         {
-             // Print remapping
+        if (alias)
+        {
+            // Print remapping
             bool is_static = Getattr(n, "staticmemberfunctionHandler:sym:name") ||
-                             Getattr(n, "staticmembervariableHandler:sym:name");
+                    Getattr(n, "staticmembervariableHandler:sym:name");
 
             char prefix[5] = {0};
             if (Getattr(n, "staticmembervariableHandler:sym:name"))
@@ -880,16 +880,31 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
                        "  procedure :: ", prefix, alias, " => ", imfuncname, "\n",
                        NULL);
             }
-            Delete(alias);
         }
         else
         {
-            // This can happen when class member or static data is exposed?
-            if (!Getattr(n, "membervariableHandler:sym:name"))
+            String* varname = Getattr(n, "membervariableHandler:sym:name");
+
+            if (varname && Getattr(n, "memberset"))
+            {
+                alias = Swig_name_set(getNSpace(), varname);
+            }
+            else if (varname && Getattr(n, "memberget"))
+            {
+                alias = Swig_name_get(getNSpace(), varname);
+            }
+            else
             {
                 Swig_print_node(n);
-                 assert(0);
-             }
+                assert(0);
+            }
+
+            // Print remapping
+            Printv(f_methods,
+                   "  procedure :: ", alias, " => ", imfuncname, "\n",
+                   NULL);
+
+            Delete(alias);
         }
     }
     else if (is_overloaded)
