@@ -4,15 +4,74 @@ See the RELEASENOTES file for a summary of changes in each release.
 Issue # numbers mentioned below can be found on Github. For more details, add
 the issue number to the end of the URL: https://github.com/swig/swig/issues/
 
-Version 3.0.12 (in progress)
-============================
+Version 4.0.0 (in progress)
+===========================
 
-2016-12-31: ajrheading1
-	    Issue #860 - Remove use of std::unary_function and std::binary_function
-            which is deprecated in C++11.
+2017-04-27: redbrain
+            Issue #974, Patch #976 - Fix preprocessor handling of macros with commas in a comment.
 
-2016-12-30: olly
-	    [PHP7] Register internal 'swig_runtime_data_type_pointer' constant
-	    as "CONST_PERSISTENT" to avoid segmentation fault on module unload.
-	    Fixes https://github.com/swig/swig/issues/859 reported by Timotheus
-	    Pokorra - thanks also to Javier Torres for a minimal reproducer.
+2017-04-25: jleveque
+            [Lua] #959 - Fix Visual Studio C4244 conversion warnings in Lua wrappers.
+
+2017-04-21: tamuratak
+            [Ruby] #964 - Add shared_ptr director typemaps.
+
+2017-04-20: wsfulton
+            [Ruby] #586, #935 Add assert for invalid NULL type parameter when calling SWIG_Ruby_NewPointerObj.
+
+2017-04-20: tamuratak
+            [Ruby] #930, #937 - Fix containers of std::shared_ptr.
+            Upcasting, const types (eg vector<shared_ptr<const T>>) and NULL/nullptr support added.
+
+2017-04-12: smarchetto
+            [Scilab] New parameter targetversion to specify the Scilab target version (5, 6, ..) for code generation
+            With Scilab 6 target specified, identifier names truncation is disabled (no longer necessary)
+
+2017-02-29: tamuratak
+            [Ruby] #917 - Add Enumerable module to all container class wrappers. It was missing
+            for std::list, std::multiset, std::unordered_multiset and std::unordered_map.
+
+2017-03-24: tamuratak
+            [Ruby] Fix #939 - Wrapping std::vector<bool> fix due to incorrect null checks
+            on VALUE obj.
+
+2017-03-17: wsfulton
+            [Go] Fix handling of typedef'd function pointers and typedef'd member function pointers
+            such as:
+
+              typedef int (*FnPtr_td)(int, int);
+              int do_op(int x, int y, FnPtr_td op);
+
+2017-03-16: wsfulton
+            Add support for member const function pointers such as:
+
+              int fn(short (Funcs::* parm)(bool)) const;
+
+            Also fix parsing of references/pointers and qualifiers to member
+            pointers such as:
+
+              int fn(short (Funcs::* const parm)(bool));
+              int fn(short (Funcs::* & parm)(bool));
+
+2017-03-10: wsfulton
+            Extend C++11 alternate function syntax parsing to support const and noexcept, such as:
+
+              auto sum1(int x, int y) const -> int { return x + y; }
+              auto sum2(int x, int y) noexcept -> int { return x + y; }
+
+2017-02-27: assambar
+            [C++11] Extend parser to support throw specifier in combination
+            with override and/or final.
+
+2017-02-10: tamuratak
+            [Ruby] #883 - Add support for C++11 hash tables:
+              std::unordered_map
+              std::unordered_set
+              std::unordered_multimap
+              std::unordered_multiset
+
+2017-02-08: jcsharp
+            [C#] #887 Improve std::vector<T> wrapper constructors -
+            Replace constructor taking ICollection with IEnumerable and also add IEnumerable<T>
+            constructor to avoid the boxing and unboxing overhead of the original constructor,
+            when the type parameter is a value type.

@@ -77,13 +77,24 @@ matrix:
       dist: trusty
     - compiler: gcc
       os: linux
-      env: SWIGLANG=octave SWIGJOBS=-j2 # 3.2
+      env: SWIGLANG=ocaml
+      sudo: required
+      dist: trusty
     - compiler: gcc
       os: linux
-      env: SWIGLANG=octave SWIGJOBS=-j2 VER=3.8
+      env: SWIGLANG=octave SWIGJOBS=-j2 # 3.8
+      sudo: required
+      dist: trusty
     - compiler: gcc
       os: linux
       env: SWIGLANG=octave SWIGJOBS=-j2 VER=4.0
+      sudo: required
+      dist: trusty
+    - compiler: gcc
+      os: linux
+      env: SWIGLANG=octave SWIGJOBS=-j2 VER=4.2 CPP11=1
+      sudo: required
+      dist: trusty
     - compiler: gcc
       os: linux
       env: SWIGLANG=perl5
@@ -222,6 +233,10 @@ matrix:
       sudo: required
       dist: trusty
     - os: linux
+      env: SWIGLANG=ruby SWIG_CC=gcc-5 SWIG_CXX=g++-5 CPP11=1
+      sudo: required
+      dist: trusty
+    - os: linux
       env: SWIGLANG=csharp SWIG_CC=gcc-6 SWIG_CXX=g++-6 CPP14=1
       sudo: required
       dist: trusty
@@ -231,6 +246,10 @@ matrix:
       dist: trusty
     - os: linux
       env: SWIGLANG=python SWIG_CC=gcc-6 SWIG_CXX=g++-6 CPP14=1
+      sudo: required
+      dist: trusty
+    - os: linux
+      env: SWIGLANG=ruby SWIG_CC=gcc-6 SWIG_CXX=g++-6 CPP14=1
       sudo: required
       dist: trusty
     - compiler: gcc
@@ -274,6 +293,10 @@ matrix:
       env: SWIGLANG=tcl
 
   allow_failures:
+    # Started failing after upgrade from Guile 2.0.14 to Guile 2.2.0
+    - compiler: clang
+      os: osx
+      env: SWIGLANG=guile
     # Lots of failing tests currently
     - compiler: gcc
       os: linux
