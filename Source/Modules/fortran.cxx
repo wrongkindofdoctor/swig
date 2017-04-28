@@ -1173,7 +1173,7 @@ int FORTRAN::enumDeclaration(Node *n)
 int FORTRAN::enumvalueDeclaration(Node *n)
 {
     Language::enumvalueDeclaration(n);
-    String* name = Getattr(n, "name");
+    String* name = Getattr(n, "sym:name");
     String* value = Getattr(n, "enumvalue");
 
     if (!value)

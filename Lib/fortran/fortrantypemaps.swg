@@ -279,6 +279,8 @@ FORTRAN_EQUIV(size_t, std::size_t);
 %typemap(fout) char
   %{ $result = $imcall %}
 
+%apply char { unsigned char };
+
 %define CHAR_TYPEMAP(CTYPE, FTYPE)
     %typemap(fin, noblock=1) (CTYPE STRING, int SIZE)
     { $1_name, len($1_name) }
