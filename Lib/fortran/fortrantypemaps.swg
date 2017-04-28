@@ -106,14 +106,14 @@
   %typemap(in) CTYPE*, CTYPE&, CTYPE[]
     %{$1 = $input;%}
 
-  %typemap(out) CTYPE, CTYPE&, const CTYPE*
+  %typemap(out) CTYPE, CTYPE&, CTYPE*, const CTYPE*
     %{ $result = $1; %}
   %typemap(out) const CTYPE&
     %{ $result = *$1; %}
 
   // Note: FTYPE is a string, it gets preprocessor-concatenated to the
   // dimension/intent string
-  %typemap(imtype)       CTYPE*, CTYPE[]
+  %typemap(imtype, out="type(C_PTR)") CTYPE*, CTYPE[]
     FTYPE ", dimension(*), intent(inout)"
   %typemap(imtype) const CTYPE*, const CTYPE[]
     FTYPE ", dimension(*), intent(in)"
@@ -124,7 +124,7 @@
   %typemap(imtype, out="type(C_PTR)") CTYPE&
     FTYPE ", intent(in)"
 
-  %typemap(ftype, out="type(C_PTR)")        CTYPE*, CTYPE[]
+  %typemap(ftype, out=FTYPE ", pointer") CTYPE*, CTYPE[]
     FTYPE ", dimension(:), intent(inout)"
   %typemap(ftype, out="type(C_PTR)")  const CTYPE*, const CTYPE[]
     FTYPE ", dimension(:), intent(in)"
@@ -137,6 +137,8 @@
     %{$1_name%}
   %typemap(fout) CTYPE, CTYPE[], const CTYPE*, const CTYPE&
     %{ $result = $imcall %}
+  %typemap(fout) CTYPE*
+    %{ call c_f_pointer($imcall, $result) %}
   %typemap(fout) CTYPE&
     %{ call c_f_pointer($imcall, $result) %}
 %enddef
