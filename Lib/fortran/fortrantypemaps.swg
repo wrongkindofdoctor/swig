@@ -110,10 +110,10 @@
 
   // Return original type or pointer
   %typemap(out) CTYPE, CTYPE&, CTYPE*
-    %{ $result = $1; %}
+    %{$result = $1;%}
   // Convert pointer to value
   %typemap(out) const CTYPE&, const CTYPE*
-    %{ $result = *$1; %}
+    %{$result = *$1;%}
 
   // Note: FTYPE is a string, it gets preprocessor-concatenated to the
   // dimension/intent string
@@ -140,11 +140,11 @@
   %typemap(fin)  CTYPE, CTYPE[], CTYPE*, CTYPE&, const CTYPE*, const CTYPE&
     %{$1_name%}
   %typemap(fout) CTYPE, CTYPE[], const CTYPE*, const CTYPE&
-    %{ $result = $imcall %}
+    %{$result = $imcall%}
   %typemap(fout) CTYPE*
-    %{ call c_f_pointer($imcall, $result) %}
+    %{call c_f_pointer($imcall, $result)%}
   %typemap(fout) CTYPE&
-    %{ call c_f_pointer($imcall, $result) %}
+    %{call c_f_pointer($imcall, $result)%}
 %enddef
 
 FORTRAN_TYPEMAP(bool       , "logical(C_BOOL)"     )
@@ -182,6 +182,26 @@ FORTRAN_EQUIV(size_t, std::size_t);
 %typemap(fout)   void %{call $imcall%}
 
 //---------------------------------------------------------------------------//
+// VOID POINTER TYPES
+//---------------------------------------------------------------------------//
+  
+// Mutable references and pointers are returned as actual pointers
+%typemap(ctype, out="void*") void*
+  %{void*%}
+%typemap(in) void
+  %{$1 = *$input;%}
+%typemap(out) void*
+  %{ $result = $1; %}
+%typemap(imtype) void*
+  "type(C_PTR)"
+%typemap(ftype) void*
+  "type(C_PTR)"
+%typemap(fin)  void*
+  %{$1_name%}
+%typemap(fout) void*
+  %{$result = $imcall%}
+
+//---------------------------------------------------------------------------//
 // PROXY CLASS DEFINITIONS
 //---------------------------------------------------------------------------//
 
@@ -209,16 +229,18 @@ FORTRAN_EQUIV(size_t, std::size_t);
 // CLASSES BY VALUE
 //---------------------------------------------------------------------------//
 
-%fragment ("utility_header", "header") %{
 #ifdef __cplusplus
+%fragment ("utility_header", "header") %{
 #if __cplusplus >= 201103L
 #include <utility>
 #endif
-#endif
 %}
+#else
+%fragment ("utility_header", "header") %{%}
+#endif
 
 %typemap(ctype)  SWIGTYPE %{void*%}
-%typemap(in)     SWIGTYPE %{ $1 = *($&1_ltype)($input); %}
+%typemap(in)     SWIGTYPE %{$1 = *($&1_ltype)($input);%}
 %typemap(out, fragment="utility_header")    SWIGTYPE
 #ifdef __cplusplus
 %{
@@ -250,7 +272,7 @@ FORTRAN_EQUIV(size_t, std::size_t);
 
 %typemap(ctype)  SWIGTYPE*, SWIGTYPE& %{void*%}
 %typemap(in)     SWIGTYPE*, SWIGTYPE& %{ $1 = ($1_ltype)($input); %}
-%typemap(out)    SWIGTYPE*, SWIGTYPE& %{ $result = (void*)$1; %}
+%typemap(out)    SWIGTYPE*, SWIGTYPE& %{ $result = $1; %}
 %typemap(imtype, out="type(C_PTR)") SWIGTYPE*, SWIGTYPE& "type(C_PTR), value"
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&
     "class($fclassname)"
@@ -354,18 +376,25 @@ CHAR_TYPEMAP(const unsigned char*, "C_CHAR")
 
 //---------------------------------------------------------------------------//
 // FUNCTION POINTERS
-//
-// To use these, you must explicitly map the function pointer such as:
-//
-//   %apply SWIGFUNPTR { void (*)(int n, const double* x, double* y) } ;
-// 
 //---------------------------------------------------------------------------//
 
-%typemap(imtype) SWIGFUNPTR "type(C_FUNPTR)"
-%typemap(ftype)  SWIGFUNPTR "type(C_FUNPTR), intent(in), value"
-%typemap(fin)    SWIGFUNPTR "$1_name"
-%typemap(fout)   SWIGFUNPTR %{
+%typemap(ctype)  SWIGTYPE (*)(ANY) %{void*%}
+%typemap(in)     SWIGTYPE (*)(ANY) %{ $1 = ($1_ltype)($input); %}
+%typemap(out)    SWIGTYPE (*)(ANY) %{ $result = $1; %}
+%typemap(imtype) SWIGTYPE (*)(ANY) "type(C_FUNPTR)"
+%typemap(ftype)  SWIGTYPE (*)(ANY) "type(C_FUNPTR), intent(in), value"
+%typemap(fin)    SWIGTYPE (*)(ANY) "$1_name"
+%typemap(fout)   SWIGTYPE (*)(ANY) %{
    $result = $imcall
+%}
+
+// Member function pointers are not available
+%apply SWIGTYPE (*)(ANY) { SWIGTYPE (CLASS::*) } ;
+%typemap(in) SWIGTYPE (CLASS::*) %{
+#error "Member function pointers are not available in Fortran"
+%}
+%typemap(out) SWIGTYPE (CLASS::*) %{
+#error "Member function pointers are not available in Fortran"
 %}
 
 //---------------------------------------------------------------------------//
