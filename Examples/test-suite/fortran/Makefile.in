@@ -22,7 +22,8 @@ include $(srcdir)/../common.mk
 
 
 # Override the test lists for now to avoid all of the failing tests
-C_TEST_CASES = integers
+C_TEST_CASES = integers \
+			   ret_by_value
 CPP_TEST_CASES = cpp_basic
 
 
@@ -49,7 +50,7 @@ run_testcase_cpp = \
 	if test -f $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX); then \
 	    $(COMPILETOOL) $(FORTRAN) $*.f90 -c; \
 	    $(COMPILETOOL) $(FORTRAN) $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX) -c; \
-	    $(COMPILETOOL) $(FORTRAN) -o $*_runme $(SCRIPTPREFIX)$*_runme.@OBJEXT@ $*.a; \
+	    $(COMPILETOOL) $(FORTRAN) -o $*_runme $(SCRIPTPREFIX)$*.@OBJEXT@ $(SCRIPTPREFIX)$*_runme.@OBJEXT@ $*.so; \
 	  env LD_LIBRARY_PATH=.:$$LD_LIBRARY_PATH $(RUNTOOL) ./$*_runme; \
 	fi
 
