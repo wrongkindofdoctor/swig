@@ -16,7 +16,7 @@
        (const double* arr, int count) };
 
 // Ignore function incompatible with Fortran language (return-by-nonconst-ref)
-%ignore get_something_rref;
+%ignore get_something_rptr;
 
 #endif
 

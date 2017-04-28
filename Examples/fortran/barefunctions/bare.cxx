@@ -39,6 +39,11 @@ const double& get_something_rcref(int x)
     return data[x];
 }
 
+double* get_something_rptr(int x)
+{
+    return data + x;
+}
+
 double& get_something_rref(int x)
 {
     return data[x];

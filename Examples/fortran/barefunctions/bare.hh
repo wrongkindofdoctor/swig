@@ -18,6 +18,7 @@ double get_something(int x);
 void get_something_ref(int x, double& y);
 void get_something_ptr(int x, double* y);
 
+double* get_something_rptr(int x);
 double& get_something_rref(int x);
 const double& get_something_rcref(int x);
 
