@@ -11,12 +11,9 @@
 #define SWIG_FORTRAN_STD_SIZETYPE int
 #endif
 
-%{
-#include <string>
-#include <algorithm>
-#include <stdexcept>
-%}
-
+%fragment("<algorithm>");
+%fragment("<stdexcept>");
+%fragment("<string>");
 
 %fragment("StdStringCopyout", "header") {
 

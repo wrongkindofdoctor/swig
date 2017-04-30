@@ -8,10 +8,10 @@
 //---------------------------------------------------------------------------//
 %module except;
 
-//%include <std_except>
+%include <std_except.i>
 
 %exception {
-    swig::fortran_delayed_exception_check();
+    swig::fortran_check_unhandled_exception();
     try
     {
         $action

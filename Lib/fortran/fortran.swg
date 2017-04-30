@@ -13,6 +13,8 @@
 
    %fortranprepend : Add code before the C++ function is called
    %fortranappend  : Add code after the C++ function is called
+   %fortranspec    : Add specifications (public, variables) to a module
+   %fortrancode    : Add proxy code to a module
  */
 
 #define %fortranprepend       %feature("fortranprepend")
@@ -20,6 +22,10 @@
 
 #define %fortranappend         %feature("fortranappend")
 #define %clearfortranappend    %feature("fortranappend","")
+
+#define %fortranspec           %insert("fortranspec")
+
+#define %fortrancode           %insert("fortran")
 
 //---------------------------------------------------------------------------//
 // CUSTOM TYPEMAP DESCRIPTIONS.
@@ -31,8 +37,8 @@
 %include "fortrankw.swg"
 
 //---------------------------------------------------------------------------//
-// EXCEPTION SUPPORT
-%include <exception.i>
+// FRAGMENTS
+%include "fragments.swg"
 
 //---------------------------------------------------------------------------//
 // end of fortran/fortran.swg

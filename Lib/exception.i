@@ -246,58 +246,6 @@ SWIGINTERN void SWIG_DThrowException(int code, const char *msg) {
 { SWIG_DThrowException(code, msg); return $null; }
 #endif // SWIGD
 
-#ifdef SWIGFORTRAN
-%{
-#include <string>
-#include <stdexcept>
-#include <algorithm>
-namespace swig
-{
-int fortran_exception_code = 0;
-std::string fortran_exception_str;
-
-SWIGINTERN void fortran_delayed_exception_check()
-{
-    if (fortran_exception_code != 0)
-        throw std::runtime_error("An unhandled exception occurred: "
-                                 + fortran_exception_str);
-}
-
-SWIGINTERN void fortran_store_exception(int code, const char *msg)
-{
-    fortran_exception_code = code;
-    fortran_exception_str = msg;
-}
-}
-%}
-
-%inline %{
-//! Get the error code from a thrown error
-int get_swig_ierr() { return swig::fortran_exception_code; }
-//! Get the string corresponding to an error
-void get_swig_serr(char* STRING, int SIZE)
-{
-    int minsize = std::min<int>(SIZE, swig::fortran_exception_str.size());
-
-    char* dst = STRING;
-    dst = std::copy(swig::fortran_exception_str.begin(),
-                    swig::fortran_exception_str.begin() + minsize,
-                    dst);
-    std::fill(dst, STRING + SIZE, ' ');
-}
-//! Clear an exception (after handling it as needed)
-void clear_swig_err()
-{
-    swig::fortran_exception_code = 0;
-    swig::fortran_exception_str.clear();
-}
-%}
-
-#define SWIG_exception(code, msg)\
-{ swig::fortran_store_exception(code, msg); return $null; }
-
-#endif // SWIGFORTRAN
-
 #ifdef __cplusplus
 /*
   You can use the SWIG_CATCH_STDEXCEPT macro with the %exception

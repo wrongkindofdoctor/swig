@@ -95,6 +95,7 @@ class FORTRAN : public Language
     virtual int classHandler(Node *n);
     virtual int memberfunctionHandler(Node *n);
     virtual int importDirective(Node *n);
+    virtual int insertDirective(Node *n);
     virtual int enumDeclaration(Node *n);
     virtual int enumvalueDeclaration(Node *n);
     virtual int staticmemberfunctionHandler(Node *n);
@@ -1156,6 +1157,33 @@ int FORTRAN::importDirective(Node *n)
 
     return Language::importDirective(n);
 }
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Process an '%insert' directive.
+ *
+ * This allows us to do custom insetrions into parts of the fortran module.
+ */
+int FORTRAN::insertDirective(Node *n)
+{
+    String *code = Getattr(n, "code");
+    String *section = Getattr(n, "section");
+
+    if (!ImportMode && d_use_proxy && (Cmp(section, "fortran") == 0))
+    {
+        Printv(f_proxy, code, NULL);
+    }
+    else if (!ImportMode && (Cmp(section, "fortranspec") == 0))
+    {
+        Printv(f_public, code, NULL);
+    }
+    else
+    {
+        return Language::insertDirective(n);
+    }
+    return SWIG_OK;
+}
+
 
 //---------------------------------------------------------------------------//
 /*!

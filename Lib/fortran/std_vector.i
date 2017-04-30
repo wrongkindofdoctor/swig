@@ -14,9 +14,11 @@
 
 %{
 #include <vector>
-#include <stdexcept>
-#include <algorithm>
 %}
+
+// Force inclusion of algorithm and stdexcept
+%fragment("<algorithm>");
+%fragment("<stdexcept>");
 
 namespace std
 {
