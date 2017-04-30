@@ -43,7 +43,7 @@
 // Insert the fortran integer definition
 %insert("fortranspec") {
  public :: SWIG_FORTRAN_ERROR_INT
- integer(C_INT), bind(C) :: SWIG_FORTRAN_ERROR_INT
+ integer(C_INT), bind(C) :: SWIG_FORTRAN_ERROR_INT = 0
 }
 
 // Declare the integer externally for C/C++ when stdexcept is included
