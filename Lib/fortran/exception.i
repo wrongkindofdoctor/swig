@@ -38,6 +38,8 @@
 // Allow the user to change the name of the error flag on the fortran side
 #ifndef SWIG_FORTRAN_ERROR_INT
 #define SWIG_FORTRAN_ERROR_INT ierr
+#define SWIG_FORTRAN_ERROR_STR serr
+#define SWIG_FORTRAN_ERROR_STRLEN 1024
 #endif
 
 #define SWIG_exception(code, msg)\
@@ -46,41 +48,61 @@
 // Insert the fortran integer definition (only if %included)
 %insert("fortranspec") {
  public :: SWIG_FORTRAN_ERROR_INT
+ public :: SWIG_FORTRAN_ERROR_STR
  integer(C_INT), bind(C) :: SWIG_FORTRAN_ERROR_INT = 0
+ character(kind=C_CHAR, len=SWIG_FORTRAN_ERROR_STRLEN), bind(C) :: SWIG_FORTRAN_ERROR_STR = ""
 }
 
 // Define SWIG integer error codes
 
 #ifndef SWIGIMPORTED
 %fragment("fortran_exception_impl", "header",
-          fragment="<algorithm>", fragment="<string>", fragment="<stdexcept>")
+          fragment="<string>", fragment="<algorithm>", fragment="<stdexcept>")
 {
 // External fortran-owned data that we save to
 #ifdef __cplusplus
 extern "C" {
 #endif
 extern int SWIG_FORTRAN_ERROR_INT;
+extern char SWIG_FORTRAN_ERROR_STR[SWIG_FORTRAN_ERROR_STRLEN];
 #ifdef __cplusplus
 };
 #endif
 
 namespace swig
 {
-// Message thrown by last unhandled exception
-std::string fortran_exception_str;
+// Stored exception message (XXX: is this safe if main() is fortran?)
+std::string fortran_last_exception_msg;
 
 // Call this function before any new action
 void fortran_check_unhandled_exception()
 {
     if (::SWIG_FORTRAN_ERROR_INT != 0)
-        throw std::runtime_error("An unhandled exception occurred: "
-                                 + fortran_exception_str);
+    {
+        throw std::runtime_error(
+                "An unhandled exception occurred: "
+                + fortran_last_exception_msg);
+    }
 }
 
+// Save an exception to the fortran error code and string
 void fortran_store_exception(int code, const char *msg)
 {
     ::SWIG_FORTRAN_ERROR_INT = code;
-    fortran_exception_str = msg;
+
+    // Save the message to a std::string first
+    fortran_last_exception_msg = msg;
+
+    std::size_t msg_size = std::min<std::size_t>(
+            fortran_last_exception_msg.size(),
+            SWIG_FORTRAN_ERROR_STRLEN);
+
+    // Copy to space-padded Fortran string
+    char* dst = SWIG_FORTRAN_ERROR_STR;
+    dst = std::copy(fortran_last_exception_msg.begin(),
+                    fortran_last_exception_msg.begin() + msg_size,
+                    dst);
+    std::fill(dst, SWIG_FORTRAN_ERROR_STR + SWIG_FORTRAN_ERROR_STRLEN, ' ');
 }
 } // end namespace swig
 };
@@ -99,23 +121,6 @@ void fortran_store_exception(int code, const char *msg);
 
 #ifndef SWIGIMPORTED
 %fragment("fortran_exception_impl");
-%fragment("<algorithm>");
-
-%inline %{
-
-void get_error_string(char* STRING, int SIZE)
-{
-    int minsize = std::min<int>(SIZE, swig::fortran_exception_str.size());
-
-    char* dst = STRING;
-    dst = std::copy(swig::fortran_exception_str.begin(),
-                    swig::fortran_exception_str.begin() + minsize,
-                    dst);
-    std::fill(dst, STRING + SIZE, ' ');
-}
-
-%}
-#else
 %fragment("fortran_exception", "header",
           fragment="fortran_exception_impl") {};
 #endif

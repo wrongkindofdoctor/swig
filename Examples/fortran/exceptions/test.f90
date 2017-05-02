@@ -10,15 +10,13 @@ program main
     use ISO_FORTRAN_ENV
     use except
     implicit none
-    character(len=128) :: errmsg
     integer :: val = 123
 
     write(*,*) "Making bad subroutine call"
     call alpha(-4)
 
     if (ierr /= 0) then
-        call get_error_string(errmsg)
-        write(*,*) "Got error ", ierr, ":", errmsg
+        write(*,*) "Got error ", ierr, ": ", trim(serr)
         ! stop 0
         write(*,*) "Recovering..."
         ! Clear error flag
