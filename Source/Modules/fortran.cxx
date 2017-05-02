@@ -1171,10 +1171,13 @@ int FORTRAN::insertDirective(Node *n)
 
     if (!ImportMode && d_use_proxy && (Cmp(section, "fortran") == 0))
     {
+        // Insert code into the body of the module (after "contains")
         Printv(f_proxy, code, NULL);
     }
     else if (!ImportMode && (Cmp(section, "fortranspec") == 0))
     {
+        // Insert code into the header of the module (alongside "public"
+        // methods)
         Printv(f_public, code, NULL);
     }
     else

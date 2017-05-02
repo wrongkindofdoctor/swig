@@ -40,32 +40,30 @@
 #define SWIG_FORTRAN_ERROR_INT ierr
 #endif
 
-// Insert the fortran integer definition
+#define SWIG_exception(code, msg)\
+{ swig::fortran_store_exception(code, msg); return $null; }
+
+// Insert the fortran integer definition (only if %included)
 %insert("fortranspec") {
  public :: SWIG_FORTRAN_ERROR_INT
  integer(C_INT), bind(C) :: SWIG_FORTRAN_ERROR_INT = 0
 }
 
-// Declare the integer externally for C/C++ when stdexcept is included
-%insert("header") {
+// Define SWIG integer error codes
+
+#ifndef SWIGIMPORTED
+%fragment("fortran_exception_impl", "header",
+          fragment="<algorithm>", fragment="<string>", fragment="<stdexcept>")
+{
+// External fortran-owned data that we save to
 #ifdef __cplusplus
 extern "C" {
 #endif
 extern int SWIG_FORTRAN_ERROR_INT;
 #ifdef __cplusplus
-}
+};
 #endif
-}
 
-%fragment("<stdexcept>");
-%fragment("<algorithm>");
-%fragment("<string>");
-
-// Define SWIG integer error codes
-%insert("runtime") "../swigerrors.swg"
-
-// Add SWIG wrapping functions for managing exceptions
-%insert("header") {
 namespace swig
 {
 // Message thrown by last unhandled exception
@@ -85,16 +83,25 @@ void fortran_store_exception(int code, const char *msg)
     fortran_exception_str = msg;
 }
 } // end namespace swig
-}
-
-#define SWIG_exception(code, msg)\
-{ swig::fortran_store_exception(code, msg); return $null; }
+};
+#else
+%fragment("fortran_exception_impl", "header") {
+namespace swig
+{
+// Functions are defined in an imported module
+void fortran_check_unhandled_exception();
+void fortran_store_exception(int code, const char *msg);
+} // end namespace swig
+};
+#endif
 
 //---------------------------------------------------------------------------//
-// FORTRAN ERROR ACCESSORS
-//---------------------------------------------------------------------------//
 
-%inline {
+#ifndef SWIGIMPORTED
+%fragment("fortran_exception_impl");
+%fragment("<algorithm>");
+
+%inline %{
 
 void get_error_string(char* STRING, int SIZE)
 {
@@ -107,7 +114,14 @@ void get_error_string(char* STRING, int SIZE)
     std::fill(dst, STRING + SIZE, ' ');
 }
 
-}
+%}
+#else
+%fragment("fortran_exception", "header",
+          fragment="fortran_exception_impl") {};
+#endif
+
+// Insert exception code
+%fragment("fortran_exception");
 
 //---------------------------------------------------------------------------//
 // end of fortran/exception.i
