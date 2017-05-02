@@ -296,7 +296,7 @@ FORTRAN_EQUIV(size_t, std::size_t);
                                      (const SWIGTYPE* ARRAY, int SIZE) };
 
 //---------------------------------------------------------------------------//
-// STRING TYPES
+// CHARACTER TYPES
 //---------------------------------------------------------------------------//
 
 // Single characters: differentiate from char pointers by using value semantics
@@ -310,16 +310,20 @@ FORTRAN_EQUIV(size_t, std::size_t);
   %{ $result = $1; %}
 %typemap(out)   const char&
   %{ $result = *$1; %}
-%typemap(imtype, out="character") char, const char&
-  "character, value"
-%typemap(ftype,  out="character") char, const char&
-  "character, value, intent(in)"
+%typemap(imtype, out="character(C_CHAR)") char, const char&
+  "character(C_CHAR), value"
+%typemap(ftype,  out="character(C_CHAR)") char, const char&
+  "character(C_CHAR), value, intent(in)"
 %typemap(fin) char, const char&
   "$1_name"
 %typemap(fout) char, const char&
   %{ $result = $imcall %}
 
 %apply char { unsigned char, signed char };
+
+//---------------------------------------------------------------------------//
+// STRING TYPES
+//---------------------------------------------------------------------------//
 
 %define CHAR_TYPEMAP(CTYPE, FTYPE)
     %typemap(fin, noblock=1) (CTYPE STRING, int SIZE)
