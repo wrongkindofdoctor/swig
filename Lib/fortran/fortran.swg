@@ -30,19 +30,19 @@
 //---------------------------------------------------------------------------//
 // CUSTOM TYPEMAP DESCRIPTIONS.
 
-%include "fortrantypemaps.swg"
+%include "fortypemaps.swg"
 
 //---------------------------------------------------------------------------//
 // RESERVED KEYWORDS
-%include "fortrankw.swg"
+%include "forkw.swg"
 
 //---------------------------------------------------------------------------//
 // FRAGMENTS
-%include "fragments.swg"
+%include "forfragments.swg"
 
 //---------------------------------------------------------------------------//
 // RUNTIME
-%include "fortranruntime.swg"
+%include "forruntime.swg"
 
 //---------------------------------------------------------------------------//
 // end of fortran/fortran.swg
