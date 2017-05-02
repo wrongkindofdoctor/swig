@@ -336,7 +336,7 @@ FORTRAN_EQUIV(size_t, std::size_t);
     #error "Can't return strings in Fortran"
     %}
     %typemap(imtype) CTYPE "character(" FTYPE ")"
-    %typemap(ftype)  CTYPE "character(len=*)"
+    %typemap(ftype)  CTYPE "character(kind=" FTYPE ", len=*)"
     %typemap(fin)    CTYPE "$1_name"
 %enddef
 
