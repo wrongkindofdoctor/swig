@@ -56,7 +56,7 @@
 // Define SWIG integer error codes
 
 #ifndef SWIGIMPORTED
-%fragment("fortran_exception_impl", "header",
+%fragment("fortran_exception", "header",
           fragment="<string>", fragment="<algorithm>", fragment="<stdexcept>")
 {
 // External fortran-owned data that we save to
@@ -107,7 +107,7 @@ void fortran_store_exception(int code, const char *msg)
 } // end namespace swig
 };
 #else
-%fragment("fortran_exception_impl", "header") {
+%fragment("fortran_exception", "header") {
 namespace swig
 {
 // Functions are defined in an imported module
@@ -118,12 +118,6 @@ void fortran_store_exception(int code, const char *msg);
 #endif
 
 //---------------------------------------------------------------------------//
-
-#ifndef SWIGIMPORTED
-%fragment("fortran_exception_impl");
-%fragment("fortran_exception", "header",
-          fragment="fortran_exception_impl") {};
-#endif
 
 // Insert exception code
 %fragment("fortran_exception");
