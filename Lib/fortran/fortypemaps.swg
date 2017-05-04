@@ -382,10 +382,10 @@ CHAR_TYPEMAP(const unsigned char*, "C_CHAR")
 // FUNCTION POINTERS
 //---------------------------------------------------------------------------//
 
-%typemap(ctype)  SWIGTYPE (*)(ANY) %{void*%}
-%typemap(in)     SWIGTYPE (*)(ANY) %{ $1 = ($1_ltype)($input); %}
+%typemap(ctype)  SWIGTYPE (*)(ANY) %{ $1_ltype %}
+%typemap(in)     SWIGTYPE (*)(ANY) %{ $1 = $input; %}
 %typemap(out)    SWIGTYPE (*)(ANY) %{ $result = $1; %}
-%typemap(imtype) SWIGTYPE (*)(ANY) "type(C_FUNPTR)"
+%typemap(imtype) SWIGTYPE (*)(ANY) "type(C_FUNPTR), intent(in), value"
 %typemap(ftype)  SWIGTYPE (*)(ANY) "type(C_FUNPTR), intent(in), value"
 %typemap(fin)    SWIGTYPE (*)(ANY) "$1_name"
 %typemap(fout)   SWIGTYPE (*)(ANY) %{
