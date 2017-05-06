@@ -18,7 +18,7 @@
 
 // Force inclusion of algorithm and stdexcept
 %fragment("<algorithm>");
-%fragment("<stdexcept>");
+%fragment("ArraySizeCheck");
 
 namespace std
 {
@@ -83,9 +83,7 @@ class vector
     // Copy the C++ data to the given Fortran arr. Sizes must match.
     void copy_to(pointer arr, size_type arrsize)
     {
-        if ($self->size() != arrsize)
-            throw std::range_error("arr/vector size mismatch");
-
+        swig::array_size_check($self->size(), arrsize);
         std::copy($self->begin(), $self->end(), arr);
     }
 
