@@ -66,7 +66,7 @@ extern "C" {
 extern int SWIG_FORTRAN_ERROR_INT;
 extern char SWIG_FORTRAN_ERROR_STR[SWIG_FORTRAN_ERROR_STRLEN];
 #ifdef __cplusplus
-};
+}
 #endif
 
 namespace swig
@@ -105,7 +105,7 @@ void fortran_store_exception(int code, const char *msg)
     std::fill(dst, SWIG_FORTRAN_ERROR_STR + SWIG_FORTRAN_ERROR_STRLEN, ' ');
 }
 } // end namespace swig
-};
+}
 #else
 %fragment("fortran_exception", "header") {
 namespace swig
@@ -114,7 +114,7 @@ namespace swig
 void fortran_check_unhandled_exception();
 void fortran_store_exception(int code, const char *msg);
 } // end namespace swig
-};
+}
 #endif
 
 //---------------------------------------------------------------------------//
