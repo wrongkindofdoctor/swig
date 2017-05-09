@@ -15,9 +15,6 @@
 /* Contract support */
 #define SWIG_contract_assert(nullreturn, expr, msg) if (!(expr)) { \
 swig::fortran_store_exception(SWIG_ValueError, msg); return nullreturn; }
-
-/* SWIG default typedefs assume size_t is available unscoped */
-#include <cctype>
 %}
 
 //---------------------------------------------------------------------------//

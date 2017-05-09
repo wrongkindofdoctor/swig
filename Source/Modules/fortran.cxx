@@ -1202,12 +1202,24 @@ int FORTRAN::enumDeclaration(Node *n)
 
     if (symname)
     {
+        // Scope the enum if it's in a class
+        String* enum_name = NULL;
+        if (is_wrapping_class())
+        {
+            enum_name = NewStringf("%s_%s", getClassName(), symname);
+        }
+        else
+        {
+            enum_name = Copy(symname);
+        }
+
         // Print the enumerator with a placeholder so we can use 'kind(ENUM)'
         Printv(f_types, " enum, bind(c)\n",
-                        "  enumerator :: ", symname, " = -1\n", NULL);
+                        "  enumerator :: ", enum_name, " = -1\n", NULL);
 
         d_enumvalues = NewList();
-        Append(d_enumvalues, symname);
+        Append(d_enumvalues, enum_name);
+        Delete(enum_name);
     }
 
     // Emit enum items
