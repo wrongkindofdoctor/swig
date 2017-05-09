@@ -1218,7 +1218,7 @@ int FORTRAN::enumDeclaration(Node *n)
         // End enumeration
         Printv(f_types, " end enum\n", NULL);
 
-        // Make the enum values public
+        // Make the enum class *and* its values public
         Printv(f_public, " public :: ", NULL);
         print_wrapped_line(f_public, First(d_enumvalues), 11);
         Printv(f_public, "\n", NULL);
@@ -1249,13 +1249,24 @@ int FORTRAN::enumvalueDeclaration(Node *n)
 
     if (name && value)
     {
-        Append(d_enumvalues, name);
-        Printv(f_types, "  enumerator :: ", name, " = ", value, "\n", NULL);
+        if (d_enumvalues)
+        {
+            Append(d_enumvalues, name);
+            Printv(f_types, "  enumerator :: ", name, " = ", value, "\n", NULL);
+        }
+        else
+        {
+            // Anonymous enum (TODO: change to parameter??)
+            Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
+                    "Anonymous enums ('%s') are currently unsupported "
+                    "and will not be wrapped\n",
+                    SwigType_namestr(name));
+        }
     }
     else
     {
         Printv(stderr, "Enum is missing a name or value:", NULL);
-        //Swig_print_node(n);
+        Swig_print_node(n);
     }
 
     return SWIG_OK;
