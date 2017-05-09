@@ -7,6 +7,9 @@
  */
 //---------------------------------------------------------------------------//
 
+// Prevent identifiers from having a leading underscore
+// %rename("%(regex:/^_(.*)/\\1_/)s") "";
+
 #define FORTRANKW(x) %keywordwarn("'" `x` "' is a Fortran keyword")  `x`
 
 // FORTRAN 77

@@ -97,10 +97,10 @@
  */
 %define FORTRAN_TYPEMAP(CTYPE, FTYPE)
   // Mutable references and pointers are returned as actual pointers
-  %typemap(ctype, out="CTYPE*") CTYPE*, CTYPE&
+  %typemap(ctype, out="CTYPE*") CTYPE*, CTYPE&, CTYPE[]
     %{CTYPE*%}
   // Const references and pointers are returned by value
-  %typemap(ctype, out="CTYPE") CTYPE, const CTYPE*, const CTYPE&, CTYPE[]
+  %typemap(ctype, out="CTYPE") CTYPE, const CTYPE*, const CTYPE&
     %{CTYPE*%}
 
   %typemap(in) CTYPE
@@ -109,7 +109,7 @@
     %{$1 = $input;%}
 
   // Return original type or pointer
-  %typemap(out) CTYPE, CTYPE&, CTYPE*
+  %typemap(out) CTYPE, CTYPE*, CTYPE&, CTYPE[]
     %{$result = $1;%}
   // Convert pointer to value
   %typemap(out) const CTYPE&, const CTYPE*
@@ -323,27 +323,29 @@ FORTRAN_EQUIV(size_t, std::size_t);
 
 //---------------------------------------------------------------------------//
 // STRING TYPES
+//
+// Note that currently strings can be passed as character arrays, but returning
+// a C string gives just an opaque C pointer
 //---------------------------------------------------------------------------//
 
 %define CHAR_TYPEMAP(CTYPE, FTYPE)
-    %typemap(fin, noblock=1) (CTYPE STRING, int SIZE)
+    %typemap(fin, noblock=1) (CTYPE* STRING, int SIZE)
     { $1_name, len($1_name) }
     
-    %typemap(ctype)  CTYPE %{ CTYPE %}
-    %typemap(in)     CTYPE %{ $1 = ($1_ltype)$input; %}
-    %typemap(out)    CTYPE
-    %{
-    #error "Can't return strings in Fortran"
-    %}
-    %typemap(imtype) CTYPE "character(" FTYPE ")"
-    %typemap(ftype)  CTYPE "character(kind=" FTYPE ", len=*)"
-    %typemap(fin)    CTYPE "$1_name"
+    %typemap(ctype)  CTYPE*, CTYPE[] %{ CTYPE* %}
+    %typemap(in)     CTYPE*, CTYPE[] %{ $1 = ($1_ltype)$input; %}
+    %typemap(out)    CTYPE*, CTYPE[] %{$result = $1;%}
+    %typemap(imtype, out="type(C_PTR)")
+        CTYPE*, CTYPE[] "character(" FTYPE ")"
+    %typemap(ftype, out="type(C_PTR)")
+        CTYPE*, CTYPE[] "character(kind=" FTYPE ", len=*)"
+    %typemap(fin)    CTYPE* "$1_name"
 %enddef
 
-CHAR_TYPEMAP(const char*, "C_CHAR")
-CHAR_TYPEMAP(char*, "C_CHAR")
-CHAR_TYPEMAP(unsigned char*, "C_CHAR")
-CHAR_TYPEMAP(const unsigned char*, "C_CHAR")
+CHAR_TYPEMAP(const char, "C_CHAR")
+CHAR_TYPEMAP(char, "C_CHAR")
+CHAR_TYPEMAP(unsigned char, "C_CHAR")
+CHAR_TYPEMAP(const unsigned char, "C_CHAR")
 
 //---------------------------------------------------------------------------//
 // ENUMS

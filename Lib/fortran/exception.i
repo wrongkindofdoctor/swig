@@ -43,7 +43,7 @@
 #endif
 
 #define SWIG_exception(code, msg)\
-{ swig::fortran_store_exception(code, msg); return $null; }
+do { swig::fortran_store_exception(code, msg); return $null; } while(0)
 
 // Insert the fortran integer definition (only if %included)
 %insert("fortranspec") {
