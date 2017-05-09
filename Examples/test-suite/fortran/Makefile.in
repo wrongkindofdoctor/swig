@@ -17,14 +17,14 @@ top_srcdir     = @top_srcdir@
 top_builddir   = @top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 
+# C_TEST_CASES += \
+
+# Add tests that are known to fail (unsupported by this developmental Fortran version)
+FAILING_CPP_TESTS += \
+	abstract_signature \
+	abstract_typedef2
 
 include $(srcdir)/../common.mk
-
-
-# Override the test lists for now to avoid all of the failing tests
-C_TEST_CASES = integers \
-			   ret_by_value
-CPP_TEST_CASES = cpp_basic
 
 
 .SUFFIXES: .cpptest .ctest .multicpptest

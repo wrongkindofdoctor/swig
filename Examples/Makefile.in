@@ -2057,9 +2057,9 @@ fortran_compile: $(SRCDIR_SRCS)
 	$(COMPILETOOL) $(FORTRAN) $(FORTFLAGS) $(TARGET)_fort.o $(FORTRANLIBPREFIX)$(TARGET)$(SO) $(SRCDIR_FORTRANSRCS)
 
 fortran_clean:
-	rm -f *_wrap* *~ $(RUNME) $(RUNME).exe *.mod *.f90 *$(SO)
+	rm -f *_wrap* *~ $(RUNME) $(RUNME).exe *.mod *.f90 *$(FORTRANSO)
 	rm -f core @EXTRA_CLEAN@
-	rm -f *.@OBJEXT@ *@FORTRANSO@
+	rm -f *.@OBJEXT@ *$(FORTRANSO)
 
 
 ##################################################################

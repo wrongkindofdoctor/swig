@@ -355,7 +355,7 @@ all-test-suite:					\
 	all-go-test-suite			\
 	all-d-test-suite			\
 	all-javascript-test-suite \
-	all-fortran-test-suite \
+	all-fortran-test-suite
 
 all-%-test-suite:
 	@$(MAKE) $(FLAGS) check-$*-test-suite ACTION=all
