@@ -8,13 +8,11 @@
  */
 //---------------------------------------------------------------------------//
 
-#ifndef SWIG_FORTRAN_STD_SIZETYPE
-#define SWIG_FORTRAN_STD_SIZETYPE int
-#endif
-
 %{
 #include <vector>
 %}
+
+%include "std_common.i"
 
 // Force inclusion of algorithm and stdexcept
 %fragment("<algorithm>");

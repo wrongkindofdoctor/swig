@@ -7,9 +7,7 @@
  */
 //---------------------------------------------------------------------------//
 
-#ifndef SWIG_FORTRAN_STD_SIZETYPE
-#define SWIG_FORTRAN_STD_SIZETYPE int
-#endif
+%include "std_common.i"
 
 %fragment("<algorithm>");
 %fragment("<stdexcept>");

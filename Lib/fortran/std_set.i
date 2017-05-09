@@ -7,13 +7,11 @@
  */
 //---------------------------------------------------------------------------//
 
-#ifndef SWIG_FORTRAN_STD_SIZETYPE
-#define SWIG_FORTRAN_STD_SIZETYPE int
-#endif
-
 %{
 #include <set>
 %}
+
+%include "std_common.i"
 
 template <class _Key,
           class _Compare = std::less< _Key >,

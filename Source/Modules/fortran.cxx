@@ -475,9 +475,14 @@ int FORTRAN::functionWrapper(Node *n)
     Parm* p = parmlist;
     while (p)
     {
-        while (checkAttribute(p, "tmap:in:numinputs", "0"))
+        while (p && checkAttribute(p, "tmap:in:numinputs", "0"))
         {
             p = Getattr(p, "tmap:in:next");
+        }
+        if (!p)
+        {
+            // It's possible that the last argument is ignored
+            break;
         }
 
         // Construct conversion argument name
