@@ -54,6 +54,7 @@ SimpleClass& SimpleClass::operator=(const SimpleClass& rhs)
     d_id = 10 * rhs.d_id + (g_next_id++);
     cout << "Assigning " << rhs.d_id << "=>" << d_id
          << " at " << this <<  " (replaces " << orig_id << ")" << endl;
+    return *this;
 }
 
 SimpleClass::~SimpleClass()

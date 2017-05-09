@@ -14,6 +14,8 @@
 
 #ifdef SWIGFORTRAN
 
+%include <typemaps.i>
+
 // Handle constructor overloading
 %rename(create_count)  ThinVec::ThinVec(size_type);
 //%ignore   ThinVec::ThinVec(size_type, value_type);

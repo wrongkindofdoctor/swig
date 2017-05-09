@@ -13,6 +13,8 @@
 #include "algorithm.hh"
 %}
 
+%include <typemaps.i>
+
 %define TEMPLATE_ALGORITHMS(TYPE)
     %apply (SWIGTYPE* ARRAY, int SIZE) { (      TYPE* arr, int count),
                                          (const TYPE* arr, int count) }

@@ -20,6 +20,8 @@
 %fragment("<algorithm>");
 %fragment("ArraySizeCheck");
 
+%include <typemaps.i>
+
 namespace std
 {
 

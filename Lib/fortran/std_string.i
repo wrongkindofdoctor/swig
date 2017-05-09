@@ -16,6 +16,8 @@
 %fragment("<string>");
 %fragment("StringCopyout");
 
+%include <typemaps.i>
+
 namespace std
 {
 class string

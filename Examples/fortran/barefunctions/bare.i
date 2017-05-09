@@ -10,6 +10,8 @@
 
 #ifdef SWIGFORTRAN
 
+%include <typemaps.i>
+
 // Automatically expand a Fortran array into a pointer/size pair with the
 // correct type
 %apply (SWIGTYPE* ARRAY, int SIZE) {

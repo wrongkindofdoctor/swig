@@ -283,19 +283,6 @@ FORTRAN_EQUIV(size_t, std::size_t);
 %}
 
 //---------------------------------------------------------------------------//
-// ARRAY TYPES
-//---------------------------------------------------------------------------//
-
-// Cast integer to size_t whenever it shows up as a 'count' argument
-%apply int { (std::size_t SIZE) };
-
-// Automatically add "size" parameter from a Fortran array
-%typemap(fin, noblock=1) (SWIGTYPE* ARRAY, int SIZE)
-    { $1_name, size($1_name) }
-%apply (SWIGTYPE* ARRAY, int SIZE) { (SWIGTYPE* ARRAY, int SIZE),
-                                     (const SWIGTYPE* ARRAY, int SIZE) };
-
-//---------------------------------------------------------------------------//
 // CHARACTER TYPES
 //---------------------------------------------------------------------------//
 
@@ -329,9 +316,6 @@ FORTRAN_EQUIV(size_t, std::size_t);
 //---------------------------------------------------------------------------//
 
 %define CHAR_TYPEMAP(CTYPE, FTYPE)
-    %typemap(fin, noblock=1) (CTYPE* STRING, int SIZE)
-    { $1_name, len($1_name) }
-    
     %typemap(ctype)  CTYPE*, CTYPE[] %{ CTYPE* %}
     %typemap(in)     CTYPE*, CTYPE[] %{ $1 = ($1_ltype)$input; %}
     %typemap(out)    CTYPE*, CTYPE[] %{$result = $1;%}
@@ -346,6 +330,8 @@ CHAR_TYPEMAP(const char, "C_CHAR")
 CHAR_TYPEMAP(char, "C_CHAR")
 CHAR_TYPEMAP(unsigned char, "C_CHAR")
 CHAR_TYPEMAP(const unsigned char, "C_CHAR")
+
+#undef CHAR_TYPEMAP
 
 //---------------------------------------------------------------------------//
 // ENUMS
