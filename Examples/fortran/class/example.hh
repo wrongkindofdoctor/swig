@@ -1,4 +1,4 @@
-/* File : class.hh */
+/* File : example.hh */
 
 class Shape {
 public:
@@ -19,7 +19,7 @@ class Circle : public Shape {
 private:
   double radius;
 public:
-  Circle(double r) : radius(r) { }
+  Circle(double r);
   virtual double area();
   virtual double perimeter();
 };

@@ -1,5 +1,5 @@
 ##---------------------------------------------------------------------------##
-## File  : classes/CMakeLists.txt
+## File  : cppexample/CMakeLists.txt
 ## Author: Seth R Johnson
 ## Date  : Tue Dec 06 14:55:04 2016
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
@@ -7,20 +7,20 @@
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(classeslib classes.cc)
+ADD_LIBRARY(cppexamplelib example.cc)
 
 # Generate SWIG module
-MAKE_SWIG(MODULE classes
-  DEPLIBS classeslib)
+MAKE_SWIG(MODULE example
+  DEPLIBS cppexamplelib)
 
 # Create test executable
-ADD_EXECUTABLE(classes_test.exe runme.f90)
+ADD_EXECUTABLE(cppexample_test.exe runme.f90)
 # It depends on the compiled fortran module
-TARGET_LINK_LIBRARIES(classes_test.exe  ${SWIG_MODULE_classes_REAL_NAME})
+TARGET_LINK_LIBRARIES(cppexample_test.exe  ${SWIG_MODULE_example_REAL_NAME})
 
 # Create test
-ADD_TEST(NAME classes_test COMMAND classes_test.exe)
+ADD_TEST(NAME cppexample_test COMMAND cppexample_test.exe)
 
 ##---------------------------------------------------------------------------##
-## end of classes/CMakeLists.txt
+## end of cppexample/CMakeLists.txt
 ##---------------------------------------------------------------------------##

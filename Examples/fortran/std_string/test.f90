@@ -13,7 +13,7 @@ program main
     implicit none
     character :: simply_char
     character(len=16) :: fixedlen
-    character(len=:), allocatable :: deferredlen
+    character(len=*), parameter :: paramstr = "short string   "
     character(len=:), allocatable :: varlen
     integer :: i
     type(string) :: s
@@ -36,14 +36,8 @@ program main
     call s%set(0, 'X')
     call print_str(s)
 
-    deferredlen = "short string"
-    call s%assign_from(deferredlen)
-    write(0, *) "deferred-length string"
-    call print_str(s)
-
-    deferredlen = "deferred length string    "
-    call s%assign_from(deferredlen)
-    write(0, *) "deferred-length string with trailing spaces:"
+    call s%assign_from(paramstr)
+    write(0, *) "parameter string with trailing spaces:"
     call print_str(s)
 
     ! Cut it in half and read it back out to varlen

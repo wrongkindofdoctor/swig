@@ -1,5 +1,5 @@
 program class_runme
-  use classes
+  use example
 
   implicit none
 
@@ -36,7 +36,13 @@ program class_runme
   call c%release()
   call s%release()
 
-  ! Check n shapes
+  ! Example of exception handling
+!  call c%create(-2.0d0)
+!  if (ierr /= 0) then
+!      write(*,*) "Caught the following error: ", trim(serr)
+!  endif
+
+  ! Check n shapes by calling a static method
   write(*,*)c%get_nshapes(), "shapes remain"
   write(*,*)"Goodbye"
 
