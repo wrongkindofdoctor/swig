@@ -15,17 +15,17 @@
 // a C string gives just an opaque C pointer
 //---------------------------------------------------------------------------//
 
-%define CHAR_TYPEMAP(CTYPE)
+%define FORT_STR_TYPEMAP(CTYPE)
     %typemap(fin, noblock=1) (CTYPE* STRING, int SIZE)
     { $1_name, len($1_name) }
 %enddef
 
-CHAR_TYPEMAP(const char)
-CHAR_TYPEMAP(char)
-CHAR_TYPEMAP(unsigned char)
-CHAR_TYPEMAP(const unsigned char)
+FORT_STR_TYPEMAP(const char)
+FORT_STR_TYPEMAP(char)
+FORT_STR_TYPEMAP(unsigned char)
+FORT_STR_TYPEMAP(const unsigned char)
 
-#undef CHAR_TYPEMAP
+#undef FORT_STR_TYPEMAP
 
 //---------------------------------------------------------------------------//
 // ARRAY TYPES
