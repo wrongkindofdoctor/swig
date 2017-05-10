@@ -17,9 +17,15 @@ top_srcdir     = @top_srcdir@
 top_builddir   = @top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 
-# C_TEST_CASES += \
+# Tests that fail during SWIG processing (none yay!)
+#FAILING_CPP_TESTS += \
 
-# Add tests that are known to fail (unsupported by this developmental Fortran version)
+# # Tests that fail during C++ wrapper compilation
+# FAILING_CPP_TESTS += \
+# 	abstract_signature \
+# 	abstract_typedef2
+# 
+# # Tests that fail during Fortran wrapper compilation
 FAILING_CPP_TESTS += \
 	abstract_signature \
 	abstract_typedef2

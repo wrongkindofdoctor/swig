@@ -95,9 +95,9 @@
  * - Returning by const reference is automatically turned into return-by-value.
  *   (this is the 'out=CTYPE' argument)
  */
-%define FORTRAN_TYPEMAP(CTYPE, FTYPE)
+%define FORTRAN_TYPEMAP(CTYPE, FTYPE, TYPECHECK)
   // Mutable references and pointers are returned as actual pointers
-  %typemap(ctype, out="CTYPE*") CTYPE*, CTYPE&, CTYPE[]
+  %typemap(ctype, out="CTYPE*") CTYPE*, CTYPE&, CTYPE[], CTYPE[ANY]
     %{CTYPE*%}
   // Const references and pointers are returned by value
   %typemap(ctype, out="CTYPE") CTYPE, const CTYPE*, const CTYPE&
@@ -105,11 +105,11 @@
 
   %typemap(in) CTYPE
     %{$1 = *$input;%}
-  %typemap(in) CTYPE*, CTYPE&, CTYPE[]
+  %typemap(in) CTYPE*, CTYPE&, CTYPE[], CTYPE[ANY]
     %{$1 = $input;%}
 
   // Return original type or pointer
-  %typemap(out) CTYPE, CTYPE*, CTYPE&, CTYPE[]
+  %typemap(out) CTYPE, CTYPE*, CTYPE&, CTYPE[], CTYPE[ANY]
     %{$result = $1;%}
   // Convert pointer to value
   %typemap(out) const CTYPE&, const CTYPE*
@@ -117,9 +117,9 @@
 
   // Note: FTYPE is a string, it gets preprocessor-concatenated to the
   // dimension/intent string
-  %typemap(imtype, out="type(C_PTR)") CTYPE*, CTYPE[]
+  %typemap(imtype, out="type(C_PTR)") CTYPE*, CTYPE[], CTYPE[ANY]
     FTYPE ", dimension(*), intent(inout)"
-  %typemap(imtype) const CTYPE*, const CTYPE[]
+  %typemap(imtype) const CTYPE*, const CTYPE[], const CTYPE[ANY]
     FTYPE ", dimension(*), intent(in)"
   %typemap(imtype, out=FTYPE) CTYPE&
     FTYPE ", intent(inout)"
@@ -128,33 +128,36 @@
   %typemap(imtype, out="type(C_PTR)") CTYPE&
     FTYPE ", intent(in)"
 
-  %typemap(ftype, out=FTYPE ", pointer") CTYPE*, CTYPE[]
+  %typemap(ftype, out=FTYPE ", pointer") CTYPE*, CTYPE[], CTYPE[ANY]
     FTYPE ", dimension(:), intent(inout)"
-  %typemap(ftype, out="type(C_PTR)")  const CTYPE*, const CTYPE[]
+  %typemap(ftype, out="type(C_PTR)")  const CTYPE*, const CTYPE[], CTYPE[ANY]
     FTYPE ", dimension(:), intent(in)"
   %typemap(ftype, out=FTYPE ", pointer" )  CTYPE&
     FTYPE ", intent(inout)"
   %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&
     FTYPE ", intent(in)"
 
-  %typemap(fin)  CTYPE, CTYPE[], CTYPE*, CTYPE&, const CTYPE*, const CTYPE&
+  %typemap(fin)  CTYPE, CTYPE[], CTYPE[ANY], CTYPE*, CTYPE&, const CTYPE*, const CTYPE&
     %{$1_name%}
-  %typemap(fout) CTYPE, CTYPE[], const CTYPE*, const CTYPE&
+  %typemap(fout) CTYPE, CTYPE[], CTYPE[ANY], const CTYPE*, const CTYPE&
     %{$result = $imcall%}
   %typemap(fout) CTYPE*
     %{call c_f_pointer($imcall, $result)%}
   %typemap(fout) CTYPE&
     %{call c_f_pointer($imcall, $result)%}
+
+  // Issue warning for overloaded C++ functions
+  %typecheck(TYPECHECK) CTYPE, const CTYPE& ""
 %enddef
 
-FORTRAN_TYPEMAP(bool       , "logical(C_BOOL)"     )
-FORTRAN_TYPEMAP(short      , "integer(C_SHORT)"    )
-FORTRAN_TYPEMAP(int        , "integer(C_INT)"      )
-FORTRAN_TYPEMAP(long       , "integer(C_LONG)"     )
-FORTRAN_TYPEMAP(long long  , "integer(C_LONG_LONG)")
-FORTRAN_TYPEMAP(size_t     , "integer(C_SIZE_T)"   )
-FORTRAN_TYPEMAP(float      , "real(C_FLOAT)"       )
-FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
+FORTRAN_TYPEMAP(bool       , "logical(C_BOOL)"     , SWIG_TYPECHECK_BOOL)
+FORTRAN_TYPEMAP(short      , "integer(C_SHORT)"    , SWIG_TYPECHECK_INTEGER)
+FORTRAN_TYPEMAP(int        , "integer(C_INT)"      , SWIG_TYPECHECK_INTEGER)
+FORTRAN_TYPEMAP(long       , "integer(C_LONG)"     , SWIG_TYPECHECK_INTEGER)
+FORTRAN_TYPEMAP(long long  , "integer(C_LONG_LONG)", SWIG_TYPECHECK_INTEGER)
+FORTRAN_TYPEMAP(size_t     , "integer(C_SIZE_T)"   , SWIG_TYPECHECK_INTEGER)
+FORTRAN_TYPEMAP(float      , "real(C_FLOAT)"       , SWIG_TYPECHECK_FLOAT)
+FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      , SWIG_TYPECHECK_DOUBLE)
 
 // Apply unsigned equivalent types
 %define FORTRAN_EQUIV(CTYPE, CTYPE2)
@@ -163,6 +166,7 @@ FORTRAN_TYPEMAP(double     , "real(C_DOUBLE)"      )
  %apply       CTYPE& {       CTYPE2& };
  %apply const CTYPE* { const CTYPE2* };
  %apply const CTYPE& { const CTYPE2& };
+ %typecheck(SWIG_TYPECHECK_INTEGER) CTYPE, CTYPE2 ""
 %enddef
 
 FORTRAN_EQUIV(short , unsigned short );
@@ -170,6 +174,16 @@ FORTRAN_EQUIV(int   , unsigned int   );
 FORTRAN_EQUIV(long  , unsigned long  );
 FORTRAN_EQUIV(size_t, unsigned long long);
 FORTRAN_EQUIV(size_t, std::size_t);
+
+%typecheck(SWIG_TYPECHECK_POINTER)
+    SWIGTYPE, 
+    SWIGTYPE *, 
+    SWIGTYPE &, 
+    SWIGTYPE &&, 
+    SWIGTYPE *const&, 
+    SWIGTYPE [],
+    SWIGTYPE (CLASS::*)
+    ""
 
 //---------------------------------------------------------------------------//
 // VOID TYPES
@@ -316,14 +330,17 @@ FORTRAN_EQUIV(size_t, std::size_t);
 //---------------------------------------------------------------------------//
 
 %define CHAR_TYPEMAP(CTYPE, FTYPE)
-    %typemap(ctype)  CTYPE*, CTYPE[] %{ CTYPE* %}
-    %typemap(in)     CTYPE*, CTYPE[] %{ $1 = ($1_ltype)$input; %}
-    %typemap(out)    CTYPE*, CTYPE[] %{$result = $1;%}
+    %typemap(ctype)  CTYPE*, CTYPE[], CTYPE[ANY] %{ CTYPE* %}
+    %typemap(in)     CTYPE*, CTYPE[], CTYPE[ANY] %{ $1 = ($1_ltype)$input; %}
+    %typemap(out)    CTYPE*, CTYPE[], CTYPE[ANY] %{$result = $1;%}
     %typemap(imtype, out="type(C_PTR)")
-        CTYPE*, CTYPE[] "character(" FTYPE ")"
+        CTYPE*, CTYPE[], CTYPE[ANY] "character(" FTYPE ")"
     %typemap(ftype, out="type(C_PTR)")
-        CTYPE*, CTYPE[] "character(kind=" FTYPE ", len=*)"
-    %typemap(fin)    CTYPE* "$1_name"
+        CTYPE*, CTYPE[], CTYPE[ANY] "character(kind=" FTYPE ", len=*)"
+    %typemap(fin)    CTYPE*, CTYPE[], CTYPE[ANY] "$1_name"
+    %typemap(fout)   CTYPE*, CTYPE[], CTYPE[ANY] "$result = $imcall"
+
+    %typecheck(SWIG_TYPECHECK_POINTER) CTYPE*, CTYPE[], CTYPE[ANY]  ""
 %enddef
 
 CHAR_TYPEMAP(const char, "C_CHAR")
@@ -359,6 +376,7 @@ CHAR_TYPEMAP(const unsigned char, "C_CHAR")
     FTYPE ", intent(inout)"
   %typemap(imtype, out=FTYPE) CTYPE, const CTYPE&
     FTYPE ", intent(in)"
+  %typecheck(SWIG_TYPECHECK_INTEGER) CTYPE, const CTYPE& ""
 #undef CTYPE
 #undef FTYPE
 
