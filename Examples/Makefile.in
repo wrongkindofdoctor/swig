@@ -2032,7 +2032,7 @@ FORTRANOPTIONS =
 FORTRANSO = .so
 FORTRAN_RUNME = ./$(RUNME).exe
 FORTRAN_SUMMARY = "summary.txt"
-FOBJS      = $(INTERFACE:.i=_fort.@OBJEXT@)
+FOBJ = $(INTERFACE:.i=_fort.@OBJEXT@)
 
 ifneq (,$(SRCDIR))
 SRCDIR_FORTRANSRCS = $(addprefix $(SRCDIR),$(FORTRANSRCS))
@@ -2043,22 +2043,22 @@ endif
 fortran: $(SRCDIR_SRCS)
 	$(SWIG) -fortran $(SWIGOPT) -o $(ISRCS) $(INTERFACEPATH)
 	$(CC) -c $(CCSHARED) $(CPPFLAGS) $(CFLAGS) $(FORTRANCFLAGS) $(SRCDIR_SRCS) $(ISRCS) $(INCLUDES)
-	$(FORTRAN) -c $(TARGET).f90 -o $(FOBJS)
-	$(LDSHARED) $(CFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJS) $(FORTRAN_DLNK) $(LIBS) \
+	$(FORTRAN) -c $(TARGET).f90 -o $(FOBJ)
+	$(LDSHARED) $(CFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJ) $(FORTRAN_DLNK) $(LIBS) \
 		-o $(FORTRAN_LIBPREFIX)$(TARGET)$(FORTRANSO)
 
 fortran_cpp: $(SRCDIR_SRCS)
 	$(SWIG) -fortran -c++ $(SWIGOPT) -o $(ICXXSRCS) $(INTERFACEPATH) \
-		|| (echo "$(TARGET),FAILED,swig" >> $(FORTRAN_SUMMARY) && exit 1)
+		|| (echo "$(TARGET)|failed to run swig" >> $(FORTRAN_SUMMARY) && exit 1)
 	$(CXX) -c $(CCSHARED) $(CPPFLAGS) $(CXXFLAGS) $(FORTRANCFLAGS) \
 			$(SRCDIR_SRCS) $(SRCDIR_CXXSRCS) $(ICXXSRCS) $(INCLUDES) \
-		|| (echo "$(TARGET),FAILED,build" >> $(FORTRAN_SUMMARY) && exit 1)
-	$(FORTRAN) -c $(TARGET).f90 -o $(FOBJS) \
-		|| (echo "$(TARGET),FAILED,fortran" >> $(FORTRAN_SUMMARY) && exit 1)
-	$(CXXSHARED) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJS) $(FORTRAN_DLNK) \
+		|| (echo "$(TARGET)|failed to compile wrapper" >> $(FORTRAN_SUMMARY) && exit 1)
+	$(FORTRAN) -c $(TARGET).f90 -o $(FOBJ) \
+		|| (echo "$(TARGET)|failed to compile fortran" >> $(FORTRAN_SUMMARY) && exit 1)
+	$(CXXSHARED) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJ) $(FORTRAN_DLNK) \
 			$(LIBS) $(CPP_DLLIBS) -o $(FORTRAN_LIBPREFIX)$(TARGET)$(FORTRANSO) \
-		|| (echo "$(TARGET),FAILED,link" >> $(FORTRAN_SUMMARY) && exit 1)
-	echo "$(TARGET),PASSED,link" >> $(FORTRAN_SUMMARY)
+		|| (echo "$(TARGET)|failed to link" >> $(FORTRAN_SUMMARY) && exit 1)
+	echo "$(TARGET)|passed" >> $(FORTRAN_SUMMARY)
 
 fortran_run: $(SRCDIR_SRCS)
 	env LD_LIBRARY_PATH=$$PWD $(RUNTOOL) $(FORTRAN_RUNME) $(RUNPIPE)
