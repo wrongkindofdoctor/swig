@@ -30,9 +30,17 @@
 //---------------------------------------------------------------------------//
 // STANDARD TYPE DEFINITIONS
 
+#ifdef __cplusplus
+namespace std
+{
+#endif
 typedef unsigned long size_t;
-
-%include <typemaps/misctypes.swg>
+typedef long ptrdiff_t;
+#ifdef __cplusplus
+}
+using std::size_t;
+using std::ptrdiff_t;
+#endif
 
 //---------------------------------------------------------------------------//
 // CUSTOM TYPEMAP DESCRIPTIONS.
