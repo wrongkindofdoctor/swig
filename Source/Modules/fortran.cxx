@@ -180,8 +180,10 @@ void FORTRAN::main(int argc, char *argv[])
     /* Set language-specific configuration file */
     SWIG_config_file("fortran.swg");
 
-    /* TODO: Allow function overloads */
+    /* TODO: fix overloading of types that map to the same value */
     allow_overloading();
+    /* TODO: Multiple inheritance? */
+    Swig_interface_feature_enable();
 }
 
 //---------------------------------------------------------------------------//

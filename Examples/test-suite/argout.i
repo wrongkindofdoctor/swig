@@ -30,8 +30,8 @@ int inctr(IntRef value) {
 void voidhandle(void** handle) {
   *handle=(void*)"Here it is";
 }
-char * handle(void* handle) {
-  return (char *)handle;
+char * handle(void* hand) {
+  return (char *)hand;
 }
 
 %}

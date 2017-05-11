@@ -20,10 +20,8 @@
     { $1_name, len($1_name) }
 %enddef
 
-FORT_STR_TYPEMAP(const char)
 FORT_STR_TYPEMAP(char)
-FORT_STR_TYPEMAP(unsigned char)
-FORT_STR_TYPEMAP(const unsigned char)
+FORT_STR_TYPEMAP(const char)
 
 #undef FORT_STR_TYPEMAP
 

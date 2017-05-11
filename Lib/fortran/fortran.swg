@@ -28,6 +28,13 @@
 #define %fortrancode           %insert("fortran")
 
 //---------------------------------------------------------------------------//
+// STANDARD TYPE DEFINITIONS
+
+typedef unsigned long size_t;
+
+%include <typemaps/misctypes.swg>
+
+//---------------------------------------------------------------------------//
 // CUSTOM TYPEMAP DESCRIPTIONS.
 
 %include "fortypemaps.swg"

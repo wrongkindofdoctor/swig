@@ -88,6 +88,14 @@ class vector
     }
 
 } // end extend
+
+};
+
+// Specialize on bool
+template<class _Alloc >
+class vector<bool,_Alloc >
+{
+    /* NOT IMPLEMENTED */
 };
 
 } // end namespace std
