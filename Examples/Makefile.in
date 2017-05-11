@@ -2031,7 +2031,6 @@ FORTRANFLAGS =
 FORTRANOPTIONS =
 FORTRANSO = .so
 FORTRAN_RUNME = ./$(RUNME).exe
-FORTRAN_SUMMARY = "summary.txt"
 FOBJ = $(INTERFACE:.i=_fort.@OBJEXT@)
 
 ifneq (,$(SRCDIR))
@@ -2048,17 +2047,12 @@ fortran: $(SRCDIR_SRCS)
 		-o $(FORTRAN_LIBPREFIX)$(TARGET)$(FORTRANSO)
 
 fortran_cpp: $(SRCDIR_SRCS)
-	$(SWIG) -fortran -c++ $(SWIGOPT) -o $(ICXXSRCS) $(INTERFACEPATH) \
-		|| (echo "$(TARGET)|failed to run swig" >> $(FORTRAN_SUMMARY) && exit 1)
+	$(SWIG) -fortran -c++ $(SWIGOPT) -o $(ICXXSRCS) $(INTERFACEPATH)
 	$(CXX) -c $(CCSHARED) $(CPPFLAGS) $(CXXFLAGS) $(FORTRANCFLAGS) \
-			$(SRCDIR_SRCS) $(SRCDIR_CXXSRCS) $(ICXXSRCS) $(INCLUDES) \
-		|| (echo "$(TARGET)|failed to compile wrapper" >> $(FORTRAN_SUMMARY) && exit 1)
-	$(FORTRAN) -c $(TARGET).f90 -o $(FOBJ) \
-		|| (echo "$(TARGET)|failed to compile fortran" >> $(FORTRAN_SUMMARY) && exit 1)
+			$(SRCDIR_SRCS) $(SRCDIR_CXXSRCS) $(ICXXSRCS) $(INCLUDES)
+	$(FORTRAN) -c $(TARGET).f90 -o $(FOBJ)
 	$(CXXSHARED) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJ) $(FORTRAN_DLNK) \
-			$(LIBS) $(CPP_DLLIBS) -o $(FORTRAN_LIBPREFIX)$(TARGET)$(FORTRANSO) \
-		|| (echo "$(TARGET)|failed to link" >> $(FORTRAN_SUMMARY) && exit 1)
-	echo "$(TARGET)|passed" >> $(FORTRAN_SUMMARY)
+			$(LIBS) $(CPP_DLLIBS) -o $(FORTRAN_LIBPREFIX)$(TARGET)$(FORTRANSO)
 
 fortran_run: $(SRCDIR_SRCS)
 	env LD_LIBRARY_PATH=$$PWD $(RUNTOOL) $(FORTRAN_RUNME) $(RUNPIPE)
