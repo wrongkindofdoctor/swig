@@ -98,8 +98,6 @@ class FORTRAN : public Language
     virtual int insertDirective(Node *n);
     virtual int enumDeclaration(Node *n);
     virtual int enumvalueDeclaration(Node *n);
-    virtual int staticmemberfunctionHandler(Node *n);
-    virtual int staticmembervariableHandler(Node *n);
 
 
     virtual String *makeParameterName(Node *n, Parm *p, int arg_num,
@@ -855,65 +853,74 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
     }
     else if (is_wrapping_class())
     {
-        // Get aliased member function name
-        String* alias = Getattr(n, "fortran:membername");
-
+        // Get modified Fortran member name, defaulting to sym:name
         bool is_static = false;
-        if (alias)
-        {
-            String* new_alias = NULL;
-            if (Getattr(n, "staticmembervariableHandler:sym:name"))
-            {
-                // Member variable, rename the methods to set_ or get_
-                is_static = true;
 
-                if (Getattr(n, "varset"))
-                {
-                    new_alias = Swig_name_set(getNSpace(), alias);
-                }
-                else if (Getattr(n, "varget"))
-                {
-                    new_alias = Swig_name_get(getNSpace(), alias);
-                }
-                else
-                {
-                    Swig_print_node(n);
-                }
-            }
-            else if (Getattr(n, "staticmemberfunctionHandler:sym:name"))
+        String* alias = NULL;
+        String* new_alias = NULL;
+        if ((alias = Getattr(n, "fortran:membername")))
+        {
+            // We've already overridden the member name
+        }
+        else if ((alias = Getattr(n, "staticmembervariableHandler:sym:name")))
+        {
+            // Member variable, rename the methods to set_ or get_
+            is_static = true;
+
+            if (Getattr(n, "varset"))
             {
-                is_static = true;
+                new_alias = Swig_name_set(getNSpace(), alias);
+            }
+            else if (Getattr(n, "varget"))
+            {
+                new_alias = Swig_name_get(getNSpace(), alias);
             }
             else
             {
-                String* varname = Getattr(n, "membervariableHandler:sym:name");
-
-                if (varname && Getattr(n, "memberset"))
-                {
-                    new_alias = Swig_name_set(getNSpace(), varname);
-                }
-                else if (varname && Getattr(n, "memberget"))
-                {
-                    new_alias = Swig_name_get(getNSpace(), varname);
-                }
-                else
-                {
-                    // Standard function method
-                }
+                Printv(stderr, "Static member weirdness:\n", NULL);
+                Swig_print_node(n);
             }
-
-            if (new_alias)
-            {
-                alias = new_alias;
-            }
-
-            Printv(f_methods,
-                   "  procedure", (is_static ? ", nopass" : ""),
-                   " :: ", alias, " => ", imfuncname, "\n",
+            Printv(stderr, "Renamed ", alias, " ===> ", new_alias, "\n",
                    NULL);
-
-            Delete(new_alias);
         }
+        else if ((alias = Getattr(n, "staticmemberfunctionHandler:sym:name")))
+        {
+            is_static = true;
+        }
+        else if ((alias = Getattr(n, "membervariableHandler:sym:name")))
+        {
+            if (Getattr(n, "memberset"))
+            {
+                new_alias = Swig_name_set(getNSpace(), alias);
+            }
+            else if (Getattr(n, "memberget"))
+            {
+                new_alias = Swig_name_get(getNSpace(), alias);
+            }
+            else
+            {
+                // Standard class method
+                alias = Getattr(n, "sym:name");
+            }
+        }
+        else
+        {
+            alias = Getattr(n, "sym:name");
+            Printv(stderr, "No symname:\n", NULL);
+            Swig_print_node(n);
+        }
+
+        if (new_alias)
+        {
+            alias = new_alias;
+        }
+
+        Printv(f_methods,
+               "  procedure", (is_static ? ", nopass" : ""),
+               " :: ", alias, " => ", imfuncname, "\n",
+               NULL);
+
+        Delete(new_alias);
     }
     else if (is_overloaded)
     {
@@ -989,7 +996,6 @@ int FORTRAN::classHandler(Node *n)
                 "\n",
                 SwigType_namestr(symname));
     }
-
 
     // Initialize output strings that will be added by 'functionHandler'
     assert(!f_methods);
@@ -1288,28 +1294,6 @@ int FORTRAN::enumvalueDeclaration(Node *n)
         Swig_print_node(n);
     }
 
-    return SWIG_OK;
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Extra things for static member functions
- */
-int FORTRAN::staticmemberfunctionHandler(Node *n)
-{
-    Setattr(n, "fortran:membername", Getattr(n, "sym:name"));
-    Language::staticmemberfunctionHandler(n);
-    return SWIG_OK;
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Extra things for static member variables
- */
-int FORTRAN::staticmembervariableHandler(Node *n)
-{
-    Setattr(n, "fortran:membername", Getattr(n, "sym:name"));
-    Language::staticmembervariableHandler(n);
     return SWIG_OK;
 }
 

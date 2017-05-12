@@ -18,6 +18,7 @@ subroutine test_class()
     type(SimpleClass) :: orig
     type(SimpleClass) :: made
     type(SimpleClass) :: ref
+    type(BasicStruct) :: s
 
     write(0, *) "Constructing..."
     call orig%create()
@@ -79,6 +80,11 @@ subroutine test_class()
     ! write(0, *) "Double-deleting..."
     ! call copy%release()
 
+    write(0, *) "Building struct..."
+    call s%create()
+    call s%set_val(4)
+    write(0, *) "Values:", s%get_val()
+    call s%release()
 end subroutine
 
 !-----------------------------------------------------------------------------!
