@@ -1,4 +1,4 @@
-
+#include <cstddef>
 
 class C;
 
@@ -16,7 +16,7 @@ class B : public A
 {
 public:
   B() {}
-  
+
 };
 
 

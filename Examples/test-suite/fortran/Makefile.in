@@ -45,8 +45,6 @@ FAILING_CPP_TESTS += \
   member_pointer \
   member_pointer_const \
   memberin_extend \
-  mod_a \
-  mod_b \
   name_warnings \
   namespace_spaces \
   namespace_typemap \
@@ -84,8 +82,6 @@ FAILING_CPP_TESTS += \
   char_strings \
   class_ignore \
   class_scope_weird \
-  clientdata_prop_a \
-  clientdata_prop_b \
   constant_pointers \
   constructor_copy \
   constructor_explicit \
@@ -126,9 +122,6 @@ FAILING_CPP_TESTS += \
   global_namespace \
   ignore_parameter \
   ignore_template_constructor \
-  import_stl_b \
-  imports_a \
-  imports_b \
   inherit_missing \
   inherit_target_language \
   kind \
@@ -145,7 +138,6 @@ FAILING_CPP_TESTS += \
   li_windows \
   long_long_apply \
   mixed_types \
-  multi_import_a \
   multiple_inheritance \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
@@ -173,7 +165,6 @@ FAILING_CPP_TESTS += \
   overload_subtype \
   overload_template \
   overload_template_fast \
-  packageoption_c \
   preproc_constants \
   primitive_ref \
   redefined \
@@ -236,7 +227,6 @@ FAILING_CPP_TESTS += \
   template_type_namespace \
   template_typedef_class_template \
   template_typedef_cplx5 \
-  template_typedef_import \
   template_typedef_inherit \
   template_typemaps \
   template_typemaps_typedef \
@@ -263,6 +253,11 @@ FAILING_CPP_TESTS += \
   valuewrapper_opaque \
   variable_replacement \
   wallkw
+
+FAILING_MULTI_CPP_TESTS += \
+  clientdata_prop \
+  imports \
+  mod
 
 include $(srcdir)/../common.mk
 
