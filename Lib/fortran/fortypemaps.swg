@@ -321,8 +321,9 @@ FORT_OPAQUE_PTR_TYPEMAP(void*)
 //---------------------------------------------------------------------------//
 
 %typemap(fdata) SWIGTYPE %{
+  ! These should be treated as PROTECTED data
   type(C_PTR), public :: ptr = C_NULL_PTR
-  logical, private :: own = .false.
+  logical, public :: own = .false.
 %}
 
 %typemap(fcreate) SWIGTYPE
