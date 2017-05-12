@@ -827,92 +827,85 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
            "  end ", sub_or_func_str, "\n",
            NULL);
 
-    // >>> WRITE TYPE OR ALIASES
+    // >>> DETERMINED WRAPPER NAME
 
-    const bool is_overloaded = Getattr(n, "sym:overloaded");
-    if (is_overloaded && is_wrapping_class())
+    bool is_static = false;
+
+    // Get modified Fortran member name, defaulting to sym:name
+    String* alias = NULL;
+    // Temporary for any newly allocated string
+    String* new_alias = NULL;
+
+    if ((alias = Getattr(n, "fortran:membername")))
     {
-        // Create overloaded aliased name
-        String* alias = Getattr(n, "fortran:membername");
-        String* overalias = Copy(alias);
-        Append(overalias, Getattr(n, "sym:overname"));
-
-        // Add name to method overload list
-        List* overloads = Getattr(d_method_overloads, alias);
-        if (!overloads)
-        {
-            overloads = NewList();
-            Setattr(d_method_overloads, alias, overloads);
-        }
-        Append(overloads, overalias);
-
-        // Print remapping
-        Printv(f_methods,
-               "  procedure, private :: ", overalias, " => ", imfuncname, "\n",
-               NULL);
+        // We've already overridden the member name
     }
-    else if (is_wrapping_class())
+    else if ((alias = Getattr(n, "staticmembervariableHandler:sym:name")))
     {
-        // Get modified Fortran member name, defaulting to sym:name
-        bool is_static = false;
+        // Member variable, rename the methods to set_X or get_X
+        // instead of set_Class_X or get_Class_X
+        is_static = true;
 
-        String* alias = NULL;
-        String* new_alias = NULL;
-        if ((alias = Getattr(n, "fortran:membername")))
+        if (Getattr(n, "varset"))
         {
-            // We've already overridden the member name
+            alias = new_alias = Swig_name_set(getNSpace(), alias);
         }
-        else if ((alias = Getattr(n, "staticmembervariableHandler:sym:name")))
+        else if (Getattr(n, "varget"))
         {
-            // Member variable, rename the methods to set_ or get_
-            is_static = true;
-
-            if (Getattr(n, "varset"))
-            {
-                new_alias = Swig_name_set(getNSpace(), alias);
-            }
-            else if (Getattr(n, "varget"))
-            {
-                new_alias = Swig_name_get(getNSpace(), alias);
-            }
-            else
-            {
-                Printv(stderr, "Static member weirdness:\n", NULL);
-                Swig_print_node(n);
-            }
-            Printv(stderr, "Renamed ", alias, " ===> ", new_alias, "\n",
-                   NULL);
-        }
-        else if ((alias = Getattr(n, "staticmemberfunctionHandler:sym:name")))
-        {
-            is_static = true;
-        }
-        else if ((alias = Getattr(n, "membervariableHandler:sym:name")))
-        {
-            if (Getattr(n, "memberset"))
-            {
-                new_alias = Swig_name_set(getNSpace(), alias);
-            }
-            else if (Getattr(n, "memberget"))
-            {
-                new_alias = Swig_name_get(getNSpace(), alias);
-            }
-            else
-            {
-                // Standard class method
-                alias = Getattr(n, "sym:name");
-            }
+            alias = new_alias = Swig_name_get(getNSpace(), alias);
         }
         else
         {
-            alias = Getattr(n, "sym:name");
-            Printv(stderr, "No symname:\n", NULL);
+            Printv(stderr, "Static member isn't setter or getter:\n", NULL);
             Swig_print_node(n);
         }
-
-        if (new_alias)
+    }
+    else if ((alias = Getattr(n, "staticmemberfunctionHandler:sym:name")))
+    {
+        is_static = true;
+    }
+    else if ((alias = Getattr(n, "membervariableHandler:sym:name")))
+    {
+        if (Getattr(n, "memberset"))
         {
-            alias = new_alias;
+            alias = new_alias = Swig_name_set(getNSpace(), alias);
+        }
+        else if (Getattr(n, "memberget"))
+        {
+            alias = new_alias = Swig_name_get(getNSpace(), alias);
+        }
+        else
+        {
+            // Standard class method
+            alias = Getattr(n, "sym:name");
+        }
+    }
+    else
+    {
+        alias = Getattr(n, "sym:name");
+    }
+
+    // >>> WRITE FUNCTION WRAPPER
+
+    const bool is_overloaded = Getattr(n, "sym:overloaded");
+    if (is_wrapping_class())
+    {
+        if (is_overloaded)
+        {
+            // Create overloaded aliased name
+            String* overalias = Copy(alias);
+            Append(overalias, Getattr(n, "sym:overname"));
+
+            // Add name to method overload list
+            List* overloads = Getattr(d_method_overloads, alias);
+            if (!overloads)
+            {
+                overloads = NewList();
+                Setattr(d_method_overloads, alias, overloads);
+            }
+            Append(overloads, overalias);
+
+            alias = overalias;
         }
 
         Printv(f_methods,
@@ -920,29 +913,28 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
                " :: ", alias, " => ", imfuncname, "\n",
                NULL);
 
-        Delete(new_alias);
     }
-    else if (is_overloaded)
+    else 
     {
-        // Append this function name to the list of overloaded names for the
-        // symbol
-        String* symname = Getattr(n, "sym:name");
-        List* overloads = Getattr(d_overloads, symname);
-        if (!overloads)
+        if (is_overloaded)
         {
-            overloads = NewList();
-            Setattr(d_overloads, symname, overloads);
+            // Append this function name to the list of overloaded names for the
+            // symbol
+            List* overloads = Getattr(d_overloads, alias);
+            if (!overloads)
+            {
+                overloads = NewList();
+                Setattr(d_overloads, alias, overloads);
+            }
+            Append(overloads, Copy(imfuncname));
         }
-        Append(overloads, Copy(imfuncname));
-    }
-    else
-    {
+
         // Not a class: make the function public (and alias the name)
-        String* symname = Getattr(n, "sym:name");
         Printv(f_public,
-               " public :: ", symname, "\n",
+               " public :: ", alias, "\n",
                NULL);
     }
+    Delete(new_alias);
 
     Delete(args);
     Delete(body);
@@ -1520,7 +1512,8 @@ void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
         // Note that any typedefs are resolved.
         Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF,
                      input_file, line_number,
-                     "No class type found for %s\n",
+                     "No '$fclassname' replacement (wrapped type) "
+                     "found for %s\n",
                      SwigType_str(classnametype, 0));
 
         replacementname = NewStringf("SWIGTYPE%s",
