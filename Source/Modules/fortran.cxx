@@ -909,17 +909,19 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         }
 
         Printv(f_methods,
-               "  procedure", (is_static ? ", nopass" : ""),
+               "  procedure", (  is_static     ? ", nopass"
+                               : is_overloaded ? ", private"
+                               : ""),
                " :: ", alias, " => ", imfuncname, "\n",
                NULL);
-
     }
     else 
     {
+        // Not a class: make the function public (and alias the name)
         if (is_overloaded)
         {
             // Append this function name to the list of overloaded names for the
-            // symbol
+            // symbol. 'public' access specification gets added later.
             List* overloads = Getattr(d_overloads, alias);
             if (!overloads)
             {
@@ -928,11 +930,12 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
             }
             Append(overloads, Copy(imfuncname));
         }
-
-        // Not a class: make the function public (and alias the name)
-        Printv(f_public,
-               " public :: ", alias, "\n",
-               NULL);
+        else
+        {
+            Printv(f_public,
+                   " public :: ", alias, "\n",
+                   NULL);
+        }
     }
     Delete(new_alias);
 
