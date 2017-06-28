@@ -491,7 +491,25 @@ int FORTRAN::functionWrapper(Node *n)
         // Get the C type
         String* tm = get_attached_typemap(p, "ctype",
                                           WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
-        Printv(f->def, prepend_comma, tm, " ", arg, NULL);
+        bool is_function = (strstr(Char(tm), " (*)(") != NULL);
+        if (!is_function)
+            Printv(f->def, prepend_comma, tm, " ", arg, NULL);
+        else
+        {
+            String* tm_mod = Copy(tm);
+
+            char* dest = (char*) malloc(Len(tm_mod) + 10);
+            dest[0] = 0;
+
+            strcat(dest, " (*");
+            strcat(dest, Char(arg));
+            strcat(dest, ")(");
+
+            Replace(tm_mod, " (*)(", dest, DOH_REPLACE_FIRST);
+            Printv(f->def, prepend_comma, tm_mod, NULL);
+            free(dest);
+            Delete(tm_mod);
+        }
 
         // Get typemap for this argument
         tm = get_attached_typemap(p, "in", WARN_TYPEMAP_IN_UNDEF);
