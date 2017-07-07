@@ -490,24 +490,20 @@ int FORTRAN::functionWrapper(Node *n)
 
         // Get the C type
         String* tm = get_attached_typemap(p, "ctype",
-                                          WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
-        bool is_function = (strstr(Char(tm), " (*)(") != NULL);
-        if (!is_function)
+                    WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+
+        SwigType* type = Getattr(p, "type");
+        if (!SwigType_isfunctionpointer(type))
             Printv(f->def, prepend_comma, tm, " ", arg, NULL);
         else
         {
             String* tm_mod = Copy(tm);
+            String* subst = NewStringf("(*%s)(", Char(arg));
 
-            char* dest = (char*) malloc(Len(tm_mod) + 10);
-            dest[0] = 0;
-
-            strcat(dest, " (*");
-            strcat(dest, Char(arg));
-            strcat(dest, ")(");
-
-            Replace(tm_mod, " (*)(", dest, DOH_REPLACE_FIRST);
+            Replace(tm_mod, " (*)(", subst, DOH_REPLACE_FIRST);
             Printv(f->def, prepend_comma, tm_mod, NULL);
-            free(dest);
+
+            Delete(subst);
             Delete(tm_mod);
         }
 
