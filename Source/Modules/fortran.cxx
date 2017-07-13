@@ -490,8 +490,22 @@ int FORTRAN::functionWrapper(Node *n)
 
         // Get the C type
         String* tm = get_attached_typemap(p, "ctype",
-                                          WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
-        Printv(f->def, prepend_comma, tm, " ", arg, NULL);
+                    WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+
+        SwigType* type = Getattr(p, "type");
+        if (!SwigType_isfunctionpointer(type))
+            Printv(f->def, prepend_comma, tm, " ", arg, NULL);
+        else
+        {
+            String* tm_mod = Copy(tm);
+            String* subst = NewStringf("(*%s)(", Char(arg));
+
+            Replace(tm_mod, " (*)(", subst, DOH_REPLACE_FIRST);
+            Printv(f->def, prepend_comma, tm_mod, NULL);
+
+            Delete(subst);
+            Delete(tm_mod);
+        }
 
         // Get typemap for this argument
         tm = get_attached_typemap(p, "in", WARN_TYPEMAP_IN_UNDEF);
