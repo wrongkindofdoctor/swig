@@ -8,6 +8,10 @@
 
 %include <shared_ptr.i>
 
+#ifndef SWIG_SHARED_PTR_NOT_NULL
+#define SWIG_SHARED_PTR_NOT_NULL(f) f
+#endif
+
 %define SWIG_SHARED_PTR_TYPEMAPS(CONST, TYPE...)
 
 #define SWIGSP__ SWIG_SHARED_PTR_QNAMESPACE::shared_ptr<CONST TYPE >
@@ -77,7 +81,7 @@
     if ($input) $1 = *($&1_ltype)$input;
 }
 %typemap(out, noblock=1) SWIGSP__ {
-    $result = $1 ? new $1_ltype($1) : 0;
+    $result = SWIG_SHARED_PTR_NOT_NULL($1) ? new $1_ltype($1) : 0;
 }
 
 // shared_ptr by reference
@@ -85,7 +89,7 @@
     $1 = $input ? ($1_ltype)$input : &tempnull;
 }
 %typemap(out, noblock=1) SWIGSP__ & {
-    $result = *$1 ? new $*1_ltype(*$1) : 0;
+    $result = SWIG_SHARED_PTR_NOT_NULL(*$1) ? new $*1_ltype(*$1) : 0;
 }
 
 // shared_ptr by pointer
@@ -93,7 +97,7 @@
     $1 = $input ? ($1_ltype)$input : &tempnull;
 }
 %typemap(out, noblock=1, fragment="SWIG_null_deleter") SWIGSP__ * {
-    $result = ($1 && *$1) ? new $*1_ltype(*($1_ltype)$1) : 0;
+    $result = ($1 && SWIG_SHARED_PTR_NOT_NULL(*$1)) ? new $*1_ltype(*($1_ltype)$1) : 0;
     if ($owner) delete $1;
 }
 
