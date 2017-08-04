@@ -15,10 +15,10 @@
 #ifdef SWIGFORTRAN
 
 %fortranappend SimpleClass::SimpleClass %{
-   write(0, "(a, z16)") "F Constructed ", self%ptr
+   write(0, "(a, z16)") "F Constructed ", self%swigptr
 %}
 %fortranprepend SimpleClass::~SimpleClass %{
-   write(0, "(a, z16)") "F Releasing   ", self%ptr
+   write(0, "(a, z16)") "F Releasing   ", self%swigptr
 %}
 #endif
 

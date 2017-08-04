@@ -10,7 +10,8 @@ program main
     use ISO_FORTRAN_ENV
 
     call test_class()
-end program
+
+contains
 
 subroutine test_class()
     use simple_class
@@ -22,7 +23,7 @@ subroutine test_class()
 
     write(0, *) "Constructing..."
     call orig%create()
-    ! write(0, "(a, z16)") "Orig:", orig%ptr, "Copy:", copy%ptr
+    ! write(0, "(a, z16)") "Orig:", orig%swigptr, "Copy:", copy%swigptr
     write(0, *) "Setting..."
     call orig%set(1)
     write(0, *) "Current value ", orig%get()
@@ -73,7 +74,7 @@ subroutine test_class()
 
     ! write(0, *) "Copying..."
     ! copy = orig
-    ! ! write(0, "(a, z16)") "Orig:", orig%ptr, "Copy:", copy%ptr
+    ! ! write(0, "(a, z16)") "Orig:", orig%swigptr, "Copy:", copy%swigptr
     ! call print_value(copy)
     ! write(0, *) "Destroying..."
     ! call orig%release()
@@ -86,6 +87,8 @@ subroutine test_class()
     write(0, *) "Values:", s%get_val()
     call s%release()
 end subroutine
+
+end program
 
 !-----------------------------------------------------------------------------!
 ! end of simple_class/test.f90
