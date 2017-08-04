@@ -322,23 +322,23 @@ FORT_OPAQUE_PTR_TYPEMAP(void*)
 
 %typemap(fdata) SWIGTYPE %{
   ! These should be treated as PROTECTED data
-  type(C_PTR), public :: ptr = C_NULL_PTR
-  logical, public :: own = .false.
+  type(C_PTR), public :: swigptr = C_NULL_PTR
+  logical, public :: swigown = .false.
 %}
 
 %typemap(fcreate) SWIGTYPE
 %{
-   if (c_associated(self%ptr)) call self%release()
-   self%ptr = $imcall
-   self%own = .true.
+   if (c_associated(self%swigptr)) call self%release()
+   self%swigptr = $imcall
+   self%swigown = .true.
 %}
 
 %typemap(frelease) SWIGTYPE %{
-   if (self%own) then
+   if (self%swigown) then
     call $imcall
-    self%own = .false.
+    self%swigown = .false.
    end if
-   self%ptr = C_NULL_PTR
+   self%swigptr = C_NULL_PTR
 %}
 
 //---------------------------------------------------------------------------//
@@ -383,11 +383,11 @@ FORT_OPAQUE_PTR_TYPEMAP(void*)
 %typemap(ftype)  SWIGTYPE
   "type($fclassname)"
 %typemap(fin)    SWIGTYPE
-  "$1_name%ptr"
+  "$1_name%swigptr"
 %typemap(fout)   SWIGTYPE
 %{
-   $result%ptr = $imcall
-   $result%own = .true.
+   $result%swigptr = $imcall
+   $result%swigown = .true.
 %}
 
 //---------------------------------------------------------------------------//
@@ -405,11 +405,11 @@ FORT_OPAQUE_PTR_TYPEMAP(void*)
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&
   "class($fclassname)"
 %typemap(fin)    SWIGTYPE*, SWIGTYPE&
-  "$1_name%ptr"
+  "$1_name%swigptr"
 %typemap(fout)   SWIGTYPE*, SWIGTYPE&
   %{
-   $result%ptr = $imcall
-   $result%own = $owner
+   $result%swigptr = $imcall
+   $result%swigown = $owner
 %}
 
 %typemap(ctype)  const SWIGTYPE*, const SWIGTYPE&

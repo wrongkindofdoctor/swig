@@ -34,6 +34,15 @@ Foo::~Foo()
 double Foo::get() const { return d_val; }
 void Foo::set(double v) { d_val = v; }
 
+Foo Foo::clone() const
+{
+    return *this;
+}
+
+std::shared_ptr<Foo> Foo::clone_sp() const
+{
+    return std::make_shared<Foo>(*this);
+}
 
 void print_sp(std::shared_ptr<Foo> f)
 {

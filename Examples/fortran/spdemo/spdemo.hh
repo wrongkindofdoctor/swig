@@ -26,6 +26,18 @@ class Foo
 
     double get() const;
     void set(double v);
+
+    // Return a copy by value
+    Foo clone() const;
+    // Return an SP copy
+    std::shared_ptr<Foo> clone_sp() const;
+
+    // Return references to ourself
+    Foo& mutable_ref() { return *this; }
+    const Foo& ref() const { return *this; }
+
+    Foo* mutable_ptr() { return this; }
+    const Foo* ptr() const { return this; }
 };
 
 void print_crsp(const std::shared_ptr<Foo>& f);
