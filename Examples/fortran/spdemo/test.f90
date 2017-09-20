@@ -11,7 +11,8 @@ program main
     use ISO_FORTRAN_ENV
     implicit none
 
-    call test_class()
+    !call test_class()
+    call test_spcopy()
 
 contains
 
@@ -44,6 +45,39 @@ subroutine test_class()
     call f2%release()
     write(0, *) "Release f3"
     call f3%release()
+end subroutine
+
+subroutine test_spcopy()
+    use ISO_FORTRAN_ENV
+    use spdemo, only : Foo, printfoo => print_crsp, use_count
+    implicit none
+    type(Foo) :: f1, f2
+
+    write(0, *) "Use count should be 0:", use_count(f1)
+    write(0, *) "Constructing..."
+    call f1%create(1.0d0)
+    write(0, *) "Use count should be 1:", use_count(f1)
+
+    write(0, *) "Assigning..."
+    f2 = f1
+    write(0, *) "Use count should be 2:", use_count(f1)
+    write(0, *) "Use count should be 2:", use_count(f2)
+
+    write(0, *) "Cloning..."
+    f2 = f1%clone_sp()
+    call f2%set(2.0d0)
+    write(0, *) "Use count should be 1, val 1:", use_count(f1), f1%get()
+    write(0, *) "Use count should be 1, val 2:", use_count(f2), f2%get()
+
+    write(0, *) "Getting reference..."
+    f1 = f2%ref()
+    write(0, *) "Use count should be 1:", use_count(f1)
+    write(0, *) "Use count should be 1:", use_count(f2)
+
+    call f1%release()
+    write(0, *) "Use count should be 1:", use_count(f2)
+    call f2%release()
+    write(0, *) "-- END SUBROUTINE --"
 end subroutine
 
 end program

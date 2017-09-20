@@ -27,10 +27,17 @@ Foo::Foo(double val)
     cout << "Initialized Foo at " << this << endl;
 }
 
+Foo::Foo(const Foo& other)
+    : d_val(other.d_val)
+{
+    cout << "Copy-constructed Foo at " << this << endl;
+}
+
 Foo::~Foo()
 {
     cout << "Destroyed Foo at " << this << endl;
 }
+
 double Foo::get() const { return d_val; }
 void Foo::set(double v) { d_val = v; }
 

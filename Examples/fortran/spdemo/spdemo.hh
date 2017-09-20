@@ -21,6 +21,7 @@ class Foo
   public:
     // Constructor
     Foo();
+    Foo(const Foo& other);
     Foo(double val);
     ~Foo();
 
@@ -40,6 +41,7 @@ class Foo
     const Foo* ptr() const { return this; }
 };
 
+int use_count(const std::shared_ptr<Foo>& f) { return f.use_count(); }
 void print_crsp(const std::shared_ptr<Foo>& f);
 void print_sp(std::shared_ptr<Foo> f);
 void print_spc(std::shared_ptr<const Foo> f);

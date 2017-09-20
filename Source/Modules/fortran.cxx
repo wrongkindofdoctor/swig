@@ -123,7 +123,7 @@ class FORTRAN : public Language
     void write_module_interface();
     void write_module();
 
-    void write_proxy_code(Node* n, bool is_subroutine);
+    void write_proxy_code(Node* n);
 
     // Helper functions
     String* get_attached_typemap(Node* n, const char* tmname, int warning);
@@ -439,6 +439,7 @@ int FORTRAN::functionWrapper(Node *n)
     // Get C return type
     String* c_return_type = get_typemap_out(n, "ctype",
                                             WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+    Setattr(n, "wrap:type", c_return_type);
     Printv(f->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
 
     // Function attributes
@@ -650,7 +651,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     // >>> WRITE PROXY CODE
 
-    write_proxy_code(n, is_subroutine);
+    write_proxy_code(n);
 
     return SWIG_OK;
 }
@@ -663,11 +664,14 @@ int FORTRAN::functionWrapper(Node *n)
  * \param[in] imfuncname Wrapped function name
  * \param[in] is_subroutine Whether the function has 'void' return type
  */
-void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
+void FORTRAN::write_proxy_code(Node* n)
 {
-    String* wname  = Getattr(n, "wrap:name");
+    String* wname = Getattr(n, "wrap:name");
     String* imfuncname = Getattr(n, "imfuncname");
     SwigType* returntype = Getattr(n, "type");
+    SwigType* creturntype = Getattr(n, "wrap:type");
+
+    bool is_subroutine = creturntype && (Cmp(creturntype, "void") == 0);
 
     // Set up proxy subroutine label.
     const char* sub_or_func_str = NULL;
@@ -712,8 +716,7 @@ void FORTRAN::write_proxy_code(Node* n, bool is_subroutine)
         Printv(callcmd, wname, "(", NULL);
         Printv(args, "self", NULL);
 
-        String* f_return_type
-            = get_typemap(n, "ftype", returntype,
+        String* f_return_type = get_typemap(n, "ftype", returntype,
                           WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
         substitute_classname(returntype, f_return_type);
         Printv(params, "   ", f_return_type, " :: self\n", NULL);
@@ -1017,7 +1020,68 @@ int FORTRAN::classHandler(Node *n)
     // Emit class members
     Language::classHandler(n);
 
-    // Make the class publically accessible
+    // Add assignment operator for smart pointers
+    String* spclass = Getattr(n, "feature:smartptr");
+    if (spclass)
+    {
+        // Create overloaded aliased name
+        String* alias      = NewString("assignment(=)");
+        String* imfuncname = NewStringf("swigf_assign_%s",
+                                        Getattr(n, "sym:name"));
+        String* wrapname = NewStringf("swigc_spcopy_%s",
+                                      Getattr(n, "sym:name"));
+
+        // Add self-assignment to method overload list
+        assert(!Getattr(d_method_overloads, alias));
+        List* overloads = NewList();
+        Setattr(d_method_overloads, alias, overloads);
+        Append(overloads, imfuncname);
+
+        // Define the method
+        Printv(f_methods,
+               "  procedure, private :: ", imfuncname, "\n",
+               NULL);
+        
+        // Add the proxy code implementation of assignment
+        Printv(f_proxy,
+           "  subroutine ", imfuncname, "(self, other)\n"
+           "   use, intrinsic :: ISO_C_BINDING\n"
+           "   class(", symname, "), intent(inout) :: self\n"
+           "   type(", symname, "), intent(in) :: other\n"
+           "   call self%release()\n"
+           "   self%swigptr = ", wrapname, "(other%swigptr)\n"
+           "  end subroutine\n",
+           NULL);
+
+        // Add interface code
+        Printv(f_interfaces,
+               "  function ", wrapname, "(farg1) &\n"
+               "     bind(C, name=\"", wrapname, "\") &\n"
+               "     result(fresult)\n"
+               "   use, intrinsic :: ISO_C_BINDING\n"
+               "   type(C_PTR) :: fresult\n"
+               "   type(C_PTR), value :: farg1\n"
+               "  end function\n",
+               NULL);
+
+        // Add C code
+        Wrapper* f = NewWrapper();
+        Printv(f->def, "SWIGEXPORT void* ", wrapname, "(void* farg1) {\n",
+               NULL);
+        Printv(f->code, spclass, "* arg1 = (", spclass, " *)farg1;\n"
+                       ""
+                       "    return new ", spclass, "(*arg1);\n"
+                       "}\n",
+                       NULL);
+        Wrapper_print(f, f_wrapper);
+
+        Delete(alias);
+        Delete(imfuncname);
+        Delete(wrapname);
+        DelWrapper(f);
+    }
+
+    // Make the class publicly accessible
     Printv(f_public, " public :: ", symname, "\n",
                     NULL);
 
@@ -1027,8 +1091,9 @@ int FORTRAN::classHandler(Node *n)
         Printv(f_types, ", extends(", basename, ")", NULL);
     }
 
-    if(Abstract)
+    if (Abstract)
     {
+        // The 'Abstract' global variable is set to 1 if this class is abstract
         Printv(f_types, ", abstract", NULL);
     }
 
@@ -1037,9 +1102,9 @@ int FORTRAN::classHandler(Node *n)
     // Insert the class data. Only do this if the class has no base classes
     if (!basename)
     {
-           Printv(f_types, "  ", lstrip(get_typemap(n, "fdata", d_classtype,
-                                    WARN_FORTRAN_TYPEMAP_FDATA_UNDEF)),
-           NULL);
+        Printv(f_types, "  ", lstrip(get_typemap(n, "fdata", d_classtype,
+                                 WARN_FORTRAN_TYPEMAP_FDATA_UNDEF)),
+        NULL);
     }
     Printv(f_types, " contains\n",
            f_methods, NULL);
@@ -1129,9 +1194,9 @@ int FORTRAN::destructorHandler(Node* n)
         Printv(f_proxy,
            "  subroutine ", imfuncname, "(self)\n"
            "   use, intrinsic :: ISO_C_BINDING\n"
-           "   type(", classname, ") :: self\n"
-           "   call ", Getattr(n, "wrap:name"), "(self%ptr)\n"
-           "   self%ptr = C_NULL_PTR\n"
+           "   class(", classname, ") :: self\n"
+           "   call ", Getattr(n, "wrap:name"), "(self%swigptr)\n"
+           "   self%swigptr = C_NULL_PTR\n"
            "  end subroutine\n",
            NULL);
 
@@ -1558,3 +1623,4 @@ swig_fortran(void)
 {
     return new FORTRAN();
 }
+// XXX vim: set ts=2 sw=2 cindent  :
