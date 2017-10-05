@@ -205,28 +205,18 @@
     FTYPE ", dimension(:), intent(in)"
 %enddef
 
-FORT_FUND_TYPEMAP(bool         , "logical(C_BOOL)"     )
-FORT_FUND_TYPEMAP(unsigned char, "integer(C_INT8_T)"   )
-FORT_FUND_TYPEMAP(short        , "integer(C_SHORT)"    )
-FORT_FUND_TYPEMAP(int          , "integer(C_INT)"      )
-FORT_FUND_TYPEMAP(long         , "integer(C_LONG)"     )
-FORT_FUND_TYPEMAP(long long    , "integer(C_LONG_LONG)")
-FORT_FUND_TYPEMAP(size_t       , "integer(C_SIZE_T)"   )
-FORT_FUND_TYPEMAP(float        , "real(C_FLOAT)"       )
-FORT_FUND_TYPEMAP(double       , "real(C_DOUBLE)"      )
-
-// Apply unsigned equivalent types
-%define FORTRAN_EQUIV(CTYPE, CTYPE2)
-  %apply       CTYPE  {       CTYPE2  };
-  %apply       CTYPE* {       CTYPE2* };
-  %apply       CTYPE& {       CTYPE2& };
-  %apply const CTYPE* { const CTYPE2*, const CTYPE2[], const CTYPE2[ANY] };
-  %apply const CTYPE& { const CTYPE2& };
-%enddef
-
-FORTRAN_EQUIV(short , unsigned short );
-FORTRAN_EQUIV(int   , unsigned int   );
-FORTRAN_EQUIV(long  , unsigned long  );
+FORT_FUND_TYPEMAP(bool          , "logical(C_BOOL)"     )
+FORT_FUND_TYPEMAP(unsigned char , "integer(C_INT8_T)"   )
+FORT_FUND_TYPEMAP(short         , "integer(C_SHORT)"    )
+FORT_FUND_TYPEMAP(unsigned short, "integer(C_SHORT)"    )
+FORT_FUND_TYPEMAP(int           , "integer(C_INT)"      )
+FORT_FUND_TYPEMAP(unsigned int  , "integer(C_INT)"      )
+FORT_FUND_TYPEMAP(long          , "integer(C_LONG)"     )
+FORT_FUND_TYPEMAP(unsigned long , "integer(C_LONG)"     )
+FORT_FUND_TYPEMAP(long long     , "integer(C_LONG_LONG)")
+FORT_FUND_TYPEMAP(size_t        , "integer(C_SIZE_T)"   )
+FORT_FUND_TYPEMAP(float         , "real(C_FLOAT)"       )
+FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
 
 %typecheck(SWIG_TYPECHECK_BOOL) 
     bool,
