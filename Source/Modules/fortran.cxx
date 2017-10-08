@@ -1282,6 +1282,9 @@ int FORTRAN::insertDirective(Node *n)
  */
 int FORTRAN::enumDeclaration(Node *n)
 {
+    if (ImportMode)
+      return SWIG_OK;
+
     // Symname is not present if the enum is not being wrapped
     // (protected/private)
     // XXX: do we also need to check for 'ignore'?
