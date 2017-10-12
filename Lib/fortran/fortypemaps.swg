@@ -199,7 +199,8 @@
     %{call c_f_pointer($imcall, $result)%}
 
   // Overrides for const Fortran intent
-  %typemap(imtype) const CTYPE*, const CTYPE[], const CTYPE[ANY]
+  %typemap(imtype, out="type(C_PTR)") const CTYPE*, const CTYPE[],
+                                      const CTYPE[ANY]
     FTYPE ", dimension(*), intent(in)"
   %typemap(ftype, out=FTYPE ", pointer") const CTYPE*, const CTYPE[], CTYPE[ANY]
     FTYPE ", dimension(:), intent(in)"
