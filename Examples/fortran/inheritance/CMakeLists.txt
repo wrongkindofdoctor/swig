@@ -10,11 +10,11 @@ SET(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(inheritancelib inheritance.cc)
+ADD_LIBRARY(inh inheritance.cc)
 
 # Generate SWIG module
 MAKE_SWIG(MODULE inheritance
-  DEPLIBS inheritancelib)
+  DEPLIBS inh)
 
 # Create test executable
 add_executable(inheritance_test.exe test.f90)
