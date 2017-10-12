@@ -15,7 +15,7 @@
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Reverse the contents of an arr in-place
+ * \brief Reverse the contents of an array in-place
  */
 template<class T>
 void reverse(T* arr, int count)
@@ -25,7 +25,7 @@ void reverse(T* arr, int count)
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Sort the contents of an arr in-place
+ * \brief Sort the contents of an array in-place
  */
 template<class T>
 void sort(T* arr, int count)
@@ -35,7 +35,7 @@ void sort(T* arr, int count)
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Do a binary search on the arr
+ * \brief Do a binary search on a sorted array
  *
  * \return The fortran index (starts with 1) or zero if not found
  */
