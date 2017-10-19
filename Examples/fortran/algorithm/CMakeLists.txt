@@ -6,8 +6,6 @@
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
 ##---------------------------------------------------------------------------##
 
-#SET(CMAKE_CXX_FLAGS "-std=c++11")
-
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
 

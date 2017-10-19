@@ -9,12 +9,17 @@
 program main
     use ISO_FORTRAN_ENV
     use, intrinsic :: ISO_C_BINDING
-    use stdvec, only : print_vec => print_vecdbl, VecDbl
+    use stdvec, only : print_vec => print_vecdbl, make_view => make_viewdbl, &
+        make_const_view => make_const_viewdbl, &
+        print_view => print_viewdbl, VecViewDbl, const_VecViewDbl, VecDbl
     implicit none
     type(VecDbl) :: v
+    type(VecViewDbl) :: view
+    type(const_VecViewDbl) :: cview
     integer :: i
     real(C_DOUBLE), dimension(3) :: dummy_data
     real(C_DOUBLE), allocatable, dimension(:) :: obtained
+    real(C_DOUBLE), pointer :: fptr(:)
 
     ! This should be a null-op since the underlying pointer is initialized to
     ! null
@@ -33,6 +38,16 @@ program main
         call v%set(i, real(i) * 123.0d0)
     end do
     call print_vec(v)
+
+    ! Get view
+    write(0, *) "Getting and printing view"
+    view = make_view(v)
+    call print_view(view)
+
+    ! Get view
+    write(0, *) "Getting and printing const view"
+    cview = make_const_view(v)
+    call print_view(cview)
 
     ! Pull data from the vector
     allocate(obtained(v%size()))

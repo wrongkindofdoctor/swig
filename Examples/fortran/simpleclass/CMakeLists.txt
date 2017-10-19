@@ -6,7 +6,6 @@
 ##---------------------------------------------------------------------------##
 
 SET(CMAKE_Fortran_FLAGS "-cpp ${CMAKE_Fortran_FLAGS}")
-SET(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})

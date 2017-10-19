@@ -1,4 +1,3 @@
-#SET(CMAKE_CXX_FLAGS "-std=c++11")
 SET(CMAKE_Fortran_FLAGS "-cpp ${CMAKE_Fortran_FLAGS}")
 
 # Build C++ library

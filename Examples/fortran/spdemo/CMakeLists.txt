@@ -5,8 +5,6 @@
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
 ##---------------------------------------------------------------------------##
 
-set(CMAKE_CXX_STANDARD 11)
-
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
 ADD_LIBRARY(spdemolib spdemo.cc)

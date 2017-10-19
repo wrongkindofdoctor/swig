@@ -17,8 +17,14 @@
 %template(VecDbl) std::vector<double>;
 
 %include "stdvec.hh"
-%template(print_vecdbl) print_vec<double>;
 
+%template(const_VecViewDbl) VectorView<const double>;
+%template(VecViewDbl) VectorView<double>;
+
+%template(make_viewdbl) make_view<double>;
+%template(make_const_viewdbl) make_const_view<double>;
+%template(print_viewdbl) print_view<double>;
+%template(print_vecdbl)  print_vec<double>;
 
 //---------------------------------------------------------------------------//
 // end of std_vector/stdvec.i
