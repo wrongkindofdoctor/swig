@@ -79,7 +79,6 @@ class FORTRAN : public Language
 
     // Current class parameters
     Hash* d_method_overloads; //!< Overloaded subroutine -> overload names
-    String* f_methods; //!< Method strings inside the current class
     SwigType* d_classtype; //!< Class type
     bool d_in_constructor; //!< Whether we're being called inside a constructor
     bool d_in_destructor; //!< Whether we're being called inside a constructor
@@ -109,7 +108,6 @@ class FORTRAN : public Language
         , d_outpath(NULL)
         , d_use_proxy(true)
         , d_use_final(false)
-        , f_methods(NULL)
         , d_classtype(NULL)
         , d_in_constructor(false)
         , d_in_destructor(false)
@@ -925,7 +923,7 @@ void FORTRAN::write_proxy_code(Node* n)
             alias = overalias;
         }
 
-        Printv(f_methods,
+        Printv(f_types,
                "  procedure", (  is_static     ? ", nopass"
                                : is_overloaded ? ", private"
                                : ""),
@@ -1010,12 +1008,37 @@ int FORTRAN::classHandler(Node *n)
     }
 
     // Initialize output strings that will be added by 'functionHandler'
-    assert(!f_methods);
-    f_methods = NewString("");
     d_method_overloads = NewHash();
 
     // Write Fortran class header
     d_classtype = Getattr(n, "classtypeobj");
+
+    // Make the class publicly accessible
+    Printv(f_public, " public :: ", symname, "\n",
+                    NULL);
+
+    Printv(f_types, " type", NULL);
+    if (basename)
+    {
+        Printv(f_types, ", extends(", basename, ")", NULL);
+    }
+
+    if (Abstract)
+    {
+        // The 'Abstract' global variable is set to 1 if this class is abstract
+        Printv(f_types, ", abstract", NULL);
+    }
+
+    Printv(f_types, " :: ", symname, "\n", NULL);
+
+    // Insert the class data. Only do this if the class has no base classes
+    if (!basename)
+    {
+        Printv(f_types, "  ", lstrip(get_typemap(n, "fdata", d_classtype,
+                                 WARN_FORTRAN_TYPEMAP_FDATA_UNDEF)),
+        NULL);
+    }
+    Printv(f_types, " contains\n", NULL);
 
     // Emit class members
     Language::classHandler(n);
@@ -1038,7 +1061,7 @@ int FORTRAN::classHandler(Node *n)
         Append(overloads, imfuncname);
 
         // Define the method
-        Printv(f_methods,
+        Printv(f_types,
                "  procedure, private :: ", imfuncname, "\n",
                NULL);
         
@@ -1081,34 +1104,6 @@ int FORTRAN::classHandler(Node *n)
         DelWrapper(f);
     }
 
-    // Make the class publicly accessible
-    Printv(f_public, " public :: ", symname, "\n",
-                    NULL);
-
-    Printv(f_types, " type", NULL);
-    if (basename)
-    {
-        Printv(f_types, ", extends(", basename, ")", NULL);
-    }
-
-    if (Abstract)
-    {
-        // The 'Abstract' global variable is set to 1 if this class is abstract
-        Printv(f_types, ", abstract", NULL);
-    }
-
-    Printv(f_types, " :: ", symname, "\n", NULL);
-
-    // Insert the class data. Only do this if the class has no base classes
-    if (!basename)
-    {
-        Printv(f_types, "  ", lstrip(get_typemap(n, "fdata", d_classtype,
-                                 WARN_FORTRAN_TYPEMAP_FDATA_UNDEF)),
-        NULL);
-    }
-    Printv(f_types, " contains\n",
-           f_methods, NULL);
-
     // Write overloads
     for (Iterator kv = First(d_method_overloads); kv.key; kv = Next(kv))
     {
@@ -1127,7 +1122,6 @@ int FORTRAN::classHandler(Node *n)
                     NULL);
 
     Delete(d_method_overloads);
-    Delete(f_methods); f_methods = NULL;
     d_classtype = NULL;
 
     return SWIG_OK;
@@ -1187,7 +1181,7 @@ int FORTRAN::destructorHandler(Node* n)
         String* classname = Getattr(getCurrentClass(), "sym:name");
 
         // Add the 'final' subroutine to the methods
-        Printv(f_methods, "  final     :: ", imfuncname, "\n",
+        Printv(f_types, "  final     :: ", imfuncname, "\n",
                NULL);
 
         // Add the 'final' implementation
