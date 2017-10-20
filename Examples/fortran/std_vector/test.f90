@@ -19,7 +19,8 @@ program main
     integer :: i
     real(C_DOUBLE), dimension(3) :: dummy_data
     real(C_DOUBLE), allocatable, dimension(:) :: obtained
-    real(C_DOUBLE), pointer :: fptr(:)
+    real(C_DOUBLE), pointer :: beginptr
+    real(C_DOUBLE), pointer :: vptr(:)
 
     ! This should be a null-op since the underlying pointer is initialized to
     ! null
@@ -35,7 +36,7 @@ program main
 
     write(0, *) "Setting"
     do i = 0, 7
-        call v%set(i, real(i) * 123.0d0)
+        call v%set(i, real(i + 1) * 123.0d0)
     end do
     call print_vec(v)
 
@@ -43,6 +44,13 @@ program main
     write(0, *) "Getting and printing view"
     view = make_view(v)
     call print_view(view)
+
+    beginptr => view%data()
+    write(0,*) "associated?", ASSOCIATED(beginptr)
+    write(0, *) "Fortran first element:", beginptr
+
+    vptr => view%view()
+    write(0, *) "Fortran view:", vptr
 
     ! Get view
     write(0, *) "Getting and printing const view"

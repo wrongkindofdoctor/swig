@@ -1243,31 +1243,51 @@ int FORTRAN::importDirective(Node *n)
 /*!
  * \brief Process an '%insert' directive.
  *
- * This allows us to do custom insetrions into parts of the fortran module.
+ * This allows us to do custom insertions into parts of the fortran module.
  */
 int FORTRAN::insertDirective(Node *n)
 {
+    if (ImportMode)
+        return Language::insertDirective(n);
+
     String *code = Getattr(n, "code");
     String *section = Getattr(n, "section");
 
-    if (!ImportMode && d_use_proxy && (Cmp(section, "fortran") == 0))
+    if (Cmp(section, "fortran") == 0)
     {
-        // Insert code into the body of the module (after "contains")
-        Printv(f_proxy, code, NULL);
+        if (d_use_proxy)
+        {
+            if (is_wrapping_class())
+            {
+                substitute_classname(d_classtype, code);
+            }
+            
+            // Insert code into the body of the module (after "contains")
+            Printv(f_proxy, code, NULL);
+        }
     }
-    else if (!ImportMode && (Cmp(section, "fortranspec") == 0))
+    else if (Cmp(section, "fortranspec") == 0)
     {
-        // Insert code into the header of the module (alongside "public"
-        // methods)
-        Printv(f_public, code, NULL);
+        if (is_wrapping_class())
+        {
+            // Insert code into the class definition
+            substitute_classname(d_classtype, code);
+            Printv(f_types, code, NULL);
+        }
+        else
+        {
+            // Insert code into the header of the module (alongside "public"
+            // methods), used for adding 'ierr' to the module contents
+            Printv(f_public, code, NULL);
+        }
     }
     else
     {
         return Language::insertDirective(n);
     }
+
     return SWIG_OK;
 }
-
 
 //---------------------------------------------------------------------------//
 /*!

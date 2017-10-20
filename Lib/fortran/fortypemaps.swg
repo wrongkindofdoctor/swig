@@ -128,7 +128,7 @@
     %{$result = $imcall%}
 
   // Mutable references are passed by pointers as arguments, but they're
-  // *returned* as actual pointers (becoming Fortran function pointers)
+  // *returned* as actual pointers (becoming Fortran pointers)
   %typemap(ctype, out="CTYPE*") CTYPE&
     %{CTYPE*%}
   %typemap(in) CTYPE&
