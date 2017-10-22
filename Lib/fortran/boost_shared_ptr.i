@@ -130,30 +130,7 @@
 %typemap(fin) ALL_SWIGSP__ "$1_name%swigptr"
 %typemap(fout) ALL_SWIGSP__
 %{
-   $result%swigptr = $imcall
-%}
-
-%typemap(fdata) CONST TYPE
-%{
-  type(C_PTR), public :: swigptr = C_NULL_PTR
-%}
-
-%typemap(fcreate) CONST TYPE
-%{
-   if (c_associated(self%swigptr)) call self%release()
-   self%swigptr = $imcall
-%}
-
-%typemap(frelease) CONST TYPE
-%{
-   call $imcall
-   self%swigptr = C_NULL_PTR
-%}
-
-// References
-%typemap(fout) TYPE, TYPE &, TYPE *
-%{
-   $result%swigptr = $imcall
+   $result%swigptr = $1
 %}
 
 // Instantiate shared pointer
