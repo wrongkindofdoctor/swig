@@ -29,7 +29,6 @@
 
 /*! SPECIAL TYPEMAP VARIABLES.
  *
- * $imcall    : in the proxy class, the function call into the interface wrapper
  * $fclassname: the fortran proxy class name
  */
 
@@ -121,8 +120,8 @@
   // All other aspects of const reference vs value are the same
   %typemap(ctype, out="CTYPE") CTYPE, const CTYPE&
     %{const CTYPE*%}
-  %typemap(imtype, out=FTYPE) CTYPE, const CTYPE&
-    FTYPE ", intent(in)"
+  %typemap(imtype, in=FTYPE ", intent(in)") CTYPE, const CTYPE&
+    FTYPE
   %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&
     FTYPE ", intent(in)"
   %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&
@@ -130,7 +129,7 @@
   %typemap(fin)  CTYPE
     %{$1 = $input%}
   %typemap(fout) CTYPE, const CTYPE&
-    %{$result = $imcall%}
+    %{$result = $1%}
 
   // Mutable references are passed by pointers as arguments, but they're
   // *returned* as actual pointers (becoming Fortran pointers)
@@ -140,6 +139,8 @@
     %{$1 = $input;%}
   %typemap(out) CTYPE&
     %{$result = $1;%}
+  %typemap(imtype, in=FTYPE ", intent(inout)") CTYPE&
+    FTYPE
   %typemap(ftype, out=FTYPE ", pointer")  CTYPE&
     FTYPE ", intent(inout)"
   %typemap(fin)  CTYPE
@@ -298,7 +299,8 @@ FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
   ""
 %typemap(ftype)  void
   ""
-// No 'void' fortran argument allowed
+%typemap(fin)    void
+  ""
 %typemap(fout)   void
   ""
 
@@ -366,7 +368,7 @@ FORT_OPAQUE_PTR_TYPEMAP(void*)
 %typemap(fin)    SWIGTYPE
 %{
     $1 = $input%swigptr
-}
+%}
 %typemap(fout)   SWIGTYPE
 %{
    $result%swigptr = $1
@@ -387,7 +389,7 @@ FORT_OPAQUE_PTR_TYPEMAP(void*)
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&
   "class($fclassname)"
 %typemap(fin)    SWIGTYPE*, SWIGTYPE&
-{ $1 = $input%swigptr }
+%{ $1 = $input%swigptr %}
 %typemap(fout)   SWIGTYPE*, SWIGTYPE&
 %{ $result%swigptr = $1 %}
 
@@ -439,7 +441,7 @@ FORT_CHAR_TYPEMAP(char, "C_CHAR")
   %typemap(fin)    CTYPE*, CTYPE[], CTYPE[ANY]
     "$1 = $input"
   %typemap(fout)   CTYPE*, CTYPE[], CTYPE[ANY]
-    "$result = $imcall"
+    "$result = $1"
 %enddef
 
 FORT_STR_TYPEMAP(const char, "C_CHAR")
