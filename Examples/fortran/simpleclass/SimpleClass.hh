@@ -11,6 +11,7 @@
 #ifndef simple_class_SimpleClass_hh
 #define simple_class_SimpleClass_hh
 
+#ifndef SWIG
 //! Simple public struct
 struct BasicStruct
 {
@@ -24,6 +25,7 @@ enum MyEnum {
     BLUE,
     BLACK = -1
 };
+#endif
 
 //===========================================================================//
 /*!
@@ -49,6 +51,7 @@ class SimpleClass
     // Constructor
     SimpleClass();
 
+#ifndef SWIG
     // Copy constructor
     SimpleClass(const SimpleClass& rhs);
 
@@ -75,11 +78,12 @@ class SimpleClass
 
     // Access the value, multiplied by some parameter
     storage_type get_multiplied(multiple_type multiple) const;
+#endif
 };
-
 // Free function
 void print_value(const SimpleClass& c);
 
+#ifndef SWIG
 // Return by value should be converted to set-by-reference
 SimpleClass make_class(SimpleClass::storage_type val);
 
@@ -91,6 +95,7 @@ void set_class_by_copy(SimpleClass c);
 
 // Get a color name
 void print_color(MyEnum color);
+#endif
 
 //---------------------------------------------------------------------------//
 #endif // simple_class_SimpleClass_hh

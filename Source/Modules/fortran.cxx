@@ -4,6 +4,9 @@
 
 namespace
 {
+//---------------------------------------------------------------------------//
+// GLOBAL DATA
+//---------------------------------------------------------------------------//
 
 const char usage[] = "\
 Fotran Options (available with -fortran)\n\
@@ -11,6 +14,15 @@ Fotran Options (available with -fortran)\n\
                    of generatingproxy classes\n\
      -final      - Generate 'final' statement to call C++ destructors\n\
 \n";
+
+//! Maximum line length
+const int g_max_line_length = 128;
+
+const char fortran_end_statement[] = "\n";
+
+//---------------------------------------------------------------------------//
+// UTILITY FUNCTIONS
+//---------------------------------------------------------------------------//
 
 //! Return a const char* with leading whitespace stripped
 const char* lstrip(const_String_or_char_ptr s)
@@ -23,10 +35,33 @@ const char* lstrip(const_String_or_char_ptr s)
     return trimmed;
 }
 
-//! Maximum line length
-const int g_max_line_length = 128;
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Whether a node is a constructor.
+ *
+ * Node should be a function
+ */
+bool node_is_constructor(Node* n)
+{
+    return (Cmp(Getattr(n, "nodeType"), "constructor") == 0
+            || Getattr(n, "handled_as_constructor"));
+}
 
-//! Print a comma-joined line of items to the given output.
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Whether a node is a constructor.
+ *
+ * Node should be a function
+ */
+bool node_is_destructor(Node* n)
+{
+    return Cmp(Getattr(n, "nodeType"), "destructor") == 0;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Print a comma-joined line of items to the given output.
+ */
 int print_wrapped_line(String* out, Iterator it, int line_length)
 {
     const char* prepend_comma = "";
@@ -45,8 +80,10 @@ int print_wrapped_line(String* out, Iterator it, int line_length)
     return line_length;
 }
 
-const char fortran_end_statement[] = "\n";
-
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Return a function wrapper for Fortran code.
+ */
 Wrapper* NewFortranWrapper()
 {
     Wrapper* w = NewWrapper();
@@ -54,7 +91,128 @@ Wrapper* NewFortranWrapper()
     return w;
 }
 
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get/attach and return a typemap to the given node.
+ *
+ * If 'ext' is non-null, then after binding/searchinbg, a search will be made
+ * for the typemap with the given extension. If that's present, it's used
+ * instead of the default typemap. (This allows overriding of e.g. 'tmap:ctype'
+ * with 'tmap:ctype:out'.)
+ *
+ * If 'warning' is WARN_NONE, then if the typemap is not found, the return
+ * value will be NULL. Otherwise a mangled typename will be created and saved
+ * to attributes (or if attributes is null, then the given node).
+ */
+String* get_typemap(
+        const_String_or_char_ptr  tmname,
+        const_String_or_char_ptr  ext,
+        Node*                     n,
+        int                       warning,
+        bool                      attach)
+{
+    String* result = NULL;
+
+    if (attach)
+    {
+        // Attach the typemap, or NULL if it's not there
+        const char lname[] = "";
+        result = Swig_typemap_lookup(tmname, n, lname, NULL);
+    }
+    else
+    {
+        // Look up a typemap that should already be attached
+        String* key = NewStringf("tmap:%s", tmname);
+        result = Getattr(n, key);
+        Delete(key);
+    }
+
+    if (!result && warning != WARN_NONE)
+    {
+        // Typemap was not found: emit a warning
+        SwigType* type = Getattr(n, "type");
+        if (!type)
+        {
+            type = Getattr(n, "name");
+        }
+        if (!type)
+        {
+            Swig_print_node(n);
+            type = NewString("????");
+        }
+        Swig_warning(warning,
+                     Getfile(n), Getline(n),
+                     "No '%s' typemap defined for %s\n", tmname,
+                     SwigType_str(type, 0));
+
+        if (attach)
+        {
+            // Attach a mangled typemap
+            String* key = NewStringf("tmap:%s", tmname);
+            result = NewStringf("SWIGTYPE%s", SwigType_manglestr(type));
+            Setattr(n, key, result);
+            Delete(key);
+            Delete(result); // Since we're returning a "reference"
+        }
+    }
+
+    if (ext)
+    {
+        String* key = NewStringf("tmap:%s:%s", tmname, ext);
+        String* suffixed_tm = Getattr(n, key);
+        if (suffixed_tm)
+        {
+            result = suffixed_tm;
+        }
+        Delete(key);
+    }
+    return result;
 }
+
+//---------------------------------------------------------------------------//
+//! Attach and return a typemap to the given node.
+String* attach_typemap(const_String_or_char_ptr tmname, Node* n, int warning)
+{ return get_typemap(tmname, NULL, n, warning, true); }
+
+//! Attach and return a typemap (with extension) to the given node.
+String* attach_typemap(const_String_or_char_ptr tmname,
+                       const_String_or_char_ptr ext, Node* n, int warning)
+{ return get_typemap(tmname, ext, n, warning, true); }
+
+//! Get and return a typemap to the given node.
+String* get_typemap(const_String_or_char_ptr tmname, Node* n, int warning)
+{ return get_typemap(tmname, NULL, n, warning, false); }
+
+//! Get and return a typemap (with extension) to the given node.
+String* get_typemap(const_String_or_char_ptr tmname,
+                       const_String_or_char_ptr ext, Node* n, int warning)
+{ return get_typemap(tmname, ext, n, warning, false); }
+
+//---------------------------------------------------------------------------//
+//! Add a named C argument to a function declaration.
+void print_carg(String* out, Node* n, String* tm, String* arg)
+{
+    if (!SwigType_isfunctionpointer(Getattr(n, "type")))
+    {
+        Printv(out, tm, " ", arg, NULL);
+    }
+    else
+    {
+        // Function pointer syntax requires special handling:
+        // Replace (PRVAL) (*)(PARGS) arg with (PRVAL)(*arg)(PARGS)
+        String* tm_arg = Copy(tm);
+        String* subst = NewStringf("(*%s)(", arg);
+
+        Replace(tm_arg, " (*)(", subst, DOH_REPLACE_FIRST);
+        Printv(out, tm_arg, NULL);
+
+        Delete(subst);
+        Delete(tm_arg);
+    }
+}
+//---------------------------------------------------------------------------//
+} // end anonymous namespace
+
 
 class FORTRAN : public Language
 {
@@ -88,7 +246,6 @@ class FORTRAN : public Language
 
     // Current class parameters
     Hash* d_method_overloads; //!< Overloaded subroutine -> overload names
-    SwigType* d_classtype; //!< Class type
 
     List* d_enumvalues; //!< List of enumerator values
 
@@ -115,7 +272,6 @@ class FORTRAN : public Language
         , d_outpath(NULL)
         , d_use_proxy(true)
         , d_use_final(false)
-        , d_classtype(NULL)
         , d_enumvalues(NULL)
     {
         /* * */
@@ -127,21 +283,11 @@ class FORTRAN : public Language
     void write_wrapper();
     void write_module();
 
-    // Helper functions
-    String* get_attached_typemap(Node* n, const char* tmname, int warning);
-    String* get_typemap(Node* n, const char* tmname, SwigType* type, int
-                        warning);
-    String* get_typemap_out(Node* n, const char* tmname, int warning);
-    String* get_typemap(Node* n, const_String_or_char_ptr tmname,
-                        SwigType* type, Node* attributes, int warning,
-                        const char* suffix);
-
-    bool substitute_classname(SwigType *pt, String *tm);
-    void substitute_classname_impl(SwigType *classnametype, String *tm,
-                                   const char *classnamespecialvariable);
+    bool replace_fclassname(SwigType* type, String* tm);
+    void replace_fspecial_impl(SwigType* classnametype, String* tm,
+                                   const char* classnamespecialvariable);
 
     void emit_proxy_parm(Node* n, ParmList *l, Wrapper *f);
-    void print_carg(String* out, Node* n, String* tm, String* arg);
 };
 
 //---------------------------------------------------------------------------//
@@ -382,13 +528,10 @@ void FORTRAN::write_module()
  */
 int FORTRAN::functionWrapper(Node *n)
 {
-    // Basic attributes
-    String* symname    = Getattr(n, "sym:name");
-    ParmList* parmlist = Getattr(n, "parms");
-
     // >>> INITIALIZE
 
     // Create wrapper name, taking into account overloaded functions
+    String* symname  = Getattr(n, "sym:name");
     String* wname = Copy(Swig_name_wrapper(symname));
     const bool is_overloaded = Getattr(n, "sym:overloaded");
     if (is_overloaded)
@@ -403,8 +546,19 @@ int FORTRAN::functionWrapper(Node *n)
 
     // Create name of Fortran proxy subroutine/function
     String* fname = NULL;
+    bool in_constructor = false;
+    bool in_destructor = false;
     if (is_wrapping_class())
     {
+        if (node_is_constructor(n))
+        {
+            in_constructor = true;
+        }
+        else if (node_is_destructor(n))
+        {
+            in_destructor = true;
+        }
+
         fname = NewStringf("swigf_%s", symname);
         if (is_overloaded)
         {
@@ -423,9 +577,11 @@ int FORTRAN::functionWrapper(Node *n)
     Setattr(n, "wrap:name",  wname);
     Setattr(n, "wrap:fname", fname);
 
+    // XXX: move this code into staticmembervariableHandler
     // Update parameter names for static variables
     // Otherwise, argument names will be like "BaseClass::i"
     String* staticName = Getattr(n, "staticmembervariableHandler:sym:name");
+    ParmList* parmlist = Getattr(n, "parms");
     if (staticName && ParmList_len(parmlist))
     {
         assert(ParmList_len(parmlist) == 1);
@@ -446,30 +602,40 @@ int FORTRAN::functionWrapper(Node *n)
 
     // >>> RETURN TYPE
 
+    // Actual return type of the C++ function
+    String* cpp_returntype = Getattr(n, "type");
+
     // Constructors (which to SWIG is a function that returns a 'new'
     // variable) gets turned into a subroutine with the dummy 'this'
     // parameter that we bind to the result of the 'new' function
-    String* c_return_type  = get_typemap_out(
-            n, "ctype", WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
-    String* im_return_type = get_typemap_out(
-            n, "imtype", WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
-    String* f_return_type  = get_typemap_out(
-            n, "ftype", WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
-    Setattr(n, "wrap:type",   c_return_type);
-    Setattr(n, "wrap:imtype", im_return_type);
-    Setattr(n, "wrap:ftype",  f_return_type);
+    String* c_return_type = attach_typemap("ctype", "out", n, 
+                                           WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+    String* im_return_type = attach_typemap("imtype", "out", n, 
+                                            WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
+    String* f_return_type = attach_typemap("ftype", "out", n, 
+                                           WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
+
+    if (in_constructor)
+    {
+        // Replace output with void
+        Delete(f_return_type);
+        f_return_type = NewString("");
+    }
 
     // Check whether the C routine returns a variable
     const bool is_csubroutine = (Cmp(c_return_type, "void") == 0);
     // Check whether the Fortran routine returns a variable
     const bool is_fsubroutine = (Len(f_return_type) == 0);
 
+    Printf(stdout, "Return type: '%s' %s a subroutine\n", f_return_type,
+           is_fsubroutine ? "IS" : "IS NOT");
+
     const char* im_func_type = (is_csubroutine ? "subroutine" : "function");
     const char* f_func_type  = (is_fsubroutine ? "subroutine" : "function");
 
     Printv(cfunc->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
-    Printv(imfunc->def, im_func_type, " ", fname, "(", NULL);
-    Printv(ffunc->def,  f_func_type,  " ", wname, "(", NULL);
+    Printv(imfunc->def, im_func_type, " ", wname, "(", NULL);
+    Printv(ffunc->def,  f_func_type,  " ", fname, "(", NULL);
 
     if (!is_csubroutine)
     {
@@ -477,7 +643,7 @@ int FORTRAN::functionWrapper(Node *n)
         Wrapper_add_localv(cfunc, "fresult",
                            c_return_type, "fresult = 0", NULL);
         Wrapper_add_localv(ffunc,  "fresult",
-                           im_return_type, " :: fresult", NULL);
+                           im_return_type, ":: fresult", NULL);
 
         // Add dummy variable for intermediate return value
         Printv(imargs, im_return_type, " :: fresult\n", NULL);
@@ -497,6 +663,14 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     // >>> FUNCTION PARAMETERS/ARGUMENTS
+#if 0
+    // XXX replace next in_constructor block with something like this??
+    if (in_constructor)
+    {
+        Parm* p = NewParm(type, NewString("self"), n);
+        set_nextSibling(p, parmlist);
+    }
+#endif    
 
     // Emit all of the local variables for holding arguments.
     emit_parameter_variables(parmlist, cfunc);
@@ -507,12 +681,17 @@ int FORTRAN::functionWrapper(Node *n)
     // Emit local variables in fortran code
     emit_proxy_parm(n, parmlist, ffunc);
     
-    // TODO: change to a typemap??
-    if (String* fargs_prepend = Getattr(n, "fortran:argprepend"))
+    if (in_constructor)
     {
-        // Add comma if additional arguments will be added
-        Printv(ffunc->def, fargs_prepend,
-              (Len(parmlist) > 0 ? ", " : ""), NULL);
+        // Prepend "self" to the parameter list (with trailing comma if
+        // necessary)
+        Printv(ffunc->def, "self", (Len(parmlist) > 0 ? ", " : ""), NULL);
+
+        // Add dummy argument to wrapper body
+        String* ftype = get_typemap("ftype", n,
+                                     WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
+        this->replace_fclassname(cpp_returntype, ftype);
+        Printv(fargs, "   ", ftype, " :: self\n", NULL);
     }
 
     // >>> BUILD WRAPPER FUNCTION AND INTERFACE CODE
@@ -537,15 +716,15 @@ int FORTRAN::functionWrapper(Node *n)
         String* imarg = Getattr(p, "imname");
 
         // Get the C type
-        String* tm = get_attached_typemap(p, "ctype",
-                                          WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+        String* tm = get_typemap("ctype", p,
+                                 WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
 
         Printv(cfunc->def, prepend_comma, NULL);
-        this->print_carg(cfunc->def, n, tm, imarg);
+        print_carg(cfunc->def, n, tm, imarg);
 
         // >>> C ARGUMENT CONVERSION
 
-        String* tm_in = get_attached_typemap(p, "in", WARN_TYPEMAP_IN_UNDEF);
+        String* tm_in = get_typemap("in", p, WARN_TYPEMAP_IN_UNDEF);
         Replaceall(tm_in, "$input", imarg);
         Setattr(p, "emit:input", imarg);
         Printv(cfunc->code, tm_in, "\n", NULL);
@@ -555,29 +734,30 @@ int FORTRAN::functionWrapper(Node *n)
         // Add parameter name to declaration list
         Printv(imfunc->def, prepend_comma, imarg, NULL);
 
-        // XXX simplify get_typemap call -- shouldn't these already be bound?
-        // why are we passing the function node as the first argument?
-
         // Add dummy argument to wrapper body
-        String* imtype = get_typemap(p, "imtype", Getattr(n, "type"), p,
-                                     WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF, "in");
+        String* imtype = get_typemap("imtype", "in", p,
+                                     WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
         Printv(imargs, "   ", imtype, " :: ", imarg, "\n", NULL);
         Printv(fcall, prepend_comma, imarg, NULL);
         
         // >>> F PROXY ARGUMENTS
+
+        String* cpptype = Getattr(p, "type");
 
         // Add parameter name to declaration list
         String* farg = Getattr(p, "fname");
         Printv(ffunc->def, prepend_comma, farg, NULL);
 
         // Add dummy argument to wrapper body
-        String* ftype = get_typemap(p, "ftype", Getattr(n, "type"), p,
-                                    WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF, "in");
+        String* ftype = get_typemap("ftype", "in", p,
+                                    WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
+        this->replace_fclassname(cpptype, ftype);
         Printv(fargs, "   ", ftype, " :: ", farg, "\n", NULL);
 
         // >>> F PROXY CONVERSION
 
-        tm_in = get_attached_typemap(p, "fin", WARN_TYPEMAP_IN_UNDEF);
+        tm_in = get_typemap("fin", p, WARN_TYPEMAP_IN_UNDEF);
+        this->replace_fclassname(cpptype, tm_in);
         Replaceall(tm_in, "$input", farg);
         Printv(ffunc->code, tm_in, "\n", NULL);
 
@@ -595,7 +775,6 @@ int FORTRAN::functionWrapper(Node *n)
 
     // Save fortran function call action
     Setattr(n, "wrap:faction", fcall);
-    Delete(fcall);
 
     if (!is_csubroutine)
     {
@@ -616,6 +795,8 @@ int FORTRAN::functionWrapper(Node *n)
 
     // Append dummy variables to the function "definition" line (before the
     // code and local variable declarations)
+    Chop(imargs);
+    Chop(fargs);
     Printv(imfunc->def, imargs, NULL);
     Printv(ffunc->def,  fargs, NULL);
 
@@ -676,7 +857,6 @@ int FORTRAN::functionWrapper(Node *n)
     Swig_director_emit_dynamic_cast(n, cfunc);
     String* actioncode = emit_action(n);
 
-    SwigType* cpp_returntype = Getattr(n, "type");
     if (String* code = Swig_typemap_lookup_out(
                     "out", n, Swig_cresult_name(), cfunc, actioncode))
     {
@@ -702,19 +882,46 @@ int FORTRAN::functionWrapper(Node *n)
     }
     Printv(ffunc->code, factioncode, "\n", NULL);
 
-    if (String* code = Swig_typemap_lookup("fout", n, "fresult", ffunc))
+    String* fbody = NULL;
+    if (in_constructor)
+    {
+        // Replace output with "fcreate"
+        Parm* temp = NewParm(getClassType(), NewString("temp"), n);
+        fbody = attach_typemap("fcreate", temp,
+                               WARN_FORTRAN_TYPEMAP_FCREATE_UNDEF);
+        Delete(temp);
+    }
+    else if (in_destructor)
+    {
+        // Replace output with "frelease"
+        Parm* temp = NewParm(getClassType(), NewString("temp"), n);
+        fbody = attach_typemap("frelease", temp,
+                               WARN_FORTRAN_TYPEMAP_FRELEASE_UNDEF);
+        Delete(temp);
+    }
+    else 
+    {
+        fbody = Swig_typemap_lookup("fout", n, "fresult", ffunc);
+        if (!fbody)
+        {
+            Swig_warning(WARN_FORTRAN_TYPEMAP_FOUT_UNDEF,
+                         input_file, line_number,
+                         "Unable to use return type %s in function %s.\n",
+                         SwigType_str(cpp_returntype, 0),
+                         Getattr(n, "name"));
+        }
+    }
+
+    if (fbody)
     {
         // Output typemap is defined; emit the function call and result
         // conversion code
-        Replaceall(code, "$result", (is_fsubroutine ? "" : "swigf_result"));
-        Replaceall(code, "$owner", (GetFlag(n, "feature:new") ? "1" : "0"));
-        Printv(ffunc->code, code, "\n", NULL);
-    }
-    else
-    {
-        Swig_warning(WARN_FORTRAN_TYPEMAP_FOUT_UNDEF, input_file, line_number,
-                     "Unable to use return type %s in function %s.\n",
-                     SwigType_str(cpp_returntype, 0), Getattr(n, "name"));
+        Replaceall(fbody, "$result", (!  is_fsubroutine ? "swigf_result"
+                                       : in_constructor ? "self"
+                                       : ""));
+        Replaceall(fbody, "$owner", (GetFlag(n, "feature:new") ? "1" : "0"));
+        replace_fclassname(cpp_returntype, fbody);
+        Printv(ffunc->code, fbody, "\n", NULL);
     }
     
     // Output argument output and cleanup code
@@ -750,6 +957,7 @@ int FORTRAN::functionWrapper(Node *n)
     DelWrapper(imfunc);
     DelWrapper(ffunc);
 
+    Delete(fbody);
     Delete(outarg);
     Delete(cleanup);
     Delete(fcall);
@@ -785,6 +993,7 @@ int FORTRAN::write_function_interface(Node* n)
     }
     else if ((alias = Getattr(n, "staticmembervariableHandler:sym:name")))
     {
+        // XXX: move this code into staticmembervariableHandler
         // Member variable, rename the methods to set_X or get_X
         // instead of set_Class_X or get_Class_X
         is_static = true;
@@ -805,10 +1014,12 @@ int FORTRAN::write_function_interface(Node* n)
     }
     else if ((alias = Getattr(n, "staticmemberfunctionHandler:sym:name")))
     {
+        // XXX: move this code into staticmemberfunctionHandler
         is_static = true;
     }
     else if ((alias = Getattr(n, "membervariableHandler:sym:name")))
     {
+        // XXX: I think stuff is already set correctly in "sym:name"
         if (Getattr(n, "memberset"))
         {
             alias = new_alias = Swig_name_set(getNSpace(), alias);
@@ -823,6 +1034,7 @@ int FORTRAN::write_function_interface(Node* n)
             alias = Getattr(n, "sym:name");
         }
     }
+    // XXX: variableWrapper ??
     else
     {
         alias = Getattr(n, "sym:name");
@@ -932,38 +1144,40 @@ int FORTRAN::classHandler(Node *n)
                 SwigType_namestr(symname));
     }
 
-    // Initialize output strings that will be added by 'functionHandler'
-    d_method_overloads = NewHash();
-
-    // Write Fortran class header
-    d_classtype = Getattr(n, "classtypeobj");
-
     // Make the class publicly accessible
     Printv(f_public, " public :: ", symname, "\n",
                     NULL);
 
+    // Declare class
     Printv(f_types, " type", NULL);
     if (basename)
     {
         Printv(f_types, ", extends(", basename, ")", NULL);
     }
-
     if (Abstract)
     {
         // The 'Abstract' global variable is set to 1 if this class is abstract
         Printv(f_types, ", abstract", NULL);
     }
-
     Printv(f_types, " :: ", symname, "\n", NULL);
-
+    
     // Insert the class data. Only do this if the class has no base classes
     if (!basename)
     {
-        Printv(f_types, "  ", lstrip(get_typemap(n, "fdata", d_classtype,
-                                 WARN_FORTRAN_TYPEMAP_FDATA_UNDEF)),
-        NULL);
+        // Make a phony node with "type" set to "classtypeobj" so that the SWIG
+        // typemap code can look up typemap associated with this class
+        Parm* temp = NewParm(getClassType(), NewString("temp"), n);
+        String* fdata = attach_typemap("fdata", temp,
+                                       WARN_FORTRAN_TYPEMAP_FDATA_UNDEF);
+        replace_fclassname(getClassType(), fdata);
+        Printv(f_types, "  ", lstrip(fdata), NULL);
+        Delete(fdata);
+        Delete(temp);
     }
     Printv(f_types, " contains\n", NULL);
+    
+    // Initialize output strings that will be added by 'functionHandler'
+    d_method_overloads = NewHash();
 
     // Emit class members
     Language::classHandler(n);
@@ -973,7 +1187,7 @@ int FORTRAN::classHandler(Node *n)
     if (spclass)
     {
         // Create overloaded aliased name
-        String* alias      = NewString("assignment(=)");
+        String* alias = NewString("assignment(=)");
         String* fname = NewStringf("swigf_assign_%s",
                                         Getattr(n, "sym:name"));
         String* wrapname = NewStringf("swigc_spcopy_%s",
@@ -1043,11 +1257,9 @@ int FORTRAN::classHandler(Node *n)
     }
 
     // Close out the type
-    Printv(f_types, " end type\n",
-                    NULL);
+    Printv(f_types, " end type\n", NULL);
 
-    Delete(d_method_overloads);
-    d_classtype = NULL;
+    Delete(d_method_overloads); d_method_overloads = NULL;
 
     return SWIG_OK;
 }
@@ -1080,22 +1292,8 @@ int FORTRAN::constructorHandler(Node* n)
         Delete(mrename);
     }
     Setattr(n, "fortran:membername", alias);
-
-    // Replace Fortran return type with void
-    Setattr(n, "ftype:out", "");
-
-    // Replace standard "out" typemap with custom 
-    String* fcreate = get_typemap(n, "fcreate",
-                           d_classtype,
-                           WARN_FORTRAN_TYPEMAP_FCREATE_UNDEF);
-    if (fcreate)
-    {
-        Setattr(n, "fout", fcreate);
-    }
-
-    // Add an extra "self" argument to the wrapper code
-    Setattr(n, "fortran:argprepend", "self");
     
+    // NOTE: type not yet assigned at this point
     Language::constructorHandler(n);
 
     return SWIG_OK;
@@ -1108,15 +1306,6 @@ int FORTRAN::constructorHandler(Node* n)
 int FORTRAN::destructorHandler(Node* n)
 {
     Setattr(n, "fortran:membername", "release");
-
-    // Replace standard "out" typemap with custom 
-    String* frelease = get_typemap(n, "frelease",
-                           d_classtype,
-                           WARN_FORTRAN_TYPEMAP_FRELEASE_UNDEF);
-    if (frelease)
-    {
-        Setattr(n, "fout", frelease);
-    }
     
     Language::destructorHandler(n);
 
@@ -1124,8 +1313,7 @@ int FORTRAN::destructorHandler(Node* n)
     if (d_use_final)
     {
         // Create 'final' name wrapper
-        String* fname = NewStringf("swigf_final_%s",
-                                        Getattr(n, "sym:name"));
+        String* fname = NewStringf("swigf_final_%s", Getattr(n, "sym:name"));
         String* classname = Getattr(getCurrentClass(), "sym:name");
 
         // Add the 'final' subroutine to the methods
@@ -1210,7 +1398,7 @@ int FORTRAN::insertDirective(Node *n)
         {
             if (is_wrapping_class())
             {
-                substitute_classname(d_classtype, code);
+                replace_fclassname(getClassType(), code);
             }
             
             // Insert code into the body of the module (after "contains")
@@ -1222,7 +1410,7 @@ int FORTRAN::insertDirective(Node *n)
         if (is_wrapping_class())
         {
             // Insert code into the class definition
-            substitute_classname(d_classtype, code);
+            replace_fclassname(getClassType(), code);
             Printv(f_types, code, NULL);
         }
         else
@@ -1343,150 +1531,27 @@ int FORTRAN::enumvalueDeclaration(Node *n)
 // HELPER FUNCTIONS
 //---------------------------------------------------------------------------//
 /*!
- * Get a typemap that should already be attached.
+ * \brief Substitute special '$fXXXXX' in typemaps.
  *
- * This can be called if 'get_typemap' was applied to the given node already, or
- * e.g. if Swig_typemap_attach_parms was called.
+ * This is currently only used for '$fclassname'
  */
-String* FORTRAN::get_attached_typemap(
-        Node*        n,
-        const char*  tmname,
-        int          warning)
-{
-    return get_typemap(n, tmname, Getattr(n, "type"), NULL, warning, NULL);
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * Get a typemap from the current node.
- */
-String* FORTRAN::get_typemap(
-        Node*        n,
-        const char*  tmname,
-        SwigType*    type,
-        int          warning)
-{
-    assert(n);
-    assert(type);
-    Hash* attributes = NewHash();
-    String* result = get_typemap(n, tmname, type, attributes, warning, NULL);
-    Delete(attributes);
-    return result;
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * Get a typemap from a given type, overriding with 'out'.
- */
-String* FORTRAN::get_typemap_out(
-        Node*        n,
-        const char*  tmname,
-        int          warning)
-{
-    assert(n);
-    return get_typemap(n, tmname, Getattr(n, "type"), n, warning, "out");
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Returns a new string for a typemap that accepts no arguments
- *
- * If 'attributes' is null, we assume the typemap has already been bound.
- * Otherwise we call Swig_typemap_lookup to bind to the given attributes.
- *
- * If 'warning' is WARN_NONE, then if the typemap is not found, the return
- * value will be NULL. Otherwise a mangled typename will be created and saved
- * to attributes (or if attributes is null, then the given node).
- *
- * If 'suffix' is non-null, then after binding, a search will be made for the
- * typemap with the given suffix. If that's present, it's used instead of the
- * default typemap. (This allows overriding of e.g. 'tmap:ctype' with
- * 'tmap:ctype:out'.)
- */
-String* FORTRAN::get_typemap(
-        Node*                     n,
-        const_String_or_char_ptr  tmname,
-        SwigType*                 type,
-        Node*                     attributes,
-        int                       warning,
-        const char*               suffix)
-{
-    String* tm = NULL;
-    String* key = NULL;
-    if (attributes)
-    {
-        // Bind the typemap to this node
-        Setattr(attributes, "type", type);
-        Setfile(attributes, Getfile(n));
-        Setline(attributes, Getline(n));
-        const char lname[] = "";
-        tm = Swig_typemap_lookup(tmname, attributes, lname, NULL);
-    }
-    else
-    {
-        // Look up an already-attached typemap
-        key = NewStringf("tmap:%s", tmname);
-        tm = Getattr(n, key);
-    }
-
-    if (tm)
-    {
-        if (suffix)
-        {
-            // Check for optional override (i.e. tmap:ctype:out)
-            if (!key)
-            {
-                key = NewStringf("tmap:%s:%s", tmname, suffix);
-            }
-            else
-            {
-                Printv(key, ":", suffix, NULL);
-            }
-            String* suffixed_tm = Getattr(n, key);
-            if (suffixed_tm)
-                tm = suffixed_tm;
-        }
-    }
-    else if (warning != WARN_NONE)
-    {
-        SwigType *type = Getattr(n, "type");
-        tm = NewStringf("SWIGTYPE%s", SwigType_manglestr(type));
-        Swig_warning(warning,
-                     Getfile(n), Getline(n),
-                     "No '%s' typemap defined for %s\n", tmname,
-                     SwigType_str(type, 0));
-        // Save the mangled typemap
-        if (!key)
-        {
-            key = NewStringf("tmap:%s", tmname);
-        }
-        Setattr((attributes ? attributes : n), key, tm);
-    }
-    return tm;
-}
-
-//---------------------------------------------------------------------------//
-// Substitute the '$fclassname' variables with the Fortran proxy class
-// wrapper names. Shamelessly stolen from the Java wrapper code.
-
-bool FORTRAN::substitute_classname(SwigType *pt, String *tm)
+bool FORTRAN::replace_fclassname(SwigType* intype, String *tm)
 {
     bool substitution_performed = false;
 #if 0
-    Printf(stdout, "calling substitute_classname(%s, %s)\n", pt, tm);
+    Printf(stdout, "calling replace_fclassname(%s, %s)\n", intype, tm);
 #endif
-
-    SwigType *type = Copy(SwigType_typedef_resolve_all(pt));
-    SwigType *strippedtype = SwigType_strip_qualifiers(type);
+    SwigType* type = Copy(SwigType_typedef_resolve_all(intype));
+    SwigType* strippedtype = SwigType_strip_qualifiers(type);
 
     if (Strstr(tm, "$fclassname"))
     {
-        substitute_classname_impl(strippedtype, tm, "$fclassname");
+        replace_fspecial_impl(strippedtype, tm, "$fclassname");
         substitution_performed = true;
     }
 
 #if 0
-    Printf(stdout, "substitute_classname (%c): %s => %s\n",
+    Printf(stdout, "replace_fclassname (%c): %s => %s\n",
            substitution_performed ? 'X' : ' ',
            pt, strippedtype);
 #endif
@@ -1499,8 +1564,8 @@ bool FORTRAN::substitute_classname(SwigType *pt, String *tm)
 
 //---------------------------------------------------------------------------//
 
-void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
-                                        const char *classnamespecialvariable)
+void FORTRAN::replace_fspecial_impl(SwigType *classnametype, String *tm,
+                                    const char *classnamespecialvariable)
 {
     const_String_or_char_ptr replacementname = NULL;
 
@@ -1531,9 +1596,6 @@ void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
                      SwigType_str(classnametype, 0));
 
         replacementname = "C_PTR";
-
-        Replaceall(tm, classnamespecialvariable, replacementname);
-        Delete(replacementname);
     }
     Replaceall(tm, classnamespecialvariable, replacementname);
 }
@@ -1568,17 +1630,17 @@ void FORTRAN::emit_proxy_parm(Node* n, ParmList *parmlist, Wrapper *f)
         Setattr(p, "imname", imarg);
 
         // Local parameter 
-        String* imtype = get_attached_typemap(
-                p, "imtype", WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
+        String* imtype = get_typemap("imtype", p,
+                                     WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
 
         Wrapper_add_localv(f, imarg,
-                           "   ", imtype, " :: ", imarg, NULL);
+                           imtype, "::", imarg,
+                           NULL);
 
         String* farg = this->makeParameterName(n, p, i);
         Setattr(p, "fname", farg);
 
         Delete(farg);
-        Delete(imtype);
         Delete(imarg);
 
         // Next iteration
@@ -1588,42 +1650,21 @@ void FORTRAN::emit_proxy_parm(Node* n, ParmList *parmlist, Wrapper *f)
 }
 
 //---------------------------------------------------------------------------//
-//! Add a named C argument to a function declaration.
-void FORTRAN::print_carg(String* out, Node* n, String* tm, String* arg)
-{
-    if (!SwigType_isfunctionpointer(Getattr(n, "type")))
-    {
-        Printv(out, tm, " ", arg, NULL);
-    }
-    else
-    {
-        // Function pointer syntax requires special handling:
-        // Replace (PRVAL) (*)(PARGS) arg with (PRVAL)(*arg)(PARGS)
-        String* tm_arg = Copy(tm);
-        String* subst = NewStringf("(*%s)(", arg);
-
-        Replace(tm_arg, " (*)(", subst, DOH_REPLACE_FIRST);
-        Printv(out, tm_arg, NULL);
-
-        Delete(subst);
-        Delete(tm_arg);
-    }
-}
-
-//---------------------------------------------------------------------------//
 
 void FORTRAN::replaceSpecialVariables(String* method, String* tm, Parm* parm)
 {
     (void)method;
     SwigType *type = Getattr(parm, "type");
-    this->substitute_classname(type, tm);
+    this->replace_fclassname(type, tm);
 }
 
 //---------------------------------------------------------------------------//
 // Expose the code to the SWIG main function.
 //---------------------------------------------------------------------------//
+
 extern "C" Language *
 swig_fortran(void)
 {
     return new FORTRAN();
 }
+

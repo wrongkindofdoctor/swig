@@ -12,6 +12,7 @@
 #include "SimpleClass.hh"
 %}
 
+#if 0
 #ifdef SWIGFORTRAN
 
 %fortranappend SimpleClass::SimpleClass %{
@@ -20,6 +21,7 @@
 %fortranprepend SimpleClass::~SimpleClass %{
    write(0, "(a, z16)") "F Releasing   ", self%swigptr
 %}
+#endif
 #endif
 
 // %ignore make_class;

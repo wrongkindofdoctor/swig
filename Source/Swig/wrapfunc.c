@@ -393,7 +393,8 @@ void Wrapper_print(Wrapper *w, File *f) {
 
   str = NewStringEmpty();
   Printf(str, "%s\n", w->def);
-  Printf(str, "%s\n", w->locals);
+  if (Len(w->locals) > 0)
+    Printf(str, "%s\n", w->locals);
   Printf(str, "%s\n", w->code);
   if (Compact_mode == 1)
     Wrapper_compact_print(str, f);
