@@ -1502,7 +1502,7 @@ bool FORTRAN::substitute_classname(SwigType *pt, String *tm)
 void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
                                         const char *classnamespecialvariable)
 {
-    String *replacementname = NULL;
+    const_String_or_char_ptr replacementname = NULL;
 
     if (SwigType_isenum(classnametype))
     {
@@ -1521,26 +1521,21 @@ void FORTRAN::substitute_classname_impl(SwigType *classnametype, String *tm,
         }
     }
 
-    if (replacementname)
+    if (!replacementname)
     {
-        Replaceall(tm, classnamespecialvariable, replacementname);
-    }
-    else
-    {
-        // use $descriptor if SWIG does not know anything about this type.
-        // Note that any typedefs are resolved.
+        // Use raw C pointer if SWIG does not know anything about this type.
         Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF,
                      input_file, line_number,
                      "No '$fclassname' replacement (wrapped type) "
                      "found for %s\n",
                      SwigType_str(classnametype, 0));
 
-        replacementname = NewStringf("SWIGTYPE%s",
-                                     SwigType_manglestr(classnametype));
+        replacementname = "C_PTR";
 
         Replaceall(tm, classnamespecialvariable, replacementname);
         Delete(replacementname);
     }
+    Replaceall(tm, classnamespecialvariable, replacementname);
 }
 
 //---------------------------------------------------------------------------//
