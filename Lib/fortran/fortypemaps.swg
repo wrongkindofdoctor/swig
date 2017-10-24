@@ -308,27 +308,15 @@ FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
 FORT_OPAQUE_PTR_TYPEMAP(void*)
 
 //---------------------------------------------------------------------------//
-// PROXY CLASS DEFINITIONS
-//---------------------------------------------------------------------------//
-
-%typemap(fdata) SWIGTYPE %{
-  ! These should be treated as PROTECTED data
-  type(C_PTR), public :: swigptr = C_NULL_PTR
-%}
-
-%typemap(fcreate) SWIGTYPE
-%{
-   if (c_associated(self%swigptr)) call self%release()
-   $result%swigptr = $1
-%}
-
-%typemap(frelease) SWIGTYPE %{
-   self%swigptr = C_NULL_PTR
-%}
-
-//---------------------------------------------------------------------------//
 // CLASSES BY VALUE
 //---------------------------------------------------------------------------//
+
+// This fragment is inserted 
+%fragment("SwigfUnknownClass", "ftypes", noblock=1) %{
+type, public :: SwigfUnknownClass
+  type(C_PTR), public :: swigptr
+end type
+%}
 
 #ifdef __cplusplus
 %fragment ("utility_header", "header") %{
