@@ -250,10 +250,8 @@ class FORTRAN : public Language
     virtual int classHandler(Node *n);
     virtual int memberfunctionHandler(Node *n);
     virtual int importDirective(Node *n);
-    virtual int insertDirective(Node *n);
     virtual int enumDeclaration(Node *n);
     virtual int enumvalueDeclaration(Node *n);
-
 
     virtual String *makeParameterName(Node *n, Parm *p, int arg_num,
                                       bool is_setter = false) const;
@@ -689,6 +687,12 @@ int FORTRAN::functionWrapper(Node *n)
         Printv(fargs, "   ", ftype, " :: self\n", NULL);
     }
 
+    String* prepend = Getattr(n, "feature:fortranprepend");
+    if (prepend)
+    {
+        Printv(ffunc->code, prepend, NULL);
+    }
+
     // >>> BUILD WRAPPER FUNCTION AND INTERFACE CODE
     const char* prepend_comma = "";
     for (Iterator it = First(proxparmlist); it.item; it = Next(it))
@@ -916,6 +920,12 @@ int FORTRAN::functionWrapper(Node *n)
         Delete(temp);
     }
 
+    // Optional "append" proxy code
+    String* append = Getattr(n, "feature:fortranappend");
+    if (append)
+    {
+        Printv(ffunc->code, append, NULL);
+    }
 
     // Output argument output and cleanup code
     Printv(cfunc->code, outarg, NULL);
@@ -1362,58 +1372,6 @@ int FORTRAN::importDirective(Node *n)
     return Language::importDirective(n);
 }
 
-//---------------------------------------------------------------------------//
-/*!
- * \brief Process an '%insert' directive.
- *
- * This allows us to do custom insertions into parts of the fortran module.
- */
-int FORTRAN::insertDirective(Node *n)
-{
-    if (ImportMode)
-        return Language::insertDirective(n);
-
-    String *code = Getattr(n, "code");
-    String *section = Getattr(n, "section");
-
-    // Make sure the code ends its line
-    Append(code, "\n");
-      
-    if (Cmp(section, "fortran") == 0)
-    {
-        if (d_use_proxy)
-        {
-            if (is_wrapping_class())
-            {
-                replace_fclassname(getClassType(), code);
-            }
-            
-            // Insert code into the body of the module (after "contains")
-            Printv(f_proxy, code, NULL);
-        }
-    }
-    else if (Cmp(section, "fortranspec") == 0)
-    {
-        if (is_wrapping_class())
-        {
-            // Insert code into the class definition
-            replace_fclassname(getClassType(), code);
-            Printv(f_types, code, NULL);
-        }
-        else
-        {
-            // Insert code into the header of the module (alongside "public"
-            // methods), used for adding 'ierr' to the module contents
-            Printv(f_public, code, NULL);
-        }
-    }
-    else
-    {
-        return Language::insertDirective(n);
-    }
-
-    return SWIG_OK;
-}
 
 //---------------------------------------------------------------------------//
 /*!
