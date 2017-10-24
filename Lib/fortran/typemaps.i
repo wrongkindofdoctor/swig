@@ -56,19 +56,21 @@ end type
 %}
 
 %define FORT_VIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE...)
-  #define PAIR_TYPE std::pair< CONST_CTYPE*, std::size_t >
+  #define PAIR_TYPE ::std::pair< CONST_CTYPE*, size_t >
   #define AW_TYPE swig::SwigfArrayWrapper< CONST_CTYPE >
   // XXX: for some reason, using #define genereates a %constant and a warning
   %define QAW_TYPE
       "swig::SwigfArrayWrapper<" #CONST_CTYPE ">"
   %enddef
 
-  %template() PAIR_TYPE;
-
   // C wrapper type: pointer to templated array wrapper
   %typemap(ctype, noblock=1, out=QAW_TYPE,
            fragment="SwigfArrayWrapper") PAIR_TYPE
     {AW_TYPE*}
+
+  // C input translation typemaps: $1 is PAIR_TYPE, $input is AW_TYPE
+  %typemap(arginit, noblock=1) PAIR_TYPE
+    {$1 = PAIR_TYPE();}
 
   // C input translation typemaps: $1 is PAIR_TYPE, $input is AW_TYPE
   %typemap(in) PAIR_TYPE
@@ -91,7 +93,7 @@ end type
   // in the fortran proxy code
   %typemap(imimport, fragment="SwigfArrayWrapper") PAIR_TYPE
     "SwigfArrayWrapper"
-  %typemap(imtype, in="type(SwigfArrayWrapper), intent(inout)") PAIR_TYPE
+  %typemap(imtype, in="type(SwigfArrayWrapper)") PAIR_TYPE
      "type(SwigfArrayWrapper)"
 
   // Fortran proxy code: "out" is when it's a return value;
