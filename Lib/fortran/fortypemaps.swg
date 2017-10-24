@@ -167,6 +167,8 @@
     "type(C_PTR)"
   %typemap(fin)  CTYPE
     "$1 = $input"
+  %typemap(fout)  CTYPE
+    "$result = $1"
 %enddef
 
 //---------------------------------------------------------------------------//
