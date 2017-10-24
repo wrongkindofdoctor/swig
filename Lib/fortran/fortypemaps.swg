@@ -107,19 +107,19 @@
 %define FORT_FUND_VALREF_TYPEMAP(CTYPE, FTYPE)
   // Regular values are passed as pointers and returned by value
   %typemap(in) CTYPE
-    %{$1 = *$input;%}
+    "$1 = *$input;"
   %typemap(out) CTYPE
-    %{$result = $1;%}
+    "$result = $1;"
 
   // Const references are returned by value
   %typemap(in) const CTYPE&
-    %{$1 = ($1_ltype)($input);%}
+    "$1 = ($1_ltype)($input);"
   %typemap(out) const CTYPE&
-    %{$result = *$1;%}
+    "$result = *$1;"
     
   // All other aspects of const reference vs value are the same
   %typemap(ctype, out="CTYPE") CTYPE, const CTYPE&
-    %{const CTYPE*%}
+    "const CTYPE*"
   %typemap(imtype, in=FTYPE ", intent(in)") CTYPE, const CTYPE&
     FTYPE
   %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&
@@ -127,26 +127,26 @@
   %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&
     FTYPE ", intent(in)"
   %typemap(fin)  CTYPE
-    %{$1 = $input%}
+    "$1 = $input"
   %typemap(fout) CTYPE, const CTYPE&
-    %{$result = $1%}
+    "$result = $1"
 
   // Mutable references are passed by pointers as arguments, but they're
   // *returned* as actual pointers (becoming Fortran pointers)
   %typemap(ctype, out="CTYPE*") CTYPE&
-    %{CTYPE*%}
+    "CTYPE*"
   %typemap(in) CTYPE&
-    %{$1 = $input;%}
+    "$1 = $input;"
   %typemap(out) CTYPE&
-    %{$result = $1;%}
+    "$result = $1;"
   %typemap(imtype, in=FTYPE ", intent(inout)") CTYPE&
     FTYPE
   %typemap(ftype, out=FTYPE ", pointer")  CTYPE&
     FTYPE ", intent(inout)"
-  %typemap(fin)  CTYPE
-    %{$1 = c_loc($input)%}
+  %typemap(fin)  CTYPE&
+    "$1 = c_loc($input)"
   %typemap(fout) CTYPE&
-    %{$result = c_f_pointer($1)%}
+    "$result = c_f_pointer($1)"
 %enddef
 
 /*!
@@ -156,17 +156,17 @@
  */
 %define FORT_OPAQUE_PTR_TYPEMAP(CTYPE)
   %typemap(ctype) CTYPE
-    %{void*%}
+    "void*"
   %typemap(in) CTYPE
-    %{$1 = ($1_ltype)$input;%}
+    "$1 = ($1_ltype)$input;"
   %typemap(out) CTYPE
-    %{$result = $1;%}
+    "$result = $1;"
   %typemap(imtype, in="type(C_PTR), value") CTYPE
     "type(C_PTR)"
   %typemap(ftype) CTYPE
     "type(C_PTR)"
   %typemap(fin)  CTYPE
-    %{$1 = $input%}
+    "$1 = $input"
 %enddef
 
 //---------------------------------------------------------------------------//
@@ -343,16 +343,10 @@ FORT_OPAQUE_PTR_TYPEMAP(void*)
 %typemap(ctype)  SWIGTYPE
   %{void*%}
 %typemap(in)     SWIGTYPE
-  %{$1 = *($&1_ltype)($input);%}
-%typemap(out, fragment="utility_header")    SWIGTYPE
+  "$1 = *($&1_ltype)($input);"
+%typemap(out)    SWIGTYPE
 #ifdef __cplusplus
-%{
-#if __cplusplus >= 201103L
-    $result = new $1_ltype(std::move($1));
-#else
-    $result = new $1_ltype($1);
-#endif
-%}
+  "$result = new $1_ltype($1);"
 #else
 {
   $&1_ltype $1ptr = ($&1_ltype) malloc(sizeof($1_ltype));
@@ -366,35 +360,31 @@ FORT_OPAQUE_PTR_TYPEMAP(void*)
 %typemap(ftype)  SWIGTYPE
   "type($fclassname)"
 %typemap(fin)    SWIGTYPE
-%{
-    $1 = $input%swigptr
-%}
+  "$1 = $input%swigptr"
 %typemap(fout)   SWIGTYPE
-%{
-   $result%swigptr = $1
-%}
+  "$result%swigptr = $1"
 
 //---------------------------------------------------------------------------//
 // CLASSES BY REFERENCE/POINTER
 //---------------------------------------------------------------------------//
 
 %typemap(ctype)  SWIGTYPE*, SWIGTYPE&
-  %{void*%}
+  "void*"
 %typemap(in)     SWIGTYPE*, SWIGTYPE&
-  %{$1 = ($1_ltype)($input);%}
+  "$1 = ($1_ltype)($input);"
 %typemap(out)    SWIGTYPE*, SWIGTYPE&
-  %{$result = $1;%}
+  "$result = $1;"
 %typemap(imtype, in="type(C_PTR), value") SWIGTYPE*, SWIGTYPE&
   "type(C_PTR)"
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&
   "class($fclassname)"
 %typemap(fin)    SWIGTYPE*, SWIGTYPE&
-%{ $1 = $input%swigptr %}
+  "$1 = $input%swigptr"
 %typemap(fout)   SWIGTYPE*, SWIGTYPE&
-%{ $result%swigptr = $1 %}
+  "$result%swigptr = $1"
 
 %typemap(ctype) const SWIGTYPE*, const SWIGTYPE&
-%{const void*%}
+  "const void*"
 
 //---------------------------------------------------------------------------//
 // MORE POINTERS
