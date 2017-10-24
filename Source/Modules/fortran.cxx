@@ -1326,8 +1326,6 @@ int FORTRAN::memberfunctionHandler(Node *n)
  */
 int FORTRAN::globalvariableHandler(Node *n)
 {
-    // For global variables, drop all the qualifying namespaces
-    Setattr(n, "fortran:alias", Getattr(n, "sym:name"));
     Language::globalvariableHandler(n);
     return SWIG_OK;
 }

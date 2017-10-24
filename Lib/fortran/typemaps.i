@@ -42,7 +42,7 @@ end type
   #define AW_TYPE swig::SwigfArrayWrapper< CONST_CTYPE >
   // XXX: for some reason, using #define genereates a %constant and a warning
   %define QAW_TYPE
-      "swig::SwigfArrayWrapper<" #CONST_CTYPE ">"
+      "swig::SwigfArrayWrapper< " #CONST_CTYPE " >"
   %enddef
 
   // C wrapper type: pointer to templated array wrapper
