@@ -9,12 +9,12 @@
 program main
     use ISO_FORTRAN_ENV
     use, intrinsic :: ISO_C_BINDING
-    use stdvec, only : make_const_ptrdbl => make_ptr, &
-        print_ptr => print_ptrdbl, VecDbl
+    use stdvec, only : make_view => make_const_viewdbl, &
+        print_view => print_viewdbl, VecDbl
     implicit none
     type(VecDbl) :: v
     integer :: i
-    real(C_DOUBLE), pointer :: vptr(:)
+    real(C_DOUBLE), pointer :: vview(:)
     real(C_DOUBLE), dimension(4)  :: test_dbl = (/ 0.1, 1.9, -2.0, 4.0 /)
 
     ! This should be a null-op since the underlying pointer is initialized to
@@ -33,15 +33,15 @@ program main
         call v%set(i, real(i + 1) * 123.0d0)
     end do
 
-    vptr => make_ptr(v)
+    vview => make_view(v)
 
-    write(0, *) "pointer:", vptr
+    write(0, *) "pointer:", vview
 
     write(0, *) "Printing from array pointer"
-    call print_ptr(vptr)
+    call print_view(vview)
 
     write(0, *) "Printing from test data"
-    call print_viewptr(test_dbl)
+    call print_view(test_dbl)
 
     write(0, *) "Destroying..."
     call v%release()

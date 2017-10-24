@@ -144,7 +144,7 @@
   %typemap(ftype, out=FTYPE ", pointer")  CTYPE&
     FTYPE ", intent(inout)"
   %typemap(fin)  CTYPE&
-    "$1 = c_loc($input)"
+    "$1 = $input"
   %typemap(fout) CTYPE&
     "$result = c_f_pointer($1)"
 %enddef
@@ -312,7 +312,7 @@ FORT_OPAQUE_PTR_TYPEMAP(void*)
 //---------------------------------------------------------------------------//
 
 // This fragment is inserted 
-%fragment("SwigfUnknownClass", "ftypes", noblock=1) %{
+%fragment("SwigfUnknownClass", "fpublic", noblock=1) %{
 type, public :: SwigfUnknownClass
   type(C_PTR), public :: swigptr
 end type

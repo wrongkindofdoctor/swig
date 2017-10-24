@@ -663,7 +663,6 @@ int FORTRAN::functionWrapper(Node *n)
     {
         Setattr(imimport_hash, imimport, "1");
     }
-    Swig_print_node(n);
 
     // >>> FUNCTION PARAMETERS/ARGUMENTS
 
@@ -888,7 +887,7 @@ int FORTRAN::functionWrapper(Node *n)
     else if (in_destructor)
     {
         Printv(ffunc->code,
-               "if (not c_associated(self%swigptr)) return\n",
+               "if (.not. c_associated(self%swigptr)) return\n",
                fcall, "\n"
                "self%swigptr = C_NULL_PTR\n", //i.e. $result%swigptr = $1
                NULL);

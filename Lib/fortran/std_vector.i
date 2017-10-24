@@ -18,6 +18,7 @@
 %fragment("<algorithm>");
 %fragment("ArraySizeCheck");
 
+%include <std_pair.i>
 %include <typemaps.i>
 
 namespace std
@@ -58,35 +59,38 @@ class vector
     const_reference front() const;
     const_reference back() const;
 
-    // Extend for Fortran: c indexing!
+    // Instantiate typemaps for views
+    %fort_view_typemap(_Tp);
+
+    // Extend for Fortran
 %extend {
+    // C indexing used here!
     void set(size_type index, const_reference v)
     {
         // TODO: check range
         (*$self)[index] = v;
     }
 
+    // C indexing used here!
     value_type get(size_type index)
     {
         return (*$self)[index];
     }
 
-    %apply (SWIGTYPE* ARRAY, SWIG_FORTRAN_STD_SIZETYPE SIZE)
-    { (pointer       arr, size_type arrsize),
-      (const_pointer arr, size_type arrsize) };
-
-    void assign_from(const_pointer arr, size_type arrsize)
+    std::pair<_Tp*, size_t> view()
     {
-        $self->assign(arr, arr + arrsize);
+        _Tp* begin_ptr;
+        size_t size = $self->size();
+        if (size == 0)
+        {
+            begin_ptr = NULL;
+        }
+        else
+        {
+            begin_ptr = &((*$self)[0]);
+        }
+        return std::make_pair(begin_ptr, size);
     }
-
-    // Copy the C++ data to the given Fortran arr. Sizes must match.
-    void copy_to(pointer arr, size_type arrsize)
-    {
-        swig::array_size_check($self->size(), arrsize);
-        std::copy($self->begin(), $self->end(), arr);
-    }
-
 } // end extend
 
 };

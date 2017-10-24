@@ -21,19 +21,20 @@ using std::endl;
 template<class T>
 void print_vec(const std::vector<T>& v)
 {
-    print_ptr<const T>(make_const_ptr(v));
+    print_view<T>(make_const_view(v));
 }
 
 template<class T>
-void print_ptr(std::pair<const T*, const T*> view)
+void print_view(std::pair<const T*, size_t> view)
 {
     cout << "{";
     auto iter = view.first;
-    if (iter != view.second)
+    auto end = iter + view.second;
+    if (iter != end)
     {
         cout << *iter++;
     }
-    while (iter != view.second)
+    while (iter != end)
     {
         cout << ", " << *iter++;
     }
@@ -45,7 +46,7 @@ void print_ptr(std::pair<const T*, const T*> view)
 //---------------------------------------------------------------------------//
 
 template void print_vec(const std::vector<double>&);
-template void print_ptr(std::pair<const double*, const double*>);
+template void print_view(std::pair<const double*, size_t>);
 
 //---------------------------------------------------------------------------//
 // end of std_vector/stdvec.cc

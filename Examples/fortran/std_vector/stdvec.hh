@@ -16,11 +16,19 @@
 
 //---------------------------------------------------------------------------//
 template<class T>
-std::pair<const T*, const T*> make_const_ptr(const std::vector<T>& v)
+std::pair<T*, size_t> make_view(std::vector<T>& v)
 {
     if (v.empty())
         return {};
-    return {v.data(), v.data() + v.size()};
+    return {v.data(), v.size()};
+}
+//---------------------------------------------------------------------------//
+template<class T>
+std::pair<const T*, size_t> make_const_view(const std::vector<T>& v)
+{
+    if (v.empty())
+        return {};
+    return {v.data(), v.size()};
 }
 
 //---------------------------------------------------------------------------//
@@ -30,7 +38,7 @@ void print_vec(const std::vector<T>& v);
 
 //---------------------------------------------------------------------------//
 template<class T>
-void print_ptr(std::pair<const T*, const T*> view);
+void print_view(std::pair<const T*, size_t> view);
 
 //---------------------------------------------------------------------------//
 #endif // std_vector_stdvec_hh
