@@ -38,7 +38,7 @@ end type
 %}
 
 %define FORT_VIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE...)
-  #define PAIR_TYPE ::std::pair< CONST_CTYPE*, size_t >
+  #define PAIR_TYPE ::std::pair< CONST_CTYPE*, std::size_t >
   #define AW_TYPE swig::SwigfArrayWrapper< CONST_CTYPE >
   // XXX: for some reason, using #define genereates a %constant and a warning
   %define QAW_TYPE
@@ -120,7 +120,7 @@ end type
 
 %define FORT_STRVIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE...)
   FORT_VIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE)
-  #define PAIR_TYPE ::std::pair< CONST_CTYPE*, size_t >
+  #define PAIR_TYPE ::std::pair< CONST_CTYPE*, std::size_t >
 
   // Fortran proxy code: accept a character string, but since we don't seem to
   // be able to get character string pointers, return as an array view.

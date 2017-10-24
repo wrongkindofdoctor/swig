@@ -18,11 +18,10 @@
 
 // Handle constructor overloading
 %rename(create_count)  ThinVec::ThinVec(size_type);
-//%ignore   ThinVec::ThinVec(size_type, value_type);
 %rename(create_fill)   ThinVec::ThinVec(size_type, value_type);
 
 // Rename a function that's the same as a Fortran keyword
-%rename(ass) ThinVec::assign;
+%rename(assign_from) ThinVec::assign;
 
 #endif
 
@@ -35,12 +34,13 @@
 // Load the thinvec class definition
 %include "ThinVec.hh"
 
+// Enable views for
+FORT_VIEW_TYPEMAP("real(C_DOUBLE)", double)
+FORT_VIEW_TYPEMAP("integer(C_INT)", int)
+
 // Instantiate
 %template(ThinVecDbl) ThinVec<double>;
-%template(obtain_free_d) obtain_free_t<double>;
-
 %template(ThinVecInt) ThinVec<int>;
-%template(obtain_free_i) obtain_free_t<int>;
 
 //---------------------------------------------------------------------------//
 // end of swig-dev/thinvec/ThinVec.i

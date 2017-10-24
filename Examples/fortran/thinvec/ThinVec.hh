@@ -55,15 +55,12 @@ class ThinVec
 
     void assign(const_view_type arr);
 
-    // XXX: for some reason, this has to be T* instead of pointer_type for the
-    // multi-argument resolution to work
-    view_type view() const;
+    view_type view();
 
     const std::vector<T>& data() const { return d_data; }
 };
 
 void print_vec(const ThinVec<double>& v);
-
 
 #endif // thinvec_ThinVec_hh
 

@@ -27,7 +27,7 @@ void ThinVec<T>::assign(const_view_type arr)
 }
 
 template<class T>
-ThinVec<T>::view_type ThinVec<T>::view()
+typename ThinVec<T>::view_type ThinVec<T>::view()
 {
     if (empty())
         return view_type(NULL, 0);

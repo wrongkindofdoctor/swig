@@ -42,7 +42,7 @@ program main
         dummy_data(i) = real(i) + 1.5d0
     end do
     write(0, *) "Assigning vector", dummy_data
-    call v%ass(dummy_data)
+    call v%assign_from(dummy_data)
     call print_vec(v)
 
     write(0, *) "Destroying..."
