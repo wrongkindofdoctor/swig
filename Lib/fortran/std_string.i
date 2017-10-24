@@ -29,16 +29,9 @@ class string
 
   public:
 
-    %apply int { (size_type count) };
-    %apply (char* STRING, int SIZE) {
-        (pointer s, size_type count) };
-    %apply (const char* STRING, int SIZE) {
-        (const_pointer s, size_type count) };
-
     // >>> Construct and assign
 
     string();
-    string(const_pointer s, size_type count);
     void resize(size_type count);
     void clear();
 
@@ -48,28 +41,39 @@ class string
     size_type length() const;
 
 %extend {
+
+    // C indexing used here!
     void set(size_type pos, value_type v)
     {
         // TODO: check range
         (*$self)[pos] = v;
     }
 
+    // C indexing used here!
     value_type get(size_type pos)
     {
         // TODO: check range
         return (*$self)[pos];
     }
 
-    void assign_from(const_pointer s, size_type count)
+    void assign_from(std::pair<const char*, size_t> view)
     {
-        $self->assign(s, s + count);
+        $self->assign(view.first, view.first + view.second);
     }
 
-    // Copy the string to the given Fortran string, filling the tail with
-    // spaces so that Fortran 'trim' will work.
-    void copy_to(pointer s, size_type count)
+    std::pair<char*, size_t> view()
     {
-        swig::string_copyout(*$self, s, count);
+        char* begin_ptr;
+        size_t size = $self->size();
+        if (size == 0)
+        {
+            begin_ptr = NULL;
+        }
+        else
+        {
+            begin_ptr = &(*$self->begin());
+        }
+        return std::make_pair(begin_ptr, size);
     }
 
 } // end %extend

@@ -46,20 +46,15 @@
 do { swig::fortran_store_exception(code, msg); return $null; } while(0)
 
 // Insert the fortran integer definition (only if %included)
-%insert("fortranspec") {
+%fragment("SwigfErrorVars", "fpublic") {
  public :: SWIG_FORTRAN_ERROR_INT
  public :: SWIG_FORTRAN_ERROR_STR
  integer(C_INT), bind(C) :: SWIG_FORTRAN_ERROR_INT = 0
  character(kind=C_CHAR, len=SWIG_FORTRAN_ERROR_STRLEN), bind(C) :: SWIG_FORTRAN_ERROR_STR = ""
 }
 
-// Define SWIG integer error codes
-
-#ifndef SWIGIMPORTED
-%fragment("fortran_exception", "header",
-          fragment="<string>", fragment="<algorithm>", fragment="<stdexcept>")
-{
-// External fortran-owned data that we save to
+// Insert C declaration of fortran data
+%fragment("SwigfErrorVars_cpp", "header", fragment="SwigfErrorVars") {
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,7 +63,14 @@ extern char SWIG_FORTRAN_ERROR_STR[SWIG_FORTRAN_ERROR_STRLEN];
 #ifdef __cplusplus
 }
 #endif
+}
 
+// Exception handling code
+#ifndef SWIGIMPORTED
+%fragment("fortran_exception", "header",
+          fragment="<string>", fragment="<algorithm>", fragment="<stdexcept>",
+          fragment="SwigfErrorVars_cpp")
+{
 namespace swig
 {
 // Stored exception message (XXX: is this safe if main() is fortran?)
@@ -80,7 +82,7 @@ void fortran_check_unhandled_exception()
     if (::SWIG_FORTRAN_ERROR_INT != 0)
     {
         throw std::runtime_error(
-                "An unhandled exception occurred: "
+                "An unhandled exception occurred in $symname: "
                 + fortran_last_exception_msg);
     }
 }

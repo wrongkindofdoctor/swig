@@ -125,13 +125,10 @@
 #define ALL_SWIGSP__ SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
 
 %typemap(ctype) ALL_SWIGSP__ "void *"
-%typemap(imtype, out="type(C_PTR)") ALL_SWIGSP__ "type(C_PTR), value"
-%typemap(ftype) ALL_SWIGSP__ "$typemap(ftype, TYPE)"
-%typemap(fin) ALL_SWIGSP__ "$1_name%swigptr"
-%typemap(fout) ALL_SWIGSP__
-%{
-   $result%swigptr = $1
-%}
+%typemap(imtype, in="type(C_PTR), value") ALL_SWIGSP__ "type(C_PTR)"
+%typemap(ftype) ALL_SWIGSP__ "$typemap(ftype, " #TYPE ")"
+%typemap(fin) ALL_SWIGSP__ "$1 = $input%swigptr"
+%typemap(fout) ALL_SWIGSP__ "$result%swigptr = $1"
 
 // Instantiate shared pointer
 %template() SWIGSP__;

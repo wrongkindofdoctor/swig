@@ -7,24 +7,6 @@
  */
 //---------------------------------------------------------------------------//
 
-
-//---------------------------------------------------------------------------//
-// STRING TYPES
-//
-// Note that currently strings can be passed as character arrays, but returning
-// a C string gives just an opaque C pointer
-//---------------------------------------------------------------------------//
-
-%define FORT_STR_TYPEMAP(CTYPE)
-    %typemap(fin, noblock=1) (CTYPE* STRING, int SIZE)
-    { $1_name, len($1_name) }
-%enddef
-
-FORT_STR_TYPEMAP(char)
-FORT_STR_TYPEMAP(const char)
-
-#undef FORT_STR_TYPEMAP
-
 //---------------------------------------------------------------------------//
 // ARRAY TYPES
 //
@@ -128,6 +110,38 @@ end type
 %define %fort_view_typemap(CTYPE)
     FORT_VIEW_TYPEMAP("$typemap(imtype, " #CTYPE ")", CTYPE)
 %enddef
+
+//---------------------------------------------------------------------------//
+// STRING VIEWS
+//
+// String views are treated almost exactly like array views, except the Fortran
+// wrapper code uses slightly different types.
+//---------------------------------------------------------------------------//
+
+%define FORT_STRVIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE...)
+  FORT_VIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE)
+  #define PAIR_TYPE ::std::pair< CONST_CTYPE*, size_t >
+
+  // Fortran proxy code: accept a character string, but since we don't seem to
+  // be able to get character string pointers, return as an array view.
+  %typemap(ftype, out="character(kind=" FTYPE "), dimension(:), pointer") PAIR_TYPE
+    "character(kind=" FTYPE ", len=*), target"
+
+  // Fortran proxy translation code: convert from ftype $input to imtype $1
+  %typemap(fin) PAIR_TYPE
+    %{$1%data = c_loc($input)
+      $1%size = len($input)%}
+
+  #undef PAIR_TYPE
+%enddef
+
+// Declare wrapper functions for std::pair<T*,size_t> and <const T*, ...>
+%define FORT_STRVIEW_TYPEMAP(FTYPE, CTYPE)
+    FORT_STRVIEW_TYPEMAP_IMPL(FTYPE, CTYPE)
+    FORT_STRVIEW_TYPEMAP_IMPL(FTYPE, const CTYPE)
+%enddef
+
+FORT_STRVIEW_TYPEMAP("C_CHAR", char)
 
 //---------------------------------------------------------------------------//
 // end of fortran/typemaps.i

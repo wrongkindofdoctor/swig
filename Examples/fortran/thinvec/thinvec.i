@@ -24,16 +24,6 @@
 // Rename a function that's the same as a Fortran keyword
 %rename(ass) ThinVec::assign;
 
-// Works with void obtain(double* p, size_type count)
-// and (T* p, size_type count)
-// but not (pointer p, size_type count)
-// see https://github.com/swig/swig/issues/846
-%apply (SWIGTYPE* ARRAY, int SIZE) {
-       (double* p, unsigned int count),
-       (const double* p, unsigned int count),
-       (int* p, unsigned int count),
-       (const int* p, unsigned int count) };
-
 #endif
 
 // Handle the case of operator overloading

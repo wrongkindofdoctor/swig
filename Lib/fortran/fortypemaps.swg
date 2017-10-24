@@ -126,7 +126,7 @@
     FTYPE ", intent(in)"
   %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&
     FTYPE ", intent(in)"
-  %typemap(fin)  CTYPE
+  %typemap(fin)  CTYPE, const CTYPE&
     "$1 = $input"
   %typemap(fout) CTYPE, const CTYPE&
     "$result = $1"

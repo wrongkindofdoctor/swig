@@ -74,7 +74,13 @@ class vector
     // C indexing used here!
     value_type get(size_type index)
     {
+        // TODO: check range
         return (*$self)[index];
+    }
+
+    void assign(std::pair<const _Tp*, size_t> view)
+    {
+        $self->assign(view.first, view.first + view.second);
     }
 
     std::pair<_Tp*, size_t> view()
