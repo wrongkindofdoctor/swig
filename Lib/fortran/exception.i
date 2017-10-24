@@ -46,15 +46,18 @@
 do { swig::fortran_store_exception(code, msg); return $null; } while(0)
 
 // Insert the fortran integer definition (only if %included)
-%fragment("SwigfErrorVars", "fpublic") {
+%fragment("SwigfErrorPub", "fpublic") {
  public :: SWIG_FORTRAN_ERROR_INT
  public :: SWIG_FORTRAN_ERROR_STR
+}
+%fragment("SwigfErrorParams", "fparams") {
  integer(C_INT), bind(C) :: SWIG_FORTRAN_ERROR_INT = 0
  character(kind=C_CHAR, len=SWIG_FORTRAN_ERROR_STRLEN), bind(C) :: SWIG_FORTRAN_ERROR_STR = ""
 }
 
 // Insert C declaration of fortran data
-%fragment("SwigfErrorVars_cpp", "header", fragment="SwigfErrorVars") {
+%fragment("SwigfErrorVars_cpp", "header",
+          fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -229,6 +229,7 @@ class FORTRAN : public Language
     // Injected into module file
     String* f_imports;     //!< Fortran "use" directives generated from %import
     String* f_public;      //!< List of public interface functions and mapping
+    String* f_params;       //!< Generated enumeration/param types
     String* f_types;       //!< Generated class types
     String* f_interfaces;  //!< Fortran interface declarations to SWIG functions
     String* f_proxy;    //!< Fortran subroutine wrapper functions
@@ -249,6 +250,9 @@ class FORTRAN : public Language
     virtual int constructorHandler(Node *n);
     virtual int classHandler(Node *n);
     virtual int memberfunctionHandler(Node *n);
+    virtual int staticmemberfunctionHandler(Node *n);
+    virtual int staticmembervariableHandler(Node *n);
+    virtual int globalvariableHandler(Node *n);
     virtual int importDirective(Node *n);
     virtual int enumDeclaration(Node *n);
     virtual int enumvalueDeclaration(Node *n);
@@ -363,6 +367,10 @@ int FORTRAN::top(Node *n)
     // Public interface functions
     f_public = NewString("");
     Swig_register_filebyname("fpublic", f_public);
+
+    // Enums and parameters
+    f_params = NewString("");
+    Swig_register_filebyname("fparams", f_params);
 
     // Fortran classes
     f_types = NewString("");
@@ -491,7 +499,10 @@ void FORTRAN::write_module()
                     " end interface\n", NULL);
     }
 
-    Printv(out, " ! TYPES\n",
+    Printv(out, " ! PARAMETERS\n",
+                f_params,
+                "\n"
+                " ! TYPES\n",
                 f_types,
                 "\n"
                 " ! WRAPPER DECLARATIONS\n"
@@ -566,17 +577,6 @@ int FORTRAN::functionWrapper(Node *n)
     }
     Setattr(n, "wrap:name",  wname);
     Setattr(n, "wrap:fname", fname);
-
-    // XXX: move this code into staticmembervariableHandler
-    // Update parameter names for static variables
-    // Otherwise, argument names will be like "BaseClass::i"
-    String* staticName = Getattr(n, "staticmembervariableHandler:sym:name");
-    ParmList* parmlist = Getattr(n, "parms");
-    if (staticName && ParmList_len(parmlist))
-    {
-        assert(ParmList_len(parmlist) == 1);
-        Setattr(parmlist, "name", staticName);
-    }
 
     // A new wrapper function object for the C code, the interface code
     // (Fortran declaration of C function interface), and the Fortran code
@@ -664,6 +664,8 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     // >>> FUNCTION PARAMETERS/ARGUMENTS
+
+    ParmList* parmlist = Getattr(n, "parms");
 
     // Emit all of the local variables for holding arguments.
     emit_parameter_variables(parmlist, cfunc);
@@ -975,6 +977,9 @@ int FORTRAN::functionWrapper(Node *n)
 //---------------------------------------------------------------------------//
 /*!
  * \brief Write the interface/alias code for a wrapped function.
+ *
+ * The functionHandler code should write the actual implementation of the
+ * functions. This stuff just goes in the "fpublic" and "ftypes" sections.
  */
 int FORTRAN::write_function_interface(Node* n)
 {
@@ -983,62 +988,10 @@ int FORTRAN::write_function_interface(Node* n)
 
     // >>> DETERMINED WRAPPER NAME
 
-    bool is_static = false;
-
     // Get modified Fortran member name, defaulting to sym:name
-    String* alias = NULL;
-    // Temporary for any newly allocated string
-    String* new_alias = NULL;
+    String* alias = Getattr(n, "fortran:alias");
 
-    if ((alias = Getattr(n, "fortran:membername")))
-    {
-        // We've already overridden the member name
-    }
-    else if ((alias = Getattr(n, "staticmembervariableHandler:sym:name")))
-    {
-        // XXX: move this code into staticmembervariableHandler
-        // Member variable, rename the methods to set_X or get_X
-        // instead of set_Class_X or get_Class_X
-        is_static = true;
-
-        if (Getattr(n, "varset"))
-        {
-            alias = new_alias = Swig_name_set(getNSpace(), alias);
-        }
-        else if (Getattr(n, "varget"))
-        {
-            alias = new_alias = Swig_name_get(getNSpace(), alias);
-        }
-        else
-        {
-            Printv(stderr, "Static member isn't setter or getter:\n", NULL);
-            Swig_print_node(n);
-        }
-    }
-    else if ((alias = Getattr(n, "staticmemberfunctionHandler:sym:name")))
-    {
-        // XXX: move this code into staticmemberfunctionHandler
-        is_static = true;
-    }
-    else if ((alias = Getattr(n, "membervariableHandler:sym:name")))
-    {
-        // XXX: I think stuff is already set correctly in "sym:name"
-        if (Getattr(n, "memberset"))
-        {
-            alias = new_alias = Swig_name_set(getNSpace(), alias);
-        }
-        else if (Getattr(n, "memberget"))
-        {
-            alias = new_alias = Swig_name_get(getNSpace(), alias);
-        }
-        else
-        {
-            // Standard class method
-            alias = Getattr(n, "sym:name");
-        }
-    }
-    // XXX: variableWrapper ??
-    else
+    if (!alias)
     {
         alias = Getattr(n, "sym:name");
     }
@@ -1048,6 +1001,8 @@ int FORTRAN::write_function_interface(Node* n)
     const bool is_overloaded = Getattr(n, "sym:overloaded");
     if (is_wrapping_class())
     {
+        String* qualifiers = NewString("");
+
         if (is_overloaded)
         {
             // Create overloaded aliased name
@@ -1063,15 +1018,22 @@ int FORTRAN::write_function_interface(Node* n)
             }
             Append(overloads, overalias);
 
+            // Make the procedure private
+            Append(qualifiers, ", private");
+
+            // The name we write is the overloaded alias
             alias = overalias;
+        }
+        if (String* extra_quals = Getattr(n, "fortran:procedure"))
+        {
+            // Add qualifiers like "static" for static functions
+            Printv(qualifiers, ", ", extra_quals, NULL);
         }
 
         Printv(f_types,
-               "  procedure", (  is_static     ? ", nopass"
-                               : is_overloaded ? ", private"
-                               : ""),
-               " :: ", alias, " => ", fname, "\n",
+               "  procedure", qualifiers, " :: ", alias, " => ", fname, "\n",
                NULL);
+        Delete(qualifiers);
     }
     else 
     {
@@ -1095,7 +1057,6 @@ int FORTRAN::write_function_interface(Node* n)
                    NULL);
         }
     }
-    Delete(new_alias);
     return SWIG_OK;
 }
 
@@ -1108,11 +1069,25 @@ String* FORTRAN::makeParameterName(Node *n, Parm *p,
 {
     String *name = Getattr(p, "name");
     if (name)
-        return Swig_name_make(p, 0, name, 0, 0);
-
-    // The general function which replaces arguments whose
-    // names clash with keywords with (less useful) "argN".
-    return Language::makeParameterName(n, p, arg_num, setter);
+    {
+        if (Strstr(name, "::"))
+        {
+            // Name has qualifiers (probably a static variable setter)
+            // so replace it with something simple
+            name = NewStringf("value%d", arg_num);
+        }
+        else
+        {
+            name = Swig_name_make(p, 0, name, 0, 0);
+        }
+    }
+    else
+    {
+        // The general function which replaces arguments whose
+        // names clash with keywords with (less useful) "argN".
+        name = Language::makeParameterName(n, p, arg_num, setter);
+    }
+    return name;
 }
 
 //---------------------------------------------------------------------------//
@@ -1289,7 +1264,7 @@ int FORTRAN::constructorHandler(Node* n)
         Setattr(n, "sym:name", mrename);
         Delete(mrename);
     }
-    Setattr(n, "fortran:membername", alias);
+    Setattr(n, "fortran:alias", alias);
     
     // NOTE: type not yet assigned at this point
     Language::constructorHandler(n);
@@ -1303,7 +1278,7 @@ int FORTRAN::constructorHandler(Node* n)
  */
 int FORTRAN::destructorHandler(Node* n)
 {
-    Setattr(n, "fortran:membername", "release");
+    Setattr(n, "fortran:alias", "release");
     
     Language::destructorHandler(n);
 
@@ -1341,8 +1316,43 @@ int FORTRAN::destructorHandler(Node* n)
  */
 int FORTRAN::memberfunctionHandler(Node *n)
 {
-    Setattr(n, "fortran:membername", Getattr(n, "sym:name"));
     Language::memberfunctionHandler(n);
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Process static member functions.
+ */
+int FORTRAN::globalvariableHandler(Node *n)
+{
+    // For global variables, drop all the qualifying namespaces
+    Setattr(n, "fortran:alias", Getattr(n, "sym:name"));
+    Language::globalvariableHandler(n);
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Process static member functions.
+ */
+int FORTRAN::staticmemberfunctionHandler(Node *n)
+{
+    // Add 'nopass' procedure qualifier
+    Setattr(n, "fortran:procedure", "nopass");
+    Language::staticmemberfunctionHandler(n);
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Process static member variables.
+ */
+int FORTRAN::staticmembervariableHandler(Node *n)
+{
+    // Add 'nopass' procedure qualifier for getters and setters
+    Setattr(n, "fortran:procedure", "nopass");
+    Language::staticmembervariableHandler(n);
     return SWIG_OK;
 }
 
@@ -1392,9 +1402,10 @@ int FORTRAN::enumDeclaration(Node *n)
     {
         // Scope the enum if it's in a class
         String* enum_name = NULL;
-        if (is_wrapping_class())
+        if (Node* classnode = getCurrentClass())
         {
-            enum_name = NewStringf("%s_%s", getClassName(), symname);
+            enum_name = NewStringf("%s_%s", Getattr(classnode, "sym:name"),
+                                   symname);
         }
         else
         {
@@ -1402,7 +1413,7 @@ int FORTRAN::enumDeclaration(Node *n)
         }
 
         // Print the enumerator with a placeholder so we can use 'kind(ENUM)'
-        Printv(f_types, " enum, bind(c)\n",
+        Printv(f_params, " enum, bind(c)\n",
                         "  enumerator :: ", enum_name, " = -1\n", NULL);
 
         d_enumvalues = NewList();
@@ -1416,7 +1427,7 @@ int FORTRAN::enumDeclaration(Node *n)
     if (symname)
     {
         // End enumeration
-        Printv(f_types, " end enum\n", NULL);
+        Printv(f_params, " end enum\n", NULL);
 
         // Make the enum class *and* its values public
         Printv(f_public, " public :: ", NULL);
@@ -1443,30 +1454,24 @@ int FORTRAN::enumvalueDeclaration(Node *n)
 
     if (!value)
     {
-        // Implicit enum value (no value specified: PREVIOUS + 1)
+        // Implicit enum value (if no value specified, it's PREVIOUS + 1)
         value = Getattr(n, "enumvalueex");
     }
+    assert(name);
+    assert(value);
 
-    if (name && value)
+    if (d_enumvalues)
     {
-        if (d_enumvalues)
-        {
-            Append(d_enumvalues, name);
-            Printv(f_types, "  enumerator :: ", name, " = ", value, "\n", NULL);
-        }
-        else
-        {
-            // Anonymous enum (TODO: change to parameter??)
-            Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
-                    "Anonymous enums ('%s') are currently unsupported "
-                    "and will not be wrapped\n",
-                    SwigType_namestr(name));
-        }
+        // Add to the list of enums being built
+        Append(d_enumvalues, name);
+        // Print the enum to the list
+        Printv(f_params, "  enumerator :: ", name, " = ", value, "\n", NULL);
     }
     else
     {
-        Printv(stderr, "Enum is missing a name or value:", NULL);
-        Swig_print_node(n);
+        // Convert anonymous enum to an integer parameter
+        Printv(f_params, "  integer(C_INT), parameter :: ", name,
+                   " = ", value, "\n", NULL);
     }
 
     return SWIG_OK;
