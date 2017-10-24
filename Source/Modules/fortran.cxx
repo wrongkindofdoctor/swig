@@ -181,9 +181,9 @@ String* get_typemap(const_String_or_char_ptr tmname,
 
 //---------------------------------------------------------------------------//
 //! Add a named C argument to a function declaration.
-void print_carg(String* out, Node* n, String* tm, String* arg)
+void print_carg(String* out, Parm* p, String* tm, String* arg)
 {
-    if (!SwigType_isfunctionpointer(Getattr(n, "type")))
+    if (!SwigType_isfunctionpointer(Getattr(p, "type")))
     {
         Printv(out, tm, " ", arg, NULL);
     }
@@ -201,6 +201,7 @@ void print_carg(String* out, Node* n, String* tm, String* arg)
         Delete(tm_arg);
     }
 }
+
 //---------------------------------------------------------------------------//
 } // end anonymous namespace
 
@@ -704,7 +705,7 @@ int FORTRAN::functionWrapper(Node *n)
                                  WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
 
         Printv(cfunc->def, prepend_comma, NULL);
-        print_carg(cfunc->def, n, tm, imname);
+        print_carg(cfunc->def, p, tm, imname);
 
         // >>> C ARGUMENT CONVERSION
 

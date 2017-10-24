@@ -16,8 +16,8 @@
 %include <typemaps.i>
 
 %define TEMPLATE_ALGORITHMS(TYPE)
-    %apply (SWIGTYPE* ARRAY, int SIZE) { (      TYPE* arr, int count),
-                                         (const TYPE* arr, int count) }
+    // Instantiate std::pair mapping
+    %fort_view_typemap(TYPE)
 
     %template(sort)        sort< TYPE >;
     %template(reverse)     reverse< TYPE >;

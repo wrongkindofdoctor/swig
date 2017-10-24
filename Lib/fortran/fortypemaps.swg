@@ -139,14 +139,14 @@
     "$1 = $input;"
   %typemap(out) CTYPE&
     "$result = $1;"
-  %typemap(imtype, in=FTYPE ", intent(inout)") CTYPE&
-    FTYPE
+  %typemap(imtype, in="type(C_PTR), value") CTYPE&
+    "type(C_PTR)"
   %typemap(ftype, out=FTYPE ", pointer")  CTYPE&
-    FTYPE ", intent(inout)"
+    FTYPE ", target, intent(inout)"
   %typemap(fin)  CTYPE&
-    "$1 = $input"
+    "$1 = c_loc($input)"
   %typemap(fout) CTYPE&
-    "$result = c_f_pointer($1)"
+    "call c_f_pointer($1, $result)"
 %enddef
 
 /*!
@@ -202,7 +202,7 @@
 
   // Overrides for const Fortran intent
   %typemap(ftype, out=FTYPE ", pointer") const CTYPE*, const CTYPE[], CTYPE[ANY]
-    FTYPE ", dimension(:), intent(in)"
+    FTYPE ", dimension(:), target, intent(in)"
 %enddef
 
 FORT_FUND_TYPEMAP(bool          , "logical(C_BOOL)"     )
@@ -464,8 +464,8 @@ FORT_FUND_VALREF_TYPEMAP(enum SWIGTYPE, "integer(C_INT)")
     %{$1 = $input;%}
 %typemap(out)    SWIGTYPE (*)(ANY)
     %{$result = $1;%}
-%typemap(imtype) SWIGTYPE (*)(ANY)
-    "type(C_FUNPTR), intent(in), value"
+%typemap(imtype, in="type(C_FUNPTR), intent(in), value") SWIGTYPE (*)(ANY)
+    "type(C_FUNPTR)"
 %typemap(ftype)  SWIGTYPE (*)(ANY)
     "type(C_FUNPTR), intent(in), value"
 %typemap(fin)    SWIGTYPE (*)(ANY)

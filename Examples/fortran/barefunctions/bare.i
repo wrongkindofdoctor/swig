@@ -12,10 +12,8 @@
 
 %include <typemaps.i>
 
-// Automatically expand a Fortran array into a pointer/size pair with the
-// correct type
-%apply (SWIGTYPE* ARRAY, int SIZE) {
-       (const double* arr, int count) };
+// Instantiate array pointer conversion for doubles
+%fort_view_typemap(double)
 
 // Ignore function incompatible with Fortran language (return-by-nonconst-ref)
 %ignore get_something_rptr;
