@@ -250,6 +250,7 @@ class FORTRAN : public Language
     virtual int constructorHandler(Node *n);
     virtual int classHandler(Node *n);
     virtual int memberfunctionHandler(Node *n);
+    virtual int membervariableHandler(Node *n);
     virtual int staticmemberfunctionHandler(Node *n);
     virtual int staticmembervariableHandler(Node *n);
     virtual int globalvariableHandler(Node *n);
@@ -989,8 +990,31 @@ int FORTRAN::write_function_interface(Node* n)
     // >>> DETERMINED WRAPPER NAME
 
     // Get modified Fortran member name, defaulting to sym:name
-    String* alias = Getattr(n, "fortran:alias");
+    if (String* varname = Getattr(n, "fortran:variable"))
+    {
+        String* new_alias;
+        if (Getattr(n, "varset") || Getattr(n, "memberset"))
+        {
+            new_alias = Swig_name_set(getNSpace(), varname);
+        }
+        else if(Getattr(n, "varget") || Getattr(n, "memberget"))
+        {
+            new_alias = Swig_name_get(getNSpace(), varname);
+        }
+        else
+        {
+            Swig_print_node(n);
+            assert(0);
+        }
+        Setattr(n, "fortran:alias", new_alias);
+        Delete(new_alias);
+    }
 
+    String* alias = Getattr(n, "fortran:alias");
+    if (!alias)
+    {
+        alias = Getattr(n, "fortran:alias");
+    }
     if (!alias)
     {
         alias = Getattr(n, "sym:name");
@@ -1316,7 +1340,23 @@ int FORTRAN::destructorHandler(Node* n)
  */
 int FORTRAN::memberfunctionHandler(Node *n)
 {
+    // Preserve original member name
+    Setattr(n, "fortran:alias", Getattr(n, "sym:name"));
+    
     Language::memberfunctionHandler(n);
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Process member variables.
+ */
+int FORTRAN::membervariableHandler(Node *n)
+{
+    // Preserve variable name
+    Setattr(n, "fortran:variable", Getattr(n, "sym:name"));
+
+    Language::membervariableHandler(n);
     return SWIG_OK;
 }
 
@@ -1336,8 +1376,12 @@ int FORTRAN::globalvariableHandler(Node *n)
  */
 int FORTRAN::staticmemberfunctionHandler(Node *n)
 {
+    // Preserve original function name
+    Setattr(n, "fortran:alias", Getattr(n, "sym:name"));
+    
     // Add 'nopass' procedure qualifier
     Setattr(n, "fortran:procedure", "nopass");
+    
     Language::staticmemberfunctionHandler(n);
     return SWIG_OK;
 }
@@ -1348,6 +1392,17 @@ int FORTRAN::staticmemberfunctionHandler(Node *n)
  */
 int FORTRAN::staticmembervariableHandler(Node *n)
 {
+#if 0
+    // Preserve variable name as Class_n
+    String* symname = Getattr(n, "sym:name");
+    String* varname = NewStringf("%s_%s", getClassPrefix(), symname);
+    Setattr(n, "fortran:variable", varname);
+    Delete(varname);
+#endif
+
+    // Preserve variable name
+    Setattr(n, "fortran:variable", Getattr(n, "sym:name"));
+
     // Add 'nopass' procedure qualifier for getters and setters
     Setattr(n, "fortran:procedure", "nopass");
     Language::staticmembervariableHandler(n);
@@ -1389,7 +1444,7 @@ int FORTRAN::importDirective(Node *n)
 int FORTRAN::enumDeclaration(Node *n)
 {
     if (ImportMode)
-      return SWIG_OK;
+        return SWIG_OK;
 
     // Symname is not present if the enum is not being wrapped
     // (protected/private)
