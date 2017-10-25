@@ -196,7 +196,7 @@
  */
 %define FORT_OPAQUE_PTR_TYPEMAP(CTYPE)
   %typemap(ctype) CTYPE
-    "void*"
+    "$1_ltype"
   %typemap(in, noblock=1) CTYPE
     {$1 = %const_cast($input, $1_ltype);}
   %typemap(out) CTYPE
@@ -385,6 +385,8 @@ end type
 //---------------------------------------------------------------------------//
 // MORE POINTERS
 //---------------------------------------------------------------------------//
+
+// NOTE: handles are untested
 
 // Handles are returned as opaque C pointers
 FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE**)

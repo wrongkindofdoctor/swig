@@ -20,16 +20,10 @@ abs_top_srcdir = @abs_top_srcdir@
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
   apply_strings \
-  argout \
-  array_typedef_memberin \
-  arrayref \
-  arrays_global_twodim \
-  char_strings \
   constant_pointers \
   contract \
   cpp_basic \
   cpp_enum \
-  default_constructor \
   director_binary_string \
   director_enum \
   director_extend \
@@ -38,7 +32,6 @@ FAILING_CPP_TESTS += \
   enum_ignore \
   enum_thorough \
   extend \
-  funcptr_cpp \
   global_namespace \
   global_vars \
   li_attribute \
@@ -49,30 +42,22 @@ FAILING_CPP_TESTS += \
   li_cdata_cpp \
   li_std_except \
   li_std_except_as_class \
-  li_std_vector \
   li_std_vector_enum \
-  li_std_vector_ptr \
-  li_swigtype_inout \
   member_funcptr_galore \
   member_pointer \
   member_pointer_const \
   memberin_extend \
   mixed_types \
-  multiple_inheritance_abstract \
-  multiple_inheritance_nspace \
   multiple_inheritance_shared_ptr \
   name_warnings \
   namespace_spaces \
   namespace_typemap \
   nested_ignore \
   operator_pointer_ref \
-  pointer_reference \
   return_const_value \
   smart_pointer_const_overload \
   special_variable_macros \
-  template_arg_typename \
   template_basic \
-  template_const_ref \
   template_explicit \
   template_rename \
   template_typedef_rec \
@@ -80,8 +65,6 @@ FAILING_CPP_TESTS += \
   typedef_struct_cpp \
   typemap_various \
   valuewrapper_const \
-  varargs \
-  varargs_overload \
   virtual_poly \
   wrapmacro
 
@@ -92,6 +75,7 @@ FAILING_CPP_TESTS += \
   autodoc \
   constructor_copy \
   default_args \
+  default_constructor \
   director_basic \
   director_classes \
   director_default \
@@ -111,8 +95,11 @@ FAILING_CPP_TESTS += \
   friends \
   fvirtual \
   inherit_target_language \
+  li_std_vector_ptr \
   multiple_inheritance \
+  multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
+  multiple_inheritance_nspace \
   namespace_class \
   namespace_nested \
   naturalvar_more \
@@ -155,6 +142,7 @@ FAILING_CPP_TESTS += \
   smart_pointer_templatevariables \
   smart_pointer_typedef \
   special_variables \
+  template_arg_typename \
   template_default_arg \
   template_enum \
   template_extend_overload \

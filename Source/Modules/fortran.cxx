@@ -182,29 +182,6 @@ String* get_typemap(const_String_or_char_ptr tmname,
 { return get_typemap(tmname, ext, n, warning, false); }
 
 //---------------------------------------------------------------------------//
-//! Add a named C argument to a function declaration.
-void print_carg(String* out, Parm* p, String* tm, String* arg)
-{
-    if (!SwigType_isfunctionpointer(Getattr(p, "type")))
-    {
-        Printv(out, tm, " ", arg, NULL);
-    }
-    else
-    {
-        // Function pointer syntax requires special handling:
-        // Replace (PRVAL) (*)(PARGS) arg with (PRVAL)(*arg)(PARGS)
-        String* tm_arg = Copy(tm);
-        String* subst = NewStringf("(*%s)(", arg);
-
-        Replace(tm_arg, " (*)(", subst, DOH_REPLACE_FIRST);
-        Printv(out, tm_arg, NULL);
-
-        Delete(subst);
-        Delete(tm_arg);
-    }
-}
-
-//---------------------------------------------------------------------------//
 } // end anonymous namespace
 
 
@@ -725,12 +702,16 @@ int FORTRAN::functionWrapper(Node *n)
         // Name of the argument in the function call (e.g. farg1)
         String* imname = Getattr(p, "imname");
 
-        // Get the C type
+        // Get the user-provided C type string, and convert it to a SWIG
+        // internal representation using Swig_cparse_type . Then convert the
+        // type and argument name to a valid C expression using SwigType_str.
         String* tm = get_typemap("ctype", p,
                                  WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
-
-        Printv(cfunc->def, prepend_comma, NULL);
-        print_carg(cfunc->def, p, tm, imname);
+        SwigType* parsed = Swig_cparse_type(tm);
+        String* carg = SwigType_str(parsed, imname);
+        Printv(cfunc->def, prepend_comma, carg, NULL);
+        Delete(carg);
+        Delete(parsed);
 
         // >>> C ARGUMENT CONVERSION
 
