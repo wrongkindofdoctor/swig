@@ -19,34 +19,25 @@ abs_top_srcdir = @abs_top_srcdir@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-allprotected \
   apply_strings \
   argout \
   array_typedef_memberin \
   arrayref \
-  arrays_global \
   arrays_global_twodim \
-  char_binary \
   char_strings \
   constant_pointers \
-  constover \
   contract \
   cpp_basic \
   cpp_enum \
-  default_args \
   default_constructor \
   director_binary_string \
   director_enum \
   director_extend \
-  director_primitives \
   director_smartptr \
-  director_string \
   dynamic_cast \
   enum_ignore \
   enum_thorough \
   extend \
-  extend_default \
-  extend_placement \
   funcptr_cpp \
   global_namespace \
   global_vars \
@@ -58,7 +49,6 @@ allprotected \
   li_cdata_cpp \
   li_std_except \
   li_std_except_as_class \
-  li_std_string \
   li_std_vector \
   li_std_vector_enum \
   li_std_vector_ptr \
@@ -69,7 +59,6 @@ allprotected \
   memberin_extend \
   mixed_types \
   multiple_inheritance_abstract \
-  multiple_inheritance_interfaces \
   multiple_inheritance_nspace \
   multiple_inheritance_shared_ptr \
   name_warnings \
@@ -77,26 +66,16 @@ allprotected \
   namespace_typemap \
   nested_ignore \
   operator_pointer_ref \
-  overload_bool \
-  overload_return_type \
-  overload_template \
-  overload_template_fast \
   pointer_reference \
   return_const_value \
   smart_pointer_const_overload \
   special_variable_macros \
-  string_constants \
   template_arg_typename \
   template_basic \
   template_const_ref \
-  template_default_arg \
-  template_default_arg_overloaded \
   template_explicit \
-  template_nested_typemaps \
   template_rename \
   template_typedef_rec \
-  threads \
-  threads_exception \
   typedef_sizet \
   typedef_struct_cpp \
   typemap_various \
@@ -109,8 +88,10 @@ allprotected \
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
+  allprotected \
   autodoc \
   constructor_copy \
+  default_args \
   director_basic \
   director_classes \
   director_default \
@@ -125,11 +106,13 @@ FAILING_CPP_TESTS += \
   director_redefined \
   enum_scope_template \
   evil_diamond_prop \
+  extend_default \
   extern_c \
   friends \
   fvirtual \
   inherit_target_language \
   multiple_inheritance \
+  multiple_inheritance_interfaces \
   namespace_class \
   namespace_nested \
   naturalvar_more \
@@ -141,8 +124,11 @@ FAILING_CPP_TESTS += \
   overload_arrays \
   overload_method \
   overload_polymorphic \
+  overload_return_type \
   overload_simple \
   overload_subtype \
+  overload_template \
+  overload_template_fast \
   preproc_constants \
   primitive_ref \
   refcount \
@@ -169,6 +155,7 @@ FAILING_CPP_TESTS += \
   smart_pointer_templatevariables \
   smart_pointer_typedef \
   special_variables \
+  template_default_arg \
   template_enum \
   template_extend_overload \
   template_methods \
