@@ -14,13 +14,6 @@
 
 %include "std_common.i"
 
-// Force inclusion of algorithm and stdexcept
-%fragment("<algorithm>");
-%fragment("ArraySizeCheck");
-
-%include <std_pair.i>
-%include <typemaps.i>
-
 namespace std
 {
 
@@ -59,9 +52,6 @@ class vector
     const_reference front() const;
     const_reference back() const;
 
-    // Instantiate typemaps for views
-    %fort_view_typemap(_Tp);
-
     // Extend for Fortran
 %extend {
     // C indexing used here!
@@ -76,26 +66,6 @@ class vector
     {
         // TODO: check range
         return (*$self)[index];
-    }
-
-    void assign(std::pair<const _Tp*, size_t> view)
-    {
-        $self->assign(view.first, view.first + view.second);
-    }
-
-    std::pair<_Tp*, size_t> view()
-    {
-        _Tp* begin_ptr;
-        size_t size = $self->size();
-        if (size == 0)
-        {
-            begin_ptr = NULL;
-        }
-        else
-        {
-            begin_ptr = &((*$self)[0]);
-        }
-        return std::make_pair(begin_ptr, size);
     }
 } // end extend
 

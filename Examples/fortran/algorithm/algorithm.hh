@@ -12,13 +12,14 @@
 #define algorithms_algorithm_hh
 
 #include <algorithm>
+#include <utility>
 
 //---------------------------------------------------------------------------//
 /*!
  * \brief Reverse the contents of an array in-place
  */
 template<class T>
-void reverse(std::pair<T*, size_t> view)
+void reverse(std::pair<T*, std::size_t> view)
 {
     std::reverse(view.first, view.first + view.second);
 }
@@ -28,9 +29,19 @@ void reverse(std::pair<T*, size_t> view)
  * \brief Sort the contents of an array in-place
  */
 template<class T>
-void sort(std::pair<T*, size_t> view)
+void sort(std::pair<T*, std::size_t> view)
 {
     std::sort(view.first, view.first + view.second);
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the same view
+ */
+template<class T>
+std::pair<T*, std::size_t> get_view(std::pair<T*, std::size_t> view)
+{
+    return view;
 }
 
 //---------------------------------------------------------------------------//
@@ -40,7 +51,7 @@ void sort(std::pair<T*, size_t> view)
  * \return The fortran index (starts with 1) or zero if not found
  */
 template<class T>
-int find_sorted(std::pair<const T*, size_t> view, T val)
+int find_sorted(std::pair<const T*, std::size_t> view, T val)
 {
     const T* start = view.first;
     const T* stop  = view.first + view.second;

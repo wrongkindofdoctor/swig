@@ -38,6 +38,7 @@ program main
     ptrstr => s%view()
     write(0, *) "String view size:", size(ptrstr)
 
+    ! Get a view of the string as an array of single chars
     call halve_str(s)
     ptrstr => s%view()
 
@@ -50,6 +51,12 @@ program main
     enddo
 
     write(0, *) "Quarter-length string: '"//varlen//"'"
+
+    ! Copy string to fix-length array (alternate way of extracting)
+    fixedlen = "XXXXXXXXXXXXXXXX"
+    call s%copy_to(fixedlen)
+    write(0, *) "Fixed-length string: '"//fixedlen//"'"
+
     write(0, *) "Destroying..."
     call s%release()
     deallocate(varlen)

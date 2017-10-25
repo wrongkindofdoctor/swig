@@ -12,8 +12,8 @@
 
 %include <typemaps.i>
 
-// Instantiate array pointer conversion for doubles
-%fort_view_typemap(double)
+// Instantiate array pointer conversion for doubles from pair<double*,size_t>
+%fortran_view(double)
 
 // Ignore function incompatible with Fortran language (return-by-nonconst-ref)
 %ignore get_something_rptr;

@@ -17,11 +17,12 @@
 
 %define TEMPLATE_ALGORITHMS(TYPE)
     // Instantiate std::pair mapping
-    %fort_view_typemap(TYPE)
+    %fortran_view(TYPE)
 
     %template(sort)        sort< TYPE >;
     %template(reverse)     reverse< TYPE >;
     %template(find_sorted) find_sorted< TYPE >;
+    %template(get_view)    get_view< TYPE >;
 %enddef
 
 %include "algorithm.hh"

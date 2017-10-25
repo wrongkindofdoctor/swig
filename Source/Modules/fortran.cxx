@@ -13,6 +13,8 @@ Fotran Options (available with -fortran)\n\
      -noproxy    - Expose the low-level functional interface instead\n\
                    of generatingproxy classes\n\
      -final      - Generate 'final' statement to call C++ destructors\n\
+     -cppcast    - Enable C++ casting operators (default) \n\
+     -nocppcast - Disable C++ casting operators\n\
 \n";
 
 //! Maximum line length
@@ -291,6 +293,8 @@ class FORTRAN : public Language
  */
 void FORTRAN::main(int argc, char *argv[])
 {
+    int cppcast = 1;
+
     /* Set language-specific subdirectory in SWIG library */
     SWIG_library_directory("fortran");
 
@@ -307,12 +311,28 @@ void FORTRAN::main(int argc, char *argv[])
             Swig_mark_arg(i);
             d_use_final = true;
         }
+        else if (strcmp(argv[i], "-cppcast") == 0)
+        {
+            cppcast = 1;
+            Swig_mark_arg(i);
+        }
+        else if (strcmp(argv[i], "-nocppcast") == 0)
+        {
+            cppcast = 0;
+            Swig_mark_arg(i);
+        }
         else if ((strcmp(argv[i], "-help") == 0))
         {
             Printv(stdout, usage, NULL);
         }
     }
 
+    /* Enable C++ casting */
+    if (cppcast)
+    {
+        Preprocessor_define("SWIG_CPLUSPLUS_CAST", 0);
+    }
+    
     /* Set language-specific preprocessing symbol */
     Preprocessor_define("SWIGFORTRAN 1", 0);
 
@@ -322,9 +342,7 @@ void FORTRAN::main(int argc, char *argv[])
     /* Set language-specific configuration file */
     SWIG_config_file("fortran.swg");
 
-    /* TODO: fix overloading of types that map to the same value */
     allow_overloading();
-    /* TODO: Multiple inheritance? */
     Swig_interface_feature_enable();
 }
 

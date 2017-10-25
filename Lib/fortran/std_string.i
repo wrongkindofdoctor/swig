@@ -9,12 +9,9 @@
 
 %include "std_common.i"
 
-%fragment("<algorithm>");
-%fragment("<stdexcept>");
-%fragment("<string>");
-%fragment("StringCopyout");
-
-%include <typemaps.i>
+%{
+#include <string>
+%}
 
 namespace std
 {
@@ -55,27 +52,6 @@ class string
         // TODO: check range
         return (*$self)[pos];
     }
-
-    void assign_from(std::pair<const char*, size_t> view)
-    {
-        $self->assign(view.first, view.first + view.second);
-    }
-
-    std::pair<char*, size_t> view()
-    {
-        char* begin_ptr;
-        size_t size = $self->size();
-        if (size == 0)
-        {
-            begin_ptr = NULL;
-        }
-        else
-        {
-            begin_ptr = &(*$self->begin());
-        }
-        return std::make_pair(begin_ptr, size);
-    }
-
 } // end %extend
 
 };

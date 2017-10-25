@@ -8,6 +8,8 @@
  */
 //---------------------------------------------------------------------------//
 
+%include <typemaps/swigmacros.swg>
+
 //---------------------------------------------------------------------------//
 /*! CUSTOM TYPEMAP DESCRIPTIONS.
  *
@@ -101,7 +103,7 @@
  * Mutable references that are *return* values are passed as pointers, and on
  * the Fortan side these become 'pointer' types.
  *
- * Nnote that it's important to use CTYPE instead of $1_ltype in order to keep
+ * Note that it's important to use CTYPE instead of $1_ltype in order to keep
  * the pointer types consistent with the given fortran FTYPE.
  */
 %define FORT_FUND_VALREF_TYPEMAP(CTYPE, FTYPE)
@@ -112,8 +114,8 @@
     "$result = $1;"
 
   // Const references are returned by value
-  %typemap(in) const CTYPE&
-    "$1 = ($1_ltype)($input);"
+  %typemap(in, noblock=1) const CTYPE&
+    {$1 = %const_cast($input, $1_ltype);}
   %typemap(out) const CTYPE&
     "$result = *$1;"
     
@@ -158,7 +160,7 @@
   %typemap(ctype) CTYPE
     "void*"
   %typemap(in) CTYPE
-    "$1 = ($1_ltype)$input;"
+    "$1 = $input;"
   %typemap(out) CTYPE
     "$result = $1;"
   %typemap(imtype, in="type(C_PTR), value") CTYPE
@@ -332,18 +334,10 @@ end type
 
 %typemap(ctype)  SWIGTYPE
   %{void*%}
-%typemap(in)     SWIGTYPE
-  "$1 = *($&1_ltype)($input);"
-%typemap(out)    SWIGTYPE
-#ifdef __cplusplus
-  "$result = new $1_ltype($1);"
-#else
-{
-  $&1_ltype $1ptr = ($&1_ltype) malloc(sizeof($1_ltype));
-  memmove($1ptr, &$1, sizeof($1_type));
-  $result = $1ptr;
-}
-#endif
+%typemap(in, noblock=1)     SWIGTYPE
+  {$1 = *%static_cast($input, $&1_type);}
+%typemap(out, noblock=1)    SWIGTYPE
+  {$result = %new_copy($1, $1_type); }
 
 %typemap(imtype, in="type(C_PTR), value") SWIGTYPE
   "type(C_PTR)"
@@ -360,8 +354,8 @@ end type
 
 %typemap(ctype)  SWIGTYPE*, SWIGTYPE&
   "void*"
-%typemap(in)     SWIGTYPE*, SWIGTYPE&
-  "$1 = ($1_ltype)($input);"
+%typemap(in, noblock=1)     SWIGTYPE*, SWIGTYPE&
+  {$1 = %reinterpret_cast($input, $1_ltype);}
 %typemap(out)    SWIGTYPE*, SWIGTYPE&
   "$result = $1;"
 %typemap(imtype, in="type(C_PTR), value") SWIGTYPE*, SWIGTYPE&
@@ -375,6 +369,8 @@ end type
 
 %typemap(ctype) const SWIGTYPE*, const SWIGTYPE&
   "const void*"
+%typemap(in, noblock=1) const SWIGTYPE*, const SWIGTYPE&
+  {$1 = %reinterpret_cast(%const_cast($input, void*), $1_ltype);}
 
 //---------------------------------------------------------------------------//
 // MORE POINTERS
@@ -411,7 +407,7 @@ FORT_CHAR_TYPEMAP(char, "C_CHAR")
   %typemap(ctype)  CTYPE*, CTYPE[], CTYPE[ANY]
     %{CTYPE*%}
   %typemap(in)     CTYPE*, CTYPE[], CTYPE[ANY]
-    %{$1 = ($1_ltype)$input;%}
+    %{$1 = $input;%}
   %typemap(out)    CTYPE*, CTYPE[], CTYPE[ANY]
     %{$result = $1;%}
   %typemap(imtype, out="type(C_PTR)") CTYPE*, CTYPE[], CTYPE[ANY]
@@ -439,18 +435,18 @@ FORT_FUND_VALREF_TYPEMAP(enum SWIGTYPE, "integer(C_INT)")
 // Override the default value treatment
 %typemap(ctype, out="int") enum SWIGTYPE, const enum SWIGTYPE&
     %{int*%}
-%typemap(in) enum SWIGTYPE
-    %{$1 = ($1_ltype)(*$input);%}
-%typemap(in) const enum SWIGTYPE&
-    %{$1 = ($1_ltype)($input);%}
+%typemap(in, noblock=1) enum SWIGTYPE
+    {$1 = %static_cast(*$input, $1_ltype);}
+%typemap(in, noblock=1) const enum SWIGTYPE&
+    {$1 = %static_cast($input, $1_ltype);}
 
 // Override the default pointer treatment
 %typemap(ctype, out="int*") enum SWIGTYPE*
     %{int*%}
-%typemap(in) enum SWIGTYPE*
-    %{$1 = ($1_ltype)($input);%}
-%typemap(out) enum SWIGTYPE*
-    %{$result = (int*)($1);%}
+%typemap(in, noblock=1) enum SWIGTYPE*
+    {$1 = %reinterpret_cast($input, $1_ltype);%}
+%typemap(out, noblock=1) enum SWIGTYPE*
+    {$result = %reinterpret_cast($1, int*);}
 
 // Override fortran type
 %typemap(ftype)  enum SWIGTYPE, enum SWIGTYPE&, enum SWIGTYPE*

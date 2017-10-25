@@ -7,6 +7,8 @@
  */
 //---------------------------------------------------------------------------//
 
+%include <std_pair.i>
+
 //---------------------------------------------------------------------------//
 // ARRAY TYPES
 //
@@ -14,8 +16,6 @@
 // fortran) that defines the start and size of a contiguous array.
 //
 //---------------------------------------------------------------------------//
-%include <std_pair.i>
-
 // Add array wrapper to C++ code when used by Fortran fragment
 %fragment("SwigfArrayWrapper_cpp", "header") %{
 namespace swig {
@@ -88,6 +88,9 @@ end type
     %{$1%data = c_loc($input)
       $1%size = size($input)%}
 
+  // Instantiate type so that SWIG respects %novaluewrapper
+  %template() PAIR_TYPE;
+
   // Fortran proxy translation code: convert from imtype 1 to ftype $result
   %typemap(fout) PAIR_TYPE
   %{
@@ -107,7 +110,7 @@ end type
 // Macro for defining the typemaps inside a class (e.g. std_vector to allow
 // automatic view support), so that the fragments and typemaps are only used as
 // needed
-%define %fort_view_typemap(CTYPE)
+%define %fortran_view(CTYPE)
     FORT_VIEW_TYPEMAP("$typemap(imtype, " #CTYPE ")", CTYPE)
 %enddef
 
@@ -118,14 +121,14 @@ end type
 // wrapper code uses slightly different types.
 //---------------------------------------------------------------------------//
 
-%define FORT_STRVIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE...)
-  FORT_VIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE)
+%define FORT_STRVIEW_TYPEMAP_IMPL(CHARTYPE, CONST_CTYPE...)
+  FORT_VIEW_TYPEMAP_IMPL("character(kind=" CHARTYPE ")", CONST_CTYPE)
   #define PAIR_TYPE ::std::pair< CONST_CTYPE*, std::size_t >
 
   // Fortran proxy code: accept a character string, but since we don't seem to
   // be able to get character string pointers, return as an array view.
-  %typemap(ftype, out="character(kind=" FTYPE "), dimension(:), pointer") PAIR_TYPE
-    "character(kind=" FTYPE ", len=*), target"
+  %typemap(ftype, out="character(kind=" CHARTYPE "), dimension(:), pointer") PAIR_TYPE
+    "character(kind=" CHARTYPE ", len=*), target"
 
   // Fortran proxy translation code: convert from ftype $input to imtype $1
   %typemap(fin) PAIR_TYPE
@@ -136,12 +139,15 @@ end type
 %enddef
 
 // Declare wrapper functions for std::pair<T*,size_t> and <const T*, ...>
-%define FORT_STRVIEW_TYPEMAP(FTYPE, CTYPE)
-    FORT_STRVIEW_TYPEMAP_IMPL(FTYPE, CTYPE)
-    FORT_STRVIEW_TYPEMAP_IMPL(FTYPE, const CTYPE)
+%define FORT_STRVIEW_TYPEMAP(CHARTYPE, CTYPE)
+    FORT_STRVIEW_TYPEMAP_IMPL(CHARTYPE, CTYPE)
+    FORT_STRVIEW_TYPEMAP_IMPL(CHARTYPE, const CTYPE)
 %enddef
 
-FORT_STRVIEW_TYPEMAP("C_CHAR", char)
+%define %fortran_string_view(CTYPE)
+    // This is only here to mirror %fortran_view
+    FORT_STRVIEW_TYPEMAP("C_CHAR", CTYPE)
+%enddef
 
 //---------------------------------------------------------------------------//
 // end of fortran/typemaps.i
