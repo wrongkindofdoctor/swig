@@ -115,7 +115,6 @@ FAILING_CPP_TESTS += \
   abstract_signature \
   autodoc \
   constructor_copy \
-  cpp_nodefault \
   director_basic \
   director_classes \
   director_default \
