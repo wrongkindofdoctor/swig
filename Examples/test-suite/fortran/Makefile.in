@@ -19,15 +19,13 @@ abs_top_srcdir = @abs_top_srcdir@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  aggregate \
-  allprotected \
+allprotected \
   apply_strings \
   argout \
   array_typedef_memberin \
   arrayref \
   arrays_global \
   arrays_global_twodim \
-  catches \
   char_binary \
   char_strings \
   constant_pointers \
@@ -46,7 +44,6 @@ FAILING_CPP_TESTS += \
   dynamic_cast \
   enum_ignore \
   enum_thorough \
-  exception_order \
   extend \
   extend_default \
   extend_placement \
@@ -89,7 +86,6 @@ FAILING_CPP_TESTS += \
   smart_pointer_const_overload \
   special_variable_macros \
   string_constants \
-  swig_exception \
   template_arg_typename \
   template_basic \
   template_const_ref \
@@ -133,7 +129,6 @@ FAILING_CPP_TESTS += \
   friends \
   fvirtual \
   inherit_target_language \
-  kwargs_feature \
   multiple_inheritance \
   namespace_class \
   namespace_nested \
@@ -182,7 +177,6 @@ FAILING_CPP_TESTS += \
   template_specialization_enum \
   template_typedef_inherit \
   typemap_ns_using \
-  typemap_out_optimal \
   types_directive \
   using1 \
   using2 \

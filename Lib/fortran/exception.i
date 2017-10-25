@@ -68,11 +68,17 @@ extern char SWIG_FORTRAN_ERROR_STR[SWIG_FORTRAN_ERROR_STRLEN];
 #endif
 }
 
+%fragment("SwigfErrorIncludes_cpp", "header")
+%{
+#include <string>
+#include <algorithm>
+#include <stdexcept>
+%}
+
 // Exception handling code
 #ifndef SWIGIMPORTED
 %fragment("fortran_exception", "header",
-          fragment="<string>", fragment="<algorithm>", fragment="<stdexcept>",
-          fragment="SwigfErrorVars_cpp")
+          fragment="SwigfErrorVars_cpp", fragment="SwigfErrorIncludes_cpp")
 {
 namespace swig
 {
