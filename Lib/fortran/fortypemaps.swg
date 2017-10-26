@@ -118,7 +118,7 @@
     {$1 = %const_cast($input, $1_ltype);}
   %typemap(out) const CTYPE&
     "$result = *$1;"
-    
+
   // All other aspects of const reference vs value are the same
   %typemap(ctype, out="CTYPE") CTYPE, const CTYPE&
     "const CTYPE*"
@@ -236,39 +236,39 @@ FORT_FUND_TYPEMAP(size_t        , "integer(C_SIZE_T)"   )
 FORT_FUND_TYPEMAP(float         , "real(C_FLOAT)"       )
 FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
 
-%typecheck(SWIG_TYPECHECK_BOOL) 
+%typecheck(SWIG_TYPECHECK_BOOL)
     bool,
     const bool &
     ""
 
-%typecheck(SWIG_TYPECHECK_CHAR) 
-    char, 
+%typecheck(SWIG_TYPECHECK_CHAR)
+    char,
     const char &
     ""
 
-%typecheck(SWIG_TYPECHECK_INT8) 
+%typecheck(SWIG_TYPECHECK_INT8)
     unsigned char,
     const unsigned char &
     ""
 
-%typecheck(SWIG_TYPECHECK_INT16) 
-    short, 
-    unsigned short, 
+%typecheck(SWIG_TYPECHECK_INT16)
+    short,
+    unsigned short,
     const short &,
     const unsigned short &
     ""
 
-%typecheck(SWIG_TYPECHECK_INT32) 
-    int, 
-    unsigned int, 
+%typecheck(SWIG_TYPECHECK_INT32)
+    int,
+    unsigned int,
     const int &,
     const unsigned int &
     ""
 
-%typecheck(SWIG_TYPECHECK_INT64) 
+%typecheck(SWIG_TYPECHECK_INT64)
     long,
     long long,
-    unsigned long, 
+    unsigned long,
     unsigned long long,
     const long &,
     const long long &,
@@ -276,17 +276,17 @@ FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
     const unsigned long long &
     ""
 
-%typecheck(SWIG_TYPECHECK_FLOAT) 
+%typecheck(SWIG_TYPECHECK_FLOAT)
     float,
     const float &
     ""
 
-%typecheck(SWIG_TYPECHECK_DOUBLE) 
+%typecheck(SWIG_TYPECHECK_DOUBLE)
     double,
     const double &
     ""
 
-%typecheck(SWIG_TYPECHECK_STRING) 
+%typecheck(SWIG_TYPECHECK_STRING)
     char *,
     char *&,
     char[ANY],
@@ -294,11 +294,11 @@ FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
     ""
 
 %typecheck(SWIG_TYPECHECK_POINTER)
-    SWIGTYPE, 
-    SWIGTYPE *, 
-    SWIGTYPE &, 
-    SWIGTYPE &&, 
-    SWIGTYPE *const&, 
+    SWIGTYPE,
+    SWIGTYPE *,
+    SWIGTYPE &,
+    SWIGTYPE &&,
+    SWIGTYPE *const&,
     SWIGTYPE [],
     SWIGTYPE (*)(ANY),
     SWIGTYPE (CLASS::*)
@@ -331,7 +331,7 @@ FORT_OPAQUE_PTR_TYPEMAP(void*)
 // This fragment is inserted by the fortran.cxx code when an unknown class is
 // encountered.
 %fragment("SwigfUnknownClass", "fpublic", noblock=1) %{
-type, public :: SwigfUnknownClass
+type :: SwigfUnknownClass
   type(C_PTR), public :: swigptr
 end type
 %}
@@ -439,23 +439,29 @@ FORT_CHARPTR_TYPEMAP(char, "C_CHAR")
 FORT_FUND_VALREF_TYPEMAP(enum SWIGTYPE, "integer(C_INT)")
 
 // Override the default value treatment
-%typemap(ctype, out="int") enum SWIGTYPE, const enum SWIGTYPE&
+%typemap(ctype, out="int") enum SWIGTYPE
     %{int*%}
 %typemap(in, noblock=1) enum SWIGTYPE
     {$1 = %static_cast(*$input, $1_ltype);}
-%typemap(in, noblock=1) const enum SWIGTYPE&
-    {$1 = %static_cast($input, $1_ltype);}
 
-// Override the default pointer treatment
+// Override references
+%typemap(ctype, out="int*") enum SWIGTYPE&, const enum SWIGTYPE&
+  "int*"
+%typemap(in, noblock=1) enum SWIGTYPE&, const enum SWIGTYPE&
+    {$1 = %reinterpret_cast($input, $1_ltype);}
+%typemap(out, noblock=1) enum SWIGTYPE&, const enum SWIGTYPE&
+    {$result = %reinterpret_cast($1, int*);}
+
+// Override pointers
 %typemap(ctype, out="int*") enum SWIGTYPE*
     %{int*%}
 %typemap(in, noblock=1) enum SWIGTYPE*
-    {$1 = %reinterpret_cast($input, $1_ltype);%}
+    {$1 = %reinterpret_cast($input, $1_ltype);}
 %typemap(out, noblock=1) enum SWIGTYPE*
     {$result = %reinterpret_cast($1, int*);}
 
 // Override fortran type
-%typemap(ftype)  enum SWIGTYPE, enum SWIGTYPE&, enum SWIGTYPE*
+%typemap(ftype) enum SWIGTYPE, enum SWIGTYPE&, enum SWIGTYPE*
     "integer(kind($fclassname))"
 
 //---------------------------------------------------------------------------//

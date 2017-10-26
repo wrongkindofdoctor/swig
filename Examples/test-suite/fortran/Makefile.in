@@ -21,26 +21,18 @@ abs_top_srcdir = @abs_top_srcdir@
 FAILING_CPP_TESTS += \
   apply_strings \
   cpp_basic \
-  cpp_enum \
   director_binary_string \
-  director_enum \
   dynamic_cast \
-  enum_ignore \
-  enum_thorough \
   extend \
-  global_namespace \
-  global_vars \
   li_attribute \
   li_attribute_template \
   li_cdata_cpp \
   li_std_except \
   li_std_except_as_class \
-  li_std_vector_enum \
   member_funcptr_galore \
   member_pointer \
   member_pointer_const \
   memberin_extend \
-  mixed_types \
   namespace_spaces \
   namespace_typemap \
   operator_pointer_ref \
@@ -52,6 +44,7 @@ FAILING_CPP_TESTS += \
   typemap_various \
   virtual_poly
 
+
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
@@ -60,12 +53,14 @@ FAILING_CPP_TESTS += \
   constant_pointers \
   constructor_copy \
   contract \
+  cpp_enum \
   default_args \
   default_constructor \
   director_basic \
   director_classes \
   director_default \
   director_detect \
+  director_enum \
   director_frob \
   director_ignore \
   director_keywords \
@@ -74,15 +69,21 @@ FAILING_CPP_TESTS += \
   director_property \
   director_protected \
   director_redefined \
+  enum_ignore \
   enum_scope_template \
+  enum_thorough \
   evil_diamond_prop \
   extend_default \
   extern_c \
   friends \
   fvirtual \
+  global_namespace \
+  global_vars \
   inherit_target_language \
   li_boost_shared_ptr \
+  li_std_vector_enum \
   li_std_vector_ptr \
+  mixed_types \
   multiple_inheritance \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
