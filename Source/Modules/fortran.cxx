@@ -128,7 +128,7 @@ String* get_typemap(
         if (!type)
         {
             Swig_print_node(n);
-            type = NewString("????");
+            type = NewString("UNKNOWN");
         }
         Swig_warning(warning,
                      Getfile(n), Getline(n),
@@ -689,6 +689,11 @@ int FORTRAN::functionWrapper(Node *n)
         // type and argument name to a valid C expression using SwigType_str.
         String* tm = get_typemap("ctype", p,
                                  WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+        if (!tm)
+        {
+            // Could be a vararg: no type defined
+            continue;
+        }
         SwigType* parsed = Swig_cparse_type(tm);
         String* carg = SwigType_str(parsed, imname);
         Printv(cfunc->def, prepend_comma, carg, NULL);
@@ -744,7 +749,6 @@ int FORTRAN::functionWrapper(Node *n)
 
         // Next iteration
         prepend_comma = ", ";
-        p = nextSibling(p);
     }
 
     // END FUNCTION DEFINITION
