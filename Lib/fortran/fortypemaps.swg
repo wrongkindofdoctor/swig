@@ -346,7 +346,7 @@ end type
   {$1 = *%static_cast($input, $&1_type);}
 // Returning a class by value is copy-constructed as a new'd pointer
 %typemap(out, noblock=1)    SWIGTYPE
-  {$result = %new_copy($1, $1_type); }
+  {$result = %new_copy($1, $1_ltype); }
 
 // Wrapper type is void*
 %typemap(imtype, in="type(C_PTR), value") SWIGTYPE
@@ -361,20 +361,21 @@ end type
 //---------------------------------------------------------------------------//
 // CLASSES BY REFERENCE/POINTER
 //---------------------------------------------------------------------------//
+// Mutable pointer, mutable reference, and const pointer to mutable reference
 
-%typemap(ctype) SWIGTYPE*, SWIGTYPE&
+%typemap(ctype) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
   "void*"
 %typemap(in, noblock=1) SWIGTYPE*, SWIGTYPE&
   {$1 = %static_cast($input, $1_ltype);}
-%typemap(out) SWIGTYPE*, SWIGTYPE&
+%typemap(out) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
   "$result = $1;"
-%typemap(imtype, in="type(C_PTR), value") SWIGTYPE*, SWIGTYPE&
+%typemap(imtype, in="type(C_PTR), value") SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
   "type(C_PTR)"
-%typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&
+%typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
   "class($fclassname)"
-%typemap(fin) SWIGTYPE*, SWIGTYPE&
+%typemap(fin) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
   "$1 = $input%swigptr"
-%typemap(fout) SWIGTYPE*, SWIGTYPE&
+%typemap(fout) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
   "$result%swigptr = $1"
 
 %typemap(ctype) const SWIGTYPE*, const SWIGTYPE&

@@ -20,7 +20,6 @@ abs_top_srcdir = @abs_top_srcdir@
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
   apply_strings \
-  constant_pointers \
   contract \
   cpp_basic \
   cpp_enum \
@@ -52,9 +51,7 @@ FAILING_CPP_TESTS += \
   name_warnings \
   namespace_spaces \
   namespace_typemap \
-  nested_ignore \
   operator_pointer_ref \
-  return_const_value \
   smart_pointer_const_overload \
   special_variable_macros \
   template_basic \
@@ -64,7 +61,6 @@ FAILING_CPP_TESTS += \
   typedef_sizet \
   typedef_struct_cpp \
   typemap_various \
-  valuewrapper_const \
   virtual_poly \
   wrapmacro
 
@@ -73,6 +69,7 @@ FAILING_CPP_TESTS += \
   abstract_signature \
   allprotected \
   autodoc \
+  constant_pointers \
   constructor_copy \
   default_args \
   default_constructor \
@@ -119,6 +116,7 @@ FAILING_CPP_TESTS += \
   preproc_constants \
   primitive_ref \
   refcount \
+  return_const_value \
   samename \
   smart_pointer_const \
   smart_pointer_const2 \
@@ -160,6 +158,7 @@ FAILING_CPP_TESTS += \
   using_inherit \
   using_protected \
   valuewrapper_base \
+  valuewrapper_const \
   valuewrapper_opaque \
   variable_replacement \
   wallkw
