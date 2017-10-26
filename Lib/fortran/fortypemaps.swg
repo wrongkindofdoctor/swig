@@ -236,7 +236,6 @@ FORT_FUND_TYPEMAP(size_t        , "integer(C_SIZE_T)"   )
 FORT_FUND_TYPEMAP(float         , "real(C_FLOAT)"       )
 FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
 
-#if 0
 %typecheck(SWIG_TYPECHECK_BOOL) 
     bool,
     const bool &
@@ -304,7 +303,6 @@ FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
     SWIGTYPE (*)(ANY),
     SWIGTYPE (CLASS::*)
     ""
-#endif
 
 //---------------------------------------------------------------------------//
 // VOID TYPES
