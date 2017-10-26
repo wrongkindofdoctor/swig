@@ -24,7 +24,6 @@ FAILING_CPP_TESTS += \
   cpp_enum \
   director_binary_string \
   director_enum \
-  director_smartptr \
   dynamic_cast \
   enum_ignore \
   enum_thorough \
@@ -33,9 +32,6 @@ FAILING_CPP_TESTS += \
   global_vars \
   li_attribute \
   li_attribute_template \
-  li_boost_shared_ptr \
-  li_boost_shared_ptr_bits \
-  li_boost_shared_ptr_template \
   li_cdata_cpp \
   li_std_except \
   li_std_except_as_class \
@@ -45,7 +41,6 @@ FAILING_CPP_TESTS += \
   member_pointer_const \
   memberin_extend \
   mixed_types \
-  multiple_inheritance_shared_ptr \
   namespace_spaces \
   namespace_typemap \
   operator_pointer_ref \
@@ -59,7 +54,7 @@ FAILING_CPP_TESTS += \
 
 # failed to compile fortran
 FAILING_CPP_TESTS += \
-abstract_signature \
+  abstract_signature \
   allprotected \
   autodoc \
   constant_pointers \
@@ -86,11 +81,13 @@ abstract_signature \
   friends \
   fvirtual \
   inherit_target_language \
+  li_boost_shared_ptr \
   li_std_vector_ptr \
   multiple_inheritance \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
   multiple_inheritance_nspace \
+  multiple_inheritance_shared_ptr \
   name_warnings \
   namespace_class \
   namespace_nested \
