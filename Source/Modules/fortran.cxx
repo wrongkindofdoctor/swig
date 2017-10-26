@@ -10,9 +10,6 @@ namespace
 
 const char usage[] = "\
 Fotran Options (available with -fortran)\n\
-     -noproxy    - Expose the low-level functional interface instead\n\
-                   of generatingproxy classes\n\
-     -final      - Generate 'final' statement to call C++ destructors\n\
      -cppcast    - Enable C++ casting operators (default) \n\
      -nocppcast - Disable C++ casting operators\n\
 \n";
@@ -193,9 +190,6 @@ class FORTRAN : public Language
     String* d_module; //!< Module name
     String* d_outpath; //!< WRAP.cxx output
 
-    bool d_use_proxy; //!< Whether to generate proxy classes
-    bool d_use_final; //!< Whether to use the 'final' keyword for destructors
-
     // >>> OUTPUT FILES
 
     // Injected into .cxx file
@@ -244,8 +238,6 @@ class FORTRAN : public Language
     FORTRAN()
         : d_module(NULL)
         , d_outpath(NULL)
-        , d_use_proxy(true)
-        , d_use_final(false)
         , d_enumvalues(NULL)
     {
         /* * */
@@ -278,17 +270,7 @@ void FORTRAN::main(int argc, char *argv[])
     // Set command-line options
     for (int i = 1; i < argc; ++i)
     {
-        if ((strcmp(argv[i], "-noproxy") == 0))
-        {
-            Swig_mark_arg(i);
-            d_use_proxy = false;
-        }
-        else if ((strcmp(argv[i], "-final") == 0))
-        {
-            Swig_mark_arg(i);
-            d_use_final = true;
-        }
-        else if (strcmp(argv[i], "-cppcast") == 0)
+        if (strcmp(argv[i], "-cppcast") == 0)
         {
             cppcast = 1;
             Swig_mark_arg(i);
@@ -1305,9 +1287,10 @@ int FORTRAN::destructorHandler(Node* n)
     
     Language::destructorHandler(n);
 
-    // XXX turn final into a feature and change to typemaps
-    if (d_use_final)
+    if (Getattr(n, "feature:final"))
     {
+        // TODO: use actual function wrapper mechanics to generate this
+        
         // Create 'final' name wrapper
         String* fname = NewStringf("swigf_final_%s", Getattr(n, "sym:name"));
         String* classname = Getattr(getCurrentClass(), "sym:name");
