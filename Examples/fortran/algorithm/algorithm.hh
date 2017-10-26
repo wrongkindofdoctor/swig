@@ -12,15 +12,16 @@
 #define algorithms_algorithm_hh
 
 #include <algorithm>
+#include <utility>
 
 //---------------------------------------------------------------------------//
 /*!
  * \brief Reverse the contents of an array in-place
  */
 template<class T>
-void reverse(T* arr, int count)
+void reverse(std::pair<T*, std::size_t> view)
 {
-    std::reverse(arr, arr + count);
+    std::reverse(view.first, view.first + view.second);
 }
 
 //---------------------------------------------------------------------------//
@@ -28,9 +29,19 @@ void reverse(T* arr, int count)
  * \brief Sort the contents of an array in-place
  */
 template<class T>
-void sort(T* arr, int count)
+void sort(std::pair<T*, std::size_t> view)
 {
-    std::sort(arr, arr + count);
+    std::sort(view.first, view.first + view.second);
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get the same view
+ */
+template<class T>
+std::pair<T*, std::size_t> get_view(std::pair<T*, std::size_t> view)
+{
+    return view;
 }
 
 //---------------------------------------------------------------------------//
@@ -40,10 +51,10 @@ void sort(T* arr, int count)
  * \return The fortran index (starts with 1) or zero if not found
  */
 template<class T>
-int find_sorted(const T* arr, int count, T val)
+int find_sorted(std::pair<const T*, std::size_t> view, T val)
 {
-    const T* start = arr;
-    const T* stop  = arr + count;
+    const T* start = view.first;
+    const T* stop  = view.first + view.second;
     const T* iter  = std::lower_bound(start, stop, val);
     if (iter == stop || *iter != val)
         return 0;

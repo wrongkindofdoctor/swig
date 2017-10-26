@@ -19,20 +19,19 @@ using std::endl;
 // TEMPLATED METHODS
 //---------------------------------------------------------------------------//
 template<class T>
-void ThinVec<T>::assign(const_pointer p, size_type count)
+void ThinVec<T>::assign(const_view_type arr)
 {
-    cout << "assigning " << count << " from " << p << " to " << this
-        << endl;
-    d_data.assign(p, p + count);
+    cout << "assigning " << arr.second << " from " << arr.first
+        << " to " << this << endl;
+    d_data.assign(arr.first, arr.first + arr.second);
 }
 
 template<class T>
-void ThinVec<T>::obtain(pointer p, size_type count) const
+typename ThinVec<T>::view_type ThinVec<T>::view()
 {
-    cout << "copying " << count << " from " << this << " to " << p
-        << endl;
-    assert(count == size());
-    std::copy(d_data.begin(), d_data.end(), p);
+    if (empty())
+        return view_type(NULL, 0);
+    return view_type(&d_data[0], d_data.size());
 }
 
 //---------------------------------------------------------------------------//

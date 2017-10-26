@@ -76,7 +76,6 @@ class SimpleClass
     // Access the value, multiplied by some parameter
     storage_type get_multiplied(multiple_type multiple) const;
 };
-
 // Free function
 void print_value(const SimpleClass& c);
 

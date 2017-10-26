@@ -12,6 +12,7 @@
 #define swig_dev_bare_function_foo_hh
 
 #include <cstddef>
+#include <utility>
 
 void set_something(int x, double y);
 double get_something(int x);
@@ -23,7 +24,7 @@ const double* get_something_rcptr(int x);
 double& get_something_rref(int x);
 const double& get_something_rcref(int x);
 
-void print_array(const double* arr, int count);
+void print_array(std::pair<const double*, size_t> arr);
 
 //---------------------------------------------------------------------------//
 #endif // swig_dev_bare_function_foo_hh

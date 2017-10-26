@@ -16,12 +16,13 @@
 %include <typemaps.i>
 
 %define TEMPLATE_ALGORITHMS(TYPE)
-    %apply (SWIGTYPE* ARRAY, int SIZE) { (      TYPE* arr, int count),
-                                         (const TYPE* arr, int count) }
+    // Instantiate std::pair mapping
+    %fortran_view(TYPE)
 
     %template(sort)        sort< TYPE >;
     %template(reverse)     reverse< TYPE >;
     %template(find_sorted) find_sorted< TYPE >;
+    %template(get_view)    get_view< TYPE >;
 %enddef
 
 %include "algorithm.hh"

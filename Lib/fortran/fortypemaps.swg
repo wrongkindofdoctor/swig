@@ -8,14 +8,20 @@
  */
 //---------------------------------------------------------------------------//
 
+%include <typemaps/swigmacros.swg>
+
 //---------------------------------------------------------------------------//
 /*! CUSTOM TYPEMAP DESCRIPTIONS.
  *
  * ctype      : type in C wrapper code (input parameter, default return value)
  * ctype:out  : *return* type (overrides ctype)
- * imtype     : Fortran type in interface code (equivalent to C argument type)
- * imtype:out : Fortran return type in interface code (overrides imtype)
- * ftype      : Fortran proxy (shadow) code type
+ * imtype     : Fortran type to pass to "BIND" interface (must be Fortran
+ *              equivalent of ctype)
+ * imtype:bind : Fortran type to pass to "BIND" interface (must be Fortran
+ *              equivalent of ctype)
+ * imtype:out : Fortran return type for "BIND" interface (overrides imtype;
+ *              must be Fortran equivalent of ctype:out)
+ * ftype      : Fortran proxy (shadow) type
  * fin        : Fortran proxy code used to translate a Fortan argument to a
  *              wrapper argument
  * fin:pre    : Proxy code inserted before the wrapper call
@@ -25,7 +31,6 @@
 
 /*! SPECIAL TYPEMAP VARIABLES.
  *
- * $imcall    : in the proxy class, the function call into the interface wrapper
  * $fclassname: the fortran proxy class name
  */
 
@@ -49,22 +54,23 @@
   *      bind(C, name="swigc_function") &
   *      result(fresult)
   *    use, intrinsic ::ISO_C_BINDING
-  *    /imtype:out/   :: fresult
-  *    /imtype/       :: farg
+  *    /imtype/   :: fresult
+  *    /imtype:in/       :: farg
   *  end function
   * end interface
   *
   * FORTRAN PROXY PSEUDOCODE
   * ------------------------
   * contains
-  *   function hello(x) &
+  *   function hello(arg...) &
   *      result(fresult)
   *    use, intrinsic :: ISO_C_BINDING
-  *    /ftype:out ($proxy_name) / :: fresult
-  *    /ftype/                    :: arg
-  *    /fin:pre/
-  *    /fout (result)/ = $imcall  ! swigc_hello
-  *    /fin:post/
+  *    /ftype:out / :: $result  ! $fclassname
+  *    /imtype/ :: $1
+  *    /ftype/ :: $arg
+  *    /fin/                    ! imtype$input
+  *    $1 = $symname(arg...)
+  *    /fout/
   *   end function
   *  /fcreate/
   *  /frelease/
@@ -97,91 +103,68 @@
  * Mutable references that are *return* values are passed as pointers, and on
  * the Fortan side these become 'pointer' types.
  *
- * Nnote that it's important to use CTYPE instead of $1_ltype in order to keep
+ * Note that it's important to use CTYPE instead of $1_ltype in order to keep
  * the pointer types consistent with the given fortran FTYPE.
  */
 %define FORT_FUND_VALREF_TYPEMAP(CTYPE, FTYPE)
   // Regular values are passed as pointers and returned by value
   %typemap(in) CTYPE
-    %{$1 = *$input;%}
+    "$1 = *$input;"
   %typemap(out) CTYPE
-    %{$result = $1;%}
+    "$result = $1;"
 
   // Const references are returned by value
-  %typemap(in) const CTYPE&
-    %{$1 = ($1_ltype)($input);%}
+  %typemap(in, noblock=1) const CTYPE&
+    {$1 = %const_cast($input, $1_ltype);}
   %typemap(out) const CTYPE&
-    %{$result = *$1;%}
+    "$result = *$1;"
     
   // All other aspects of const reference vs value are the same
   %typemap(ctype, out="CTYPE") CTYPE, const CTYPE&
-    %{const CTYPE*%}
-  %typemap(imtype, out=FTYPE) CTYPE, const CTYPE&
-    FTYPE ", intent(in)"
+    "const CTYPE*"
+  %typemap(imtype, in=FTYPE ", intent(in)") CTYPE, const CTYPE&
+    FTYPE
   %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&
     FTYPE ", intent(in)"
   %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&
     FTYPE ", intent(in)"
   %typemap(fin)  CTYPE, const CTYPE&
-    %{$1_name%}
+    "$1 = $input"
   %typemap(fout) CTYPE, const CTYPE&
-    %{$result = $imcall%}
+    "$result = $1"
 
   // Mutable references are passed by pointers as arguments, but they're
   // *returned* as actual pointers (becoming Fortran pointers)
   %typemap(ctype, out="CTYPE*") CTYPE&
-    %{CTYPE*%}
+    "CTYPE*"
   %typemap(in) CTYPE&
-    %{$1 = $input;%}
+    "$1 = $input;"
   %typemap(out) CTYPE&
-    %{$result = $1;%}
-  %typemap(imtype, out="type(C_PTR)") CTYPE&
-    FTYPE ", intent(inout)"
-  %typemap(ftype, out=FTYPE ", pointer")  CTYPE&
-    FTYPE ", intent(inout)"
-  %typemap(fin)  CTYPE&
-    %{$1_name%}
-  %typemap(fout) CTYPE&
-    %{call c_f_pointer($imcall, $result)%}
-%enddef
-
-/*!
- * \def FORT_OPAQUE_PTR_TYPEMAP
- *
- * Map the given type to an opaque C pointer.
- */
-%define FORT_OPAQUE_PTR_TYPEMAP(CTYPE)
-  %typemap(ctype) CTYPE
-    %{void*%}
-  %typemap(in) CTYPE
-    %{$1 = ($1_ltype)$input;%}
-  %typemap(out) CTYPE
-    %{$result = $1;%}
-  %typemap(imtype, out="type(C_PTR)") CTYPE
-    "type(C_PTR), value"
-  %typemap(ftype) CTYPE
+    "$result = $1;"
+  %typemap(imtype, in="type(C_PTR), value") CTYPE&
     "type(C_PTR)"
-  %typemap(fin)  CTYPE
-    %{$1_name%}
-  %typemap(fout) CTYPE
-    %{$result = $imcall%}
+  %typemap(ftype, out=FTYPE ", pointer")  CTYPE&
+    FTYPE ", target, intent(inout)"
+  %typemap(fin)  CTYPE&
+    "$1 = c_loc($input)"
+  %typemap(fout) CTYPE&
+    "call c_f_pointer($1, $result)"
 %enddef
 
 //---------------------------------------------------------------------------//
-// TYPEMAP HELPERS
 /*!
- * \def FORT_FUND_TYPEMAP
- * \brief Add a typemap for a fundamental built-in type.
+ * \def FORT_FUND_PTR_TYPEMAP
+ * \brief Add array/pointer typemaps for basic fortran types.
  *
  * This adds pointer and array handling to primitive types.
  * Pointers in return values are returned as Fortran array pointers (constness
- * is ignored!).
+ * is ignored!) as though they are poniters to scalar values and not arrays.
+ * More advanced application-specific typemaps will need to be generated for
+ * that case.
+ *
  * Otherwise, pointers and arrays are treated as standard fortran arrays.
  */
-%define FORT_FUND_TYPEMAP(CTYPE, FTYPE)
-  // Set up pass-by-value and -reference
-  FORT_FUND_VALREF_TYPEMAP(CTYPE, FTYPE)
-
+%define FORT_FUND_PTR_TYPEMAP(CTYPE, FTYPE)
   // Mutable pointers and arrays are returned as actual pointers
   %typemap(ctype, out="$1_ltype") CTYPE*, CTYPE[], CTYPE[ANY]
     %{$1_ltype%}
@@ -189,21 +172,55 @@
     %{$1 = $input;%}
   %typemap(out) CTYPE*, CTYPE[], CTYPE[ANY]
     %{$result = $1;%}
-  %typemap(imtype, out="type(C_PTR)") CTYPE*, CTYPE[], CTYPE[ANY]
-    FTYPE ", dimension(*), intent(inout)"
+  %typemap(imtype, in="type(C_PTR), value") CTYPE*, CTYPE[], CTYPE[ANY]
+    "type(C_PTR)"
   %typemap(ftype, out=FTYPE ", pointer") CTYPE*, CTYPE[], CTYPE[ANY]
-    FTYPE ", dimension(:), intent(inout)"
-  %typemap(fin)  CTYPE[], CTYPE[ANY], CTYPE*
-    %{$1_name%}
-  %typemap(fout) CTYPE[], CTYPE[ANY], CTYPE*
-    %{call c_f_pointer($imcall, $result)%}
+    FTYPE ", dimension(:), target, intent(inout)"
+  %typemap(fin)  CTYPE*, CTYPE[], CTYPE[ANY]
+    %{$1 = c_loc($input);%}
+  %typemap(fout) CTYPE*, CTYPE[], CTYPE[ANY]
+    %{call c_f_pointer($1, $result)%}
 
   // Overrides for const Fortran intent
-  %typemap(imtype, out="type(C_PTR)") const CTYPE*, const CTYPE[],
-                                      const CTYPE[ANY]
-    FTYPE ", dimension(*), intent(in)"
+  %typemap(in, noblock=1) const CTYPE*, const CTYPE[], const CTYPE[ANY]
+    {$1 = %const_cast($input, $1_ltype);}
   %typemap(ftype, out=FTYPE ", pointer") const CTYPE*, const CTYPE[], CTYPE[ANY]
-    FTYPE ", dimension(:), intent(in)"
+    FTYPE ", dimension(:), target, intent(in)"
+%enddef
+
+//---------------------------------------------------------------------------//
+/*!
+ * \def FORT_OPAQUE_PTR_TYPEMAP
+ *
+ * Map the given type to an opaque C pointer.
+ */
+%define FORT_OPAQUE_PTR_TYPEMAP(CTYPE)
+  %typemap(ctype) CTYPE
+    "$1_ltype"
+  %typemap(in, noblock=1) CTYPE
+    {$1 = %const_cast($input, $1_ltype);}
+  %typemap(out) CTYPE
+    "$result = $1;"
+  %typemap(imtype, in="type(C_PTR), value") CTYPE
+    "type(C_PTR)"
+  %typemap(ftype) CTYPE
+    "type(C_PTR)"
+  %typemap(fin)  CTYPE
+    "$1 = $input"
+  %typemap(fout)  CTYPE
+    "$result = $1"
+%enddef
+
+//---------------------------------------------------------------------------//
+// TYPEMAP HELPERS
+/*!
+ * \def FORT_FUND_TYPEMAP
+ * \brief Add a typemap for a fundamental built-in type.
+ */
+%define FORT_FUND_TYPEMAP(CTYPE, FTYPE)
+  // Set up pass-by-value and -reference
+  FORT_FUND_VALREF_TYPEMAP(CTYPE, FTYPE)
+  FORT_FUND_PTR_TYPEMAP(CTYPE, FTYPE)
 %enddef
 
 FORT_FUND_TYPEMAP(bool          , "logical(C_BOOL)"     )
@@ -292,123 +309,83 @@ FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
 //---------------------------------------------------------------------------//
 
 %typemap(ctype)  void
-  %{void%}
-// No 'void' argument allowed
+  "void"
 %typemap(out)    void
-  %{%}
+  ""
 %typemap(imtype) void
   ""
 %typemap(ftype)  void
   ""
-// No 'void' fortran argument allowed
+%typemap(fin)    void
+  ""
 %typemap(fout)   void
-  %{call $imcall%}
+  ""
 
 // Void pointers are returned as opaque C pointers
 FORT_OPAQUE_PTR_TYPEMAP(void*)
 
 //---------------------------------------------------------------------------//
-// PROXY CLASS DEFINITIONS
-//---------------------------------------------------------------------------//
-
-%typemap(fdata) SWIGTYPE %{
-  ! These should be treated as PROTECTED data
-  type(C_PTR), public :: swigptr = C_NULL_PTR
-  logical, public :: swigown = .false.
-%}
-
-%typemap(fcreate) SWIGTYPE
-%{
-   if (c_associated(self%swigptr)) call self%release()
-   self%swigptr = $imcall
-   self%swigown = .true.
-%}
-
-%typemap(frelease) SWIGTYPE %{
-   if (self%swigown) then
-    call $imcall
-    self%swigown = .false.
-   end if
-   self%swigptr = C_NULL_PTR
-%}
-
-//---------------------------------------------------------------------------//
 // CLASSES BY VALUE
 //---------------------------------------------------------------------------//
 
-#ifdef __cplusplus
-%fragment ("utility_header", "header") %{
-#if __cplusplus >= 201103L
-#include <utility>
-#endif
+// This fragment is inserted by the fortran.cxx code when an unknown class is
+// encountered.
+%fragment("SwigfUnknownClass", "fpublic", noblock=1) %{
+type, public :: SwigfUnknownClass
+  type(C_PTR), public :: swigptr
+end type
 %}
-#else
-%fragment ("utility_header", "header") %{%}
-#endif
 
+// Classes accepted by value are still passed by reference by fortran
 %typemap(ctype)  SWIGTYPE
   %{void*%}
-%typemap(ctype)  SWIGTYPE
-  %{void*%}
-%typemap(in)     SWIGTYPE
-  %{$1 = *($&1_ltype)($input);%}
-%typemap(out, fragment="utility_header")    SWIGTYPE
-#ifdef __cplusplus
-%{
-#if __cplusplus >= 201103L
-    $result = new $1_ltype(std::move($1));
-#else
-    $result = new $1_ltype($1);
-#endif
-%}
-#else
-{
-  $&1_ltype $1ptr = ($&1_ltype) malloc(sizeof($1_ltype));
-  memmove($1ptr, &$1, sizeof($1_type));
-  $result = $1ptr;
-}
-#endif
+// They're copy-assigned when they're passed
+%typemap(in, noblock=1)     SWIGTYPE
+  {$1 = *%static_cast($input, $&1_type);}
+// Returning a class by value is copy-constructed as a new'd pointer
+%typemap(out, noblock=1)    SWIGTYPE
+  {$result = %new_copy($1, $1_ltype); }
 
-%typemap(imtype, out="type(C_PTR)") SWIGTYPE
-  "type(C_PTR), value"
+// Wrapper type is void*
+%typemap(imtype, in="type(C_PTR), value") SWIGTYPE
+  "type(C_PTR)"
 %typemap(ftype)  SWIGTYPE
   "type($fclassname)"
 %typemap(fin)    SWIGTYPE
-  "$1_name%swigptr"
+  "$1 = $input%swigptr"
 %typemap(fout)   SWIGTYPE
-%{
-   $result%swigptr = $imcall
-   $result%swigown = .true.
-%}
+  "$result%swigptr = $1"
 
 //---------------------------------------------------------------------------//
 // CLASSES BY REFERENCE/POINTER
 //---------------------------------------------------------------------------//
+// Mutable pointer, mutable reference, and const pointer to mutable reference
 
-%typemap(ctype)  SWIGTYPE*, SWIGTYPE&
-  %{void*%}
-%typemap(in)     SWIGTYPE*, SWIGTYPE&
-  %{$1 = ($1_ltype)($input);%}
-%typemap(out)    SWIGTYPE*, SWIGTYPE&
-  %{$result = $1;%}
-%typemap(imtype, out="type(C_PTR)") SWIGTYPE*, SWIGTYPE&
-  "type(C_PTR), value"
-%typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&
+%typemap(ctype) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
+  "void*"
+%typemap(in, noblock=1) SWIGTYPE*, SWIGTYPE&
+  {$1 = %static_cast($input, $1_ltype);}
+%typemap(out) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
+  "$result = $1;"
+%typemap(imtype, in="type(C_PTR), value") SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
+  "type(C_PTR)"
+%typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
   "class($fclassname)"
-%typemap(fin)    SWIGTYPE*, SWIGTYPE&
-  "$1_name%swigptr"
-%typemap(fout)   SWIGTYPE*, SWIGTYPE&
-  %{
-   $result%swigptr = $imcall
-   $result%swigown = $owner
-%}
+%typemap(fin) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
+  "$1 = $input%swigptr"
+%typemap(fout) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
+  "$result%swigptr = $1"
 
-%typemap(ctype)  const SWIGTYPE*, const SWIGTYPE&
-  %{const void*%}
+%typemap(ctype) const SWIGTYPE*, const SWIGTYPE&
+  "const void*"
+%typemap(in, noblock=1) const SWIGTYPE*, const SWIGTYPE&
+  {$1 = %static_cast(%const_cast($input, void*), $1_ltype);}
 
 //---------------------------------------------------------------------------//
 // MORE POINTERS
 //---------------------------------------------------------------------------//
+
+// NOTE: handles are untested
 
 // Handles are returned as opaque C pointers
 FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE**)
@@ -418,30 +395,17 @@ FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE*&)
 FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
 
 //---------------------------------------------------------------------------//
-// CHARACTER TYPES
-//---------------------------------------------------------------------------//
-// Single characters: differentiate from char pointers by using value semantics
-
-%define FORT_CHAR_TYPEMAP(CTYPE, CHARTYPE)
-  #define FTYPE FORT_FUND_VALREF_TYPEMAP( CTYPE, "character(" CHARTYPE ")")
-%enddef
-
-FORT_CHAR_TYPEMAP(char, "C_CHAR")
-
-#undef FORT_CHAR_TYPEMAP
-    
-//---------------------------------------------------------------------------//
 // STRING TYPES
 //
 // Note that currently strings can be passed as character arrays, but returning
 // a C string gives just an opaque C pointer
 //---------------------------------------------------------------------------//
 
-%define FORT_STR_TYPEMAP(CTYPE, FTYPE)
+%define FORT_CHARPTR_TYPEMAP(CTYPE, FTYPE)
   %typemap(ctype)  CTYPE*, CTYPE[], CTYPE[ANY]
     %{CTYPE*%}
   %typemap(in)     CTYPE*, CTYPE[], CTYPE[ANY]
-    %{$1 = ($1_ltype)$input;%}
+    %{$1 = $input;%}
   %typemap(out)    CTYPE*, CTYPE[], CTYPE[ANY]
     %{$result = $1;%}
   %typemap(imtype, out="type(C_PTR)") CTYPE*, CTYPE[], CTYPE[ANY]
@@ -449,15 +413,23 @@ FORT_CHAR_TYPEMAP(char, "C_CHAR")
   %typemap(ftype, out="type(C_PTR)") CTYPE*, CTYPE[], CTYPE[ANY]
     "character(kind=" FTYPE ", len=*)"
   %typemap(fin)    CTYPE*, CTYPE[], CTYPE[ANY]
-    "$1_name"
+    "$1 = $input"
   %typemap(fout)   CTYPE*, CTYPE[], CTYPE[ANY]
-    "$result = $imcall"
+    "$result = $1"
+
+  %typemap(ctype)  const CTYPE*, const CTYPE[], const CTYPE[ANY]
+    %{const CTYPE*%}
+  %typemap(in, noblock=1) const CTYPE*, const CTYPE[], const CTYPE[ANY]
+    {$1 = %const_cast($input, $1_ltype);}
+  %typemap(out, noblock=1) const CTYPE*, const CTYPE[], const CTYPE[ANY]
+    {$result = %const_cast($1, $1_ltype);}
 %enddef
 
-FORT_STR_TYPEMAP(const char, "C_CHAR")
-FORT_STR_TYPEMAP(char, "C_CHAR")
 
-#undef FORT_STR_TYPEMAP
+FORT_FUND_VALREF_TYPEMAP(char, "integer(C_SIGNED_CHAR)")
+FORT_CHARPTR_TYPEMAP(char, "C_CHAR")
+
+#undef FORT_CHARPTR_TYPEMAP
 
 //---------------------------------------------------------------------------//
 // ENUMS
@@ -469,18 +441,18 @@ FORT_FUND_VALREF_TYPEMAP(enum SWIGTYPE, "integer(C_INT)")
 // Override the default value treatment
 %typemap(ctype, out="int") enum SWIGTYPE, const enum SWIGTYPE&
     %{int*%}
-%typemap(in) enum SWIGTYPE
-    %{$1 = ($1_ltype)(*$input);%}
-%typemap(in) const enum SWIGTYPE&
-    %{$1 = ($1_ltype)($input);%}
+%typemap(in, noblock=1) enum SWIGTYPE
+    {$1 = %static_cast(*$input, $1_ltype);}
+%typemap(in, noblock=1) const enum SWIGTYPE&
+    {$1 = %static_cast($input, $1_ltype);}
 
 // Override the default pointer treatment
 %typemap(ctype, out="int*") enum SWIGTYPE*
     %{int*%}
-%typemap(in) enum SWIGTYPE*
-    %{$1 = ($1_ltype)($input);%}
-%typemap(out) enum SWIGTYPE*
-    %{$result = (int*)($1);%}
+%typemap(in, noblock=1) enum SWIGTYPE*
+    {$1 = %reinterpret_cast($input, $1_ltype);%}
+%typemap(out, noblock=1) enum SWIGTYPE*
+    {$result = %reinterpret_cast($1, int*);}
 
 // Override fortran type
 %typemap(ftype)  enum SWIGTYPE, enum SWIGTYPE&, enum SWIGTYPE*
@@ -496,15 +468,15 @@ FORT_FUND_VALREF_TYPEMAP(enum SWIGTYPE, "integer(C_INT)")
     %{$1 = $input;%}
 %typemap(out)    SWIGTYPE (*)(ANY)
     %{$result = $1;%}
-%typemap(imtype) SWIGTYPE (*)(ANY)
-    "type(C_FUNPTR), intent(in), value"
+%typemap(imtype, in="type(C_FUNPTR), intent(in), value") SWIGTYPE (*)(ANY)
+    "type(C_FUNPTR)"
 %typemap(ftype)  SWIGTYPE (*)(ANY)
     "type(C_FUNPTR), intent(in), value"
 %typemap(fin)    SWIGTYPE (*)(ANY)
-    "$1_name"
+    "$1 = $input"
 %typemap(fout)   SWIGTYPE (*)(ANY)
 %{
-   $result = $imcall
+   $result = $1
 %}
 
 // Member function pointers are not available

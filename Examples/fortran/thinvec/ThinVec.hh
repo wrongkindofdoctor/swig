@@ -20,10 +20,12 @@ class ThinVec
     std::vector<T> d_data;
 
   public:
-    typedef unsigned int size_type;
+    typedef int size_type;
     typedef T            value_type;
     typedef T*           pointer;
     typedef const T*     const_pointer;
+    typedef std::pair<pointer, std::size_t> view_type;
+    typedef std::pair<const_pointer, std::size_t> const_view_type;
 
   public:
     // Constructors
@@ -51,25 +53,14 @@ class ThinVec
     void resize(size_type newsize, value_type fillval = T())
     { d_data.resize(newsize, fillval); }
 
-    void assign(const T* p, size_type count);
+    void assign(const_view_type arr);
 
-    // XXX: for some reason, this has to be T* instead of pointer_type for the
-    // multi-argument resolution to work
-    void obtain(T* p, size_type count) const;
+    view_type view();
 
     const std::vector<T>& data() const { return d_data; }
 };
 
 void print_vec(const ThinVec<double>& v);
-
-// Free functions that user the ARRAY/SIZE typemap
-
-template<class T>
-void obtain_free_t(const ThinVec<T>& v, T* p, unsigned int count)
-{ v.obtain(p, count); }
-
-inline void obtain_free(const ThinVec<double>& v, double* p, unsigned int count)
-{ v.obtain(p, count); }
 
 #endif // thinvec_ThinVec_hh
 

@@ -125,36 +125,10 @@
 #define ALL_SWIGSP__ SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
 
 %typemap(ctype) ALL_SWIGSP__ "void *"
-%typemap(imtype, out="type(C_PTR)") ALL_SWIGSP__ "type(C_PTR), value"
-%typemap(ftype) ALL_SWIGSP__ "$typemap(ftype, TYPE)"
-%typemap(fin) ALL_SWIGSP__ "$1_name%swigptr"
-%typemap(fout) ALL_SWIGSP__
-%{
-   $result%swigptr = $imcall
-%}
-
-%typemap(fdata) CONST TYPE
-%{
-  type(C_PTR), public :: swigptr = C_NULL_PTR
-%}
-
-%typemap(fcreate) CONST TYPE
-%{
-   if (c_associated(self%swigptr)) call self%release()
-   self%swigptr = $imcall
-%}
-
-%typemap(frelease) CONST TYPE
-%{
-   call $imcall
-   self%swigptr = C_NULL_PTR
-%}
-
-// References
-%typemap(fout) TYPE, TYPE &, TYPE *
-%{
-   $result%swigptr = $imcall
-%}
+%typemap(imtype, in="type(C_PTR), value") ALL_SWIGSP__ "type(C_PTR)"
+%typemap(ftype) ALL_SWIGSP__ "$typemap(ftype, " #TYPE ")"
+%typemap(fin) ALL_SWIGSP__ "$1 = $input%swigptr"
+%typemap(fout) ALL_SWIGSP__ "$result%swigptr = $1"
 
 // Instantiate shared pointer
 %template() SWIGSP__;

@@ -65,11 +65,14 @@ void get_something_ptr(int x, double* y)
 }
 
 //---------------------------------------------------------------------------//
-void print_array(const double* data, int count)
+void print_array(std::pair<const double*, size_t> view)
 {
+    const double* data = view.first;
+    const double* end_data = data + view.second;
+
     cout << "{";
     const char* sep = "";
-    for (const double* end_data = data + count; data != end_data; ++data)
+    for (; data != end_data; ++data)
     {
         cout << sep << *data;
         sep = ", ";

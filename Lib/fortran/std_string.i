@@ -9,12 +9,9 @@
 
 %include "std_common.i"
 
-%fragment("<algorithm>");
-%fragment("<stdexcept>");
-%fragment("<string>");
-%fragment("StringCopyout");
-
-%include <typemaps.i>
+%{
+#include <string>
+%}
 
 namespace std
 {
@@ -29,16 +26,9 @@ class string
 
   public:
 
-    %apply int { (size_type count) };
-    %apply (char* STRING, int SIZE) {
-        (pointer s, size_type count) };
-    %apply (const char* STRING, int SIZE) {
-        (const_pointer s, size_type count) };
-
     // >>> Construct and assign
 
     string();
-    string(const_pointer s, size_type count);
     void resize(size_type count);
     void clear();
 
@@ -48,30 +38,20 @@ class string
     size_type length() const;
 
 %extend {
+
+    // C indexing used here!
     void set(size_type pos, value_type v)
     {
         // TODO: check range
         (*$self)[pos] = v;
     }
 
+    // C indexing used here!
     value_type get(size_type pos)
     {
         // TODO: check range
         return (*$self)[pos];
     }
-
-    void assign_from(const_pointer s, size_type count)
-    {
-        $self->assign(s, s + count);
-    }
-
-    // Copy the string to the given Fortran string, filling the tail with
-    // spaces so that Fortran 'trim' will work.
-    void copy_to(pointer s, size_type count)
-    {
-        swig::string_copyout(*$self, s, count);
-    }
-
 } // end %extend
 
 };

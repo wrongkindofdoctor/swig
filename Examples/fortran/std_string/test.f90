@@ -11,10 +11,10 @@ program main
     use, intrinsic :: ISO_C_BINDING
     use stdstr, only : print_str, halve_str, string
     implicit none
-    character :: simply_char
-    character(len=16) :: fixedlen
     character(len=*), parameter :: paramstr = "short string   "
     character(len=:), allocatable :: varlen
+    character(kind=C_CHAR), dimension(:), pointer :: ptrstr
+    character(len=16) :: fixedlen
     integer :: i
     type(string) :: s
 
@@ -22,45 +22,44 @@ program main
     call s%create()
     write(0, *) "Size:", s%size()
 
-    fixedlen = "fixed"
-    call s%assign_from(fixedlen)
-    write(0, *) "Assigned from fixed-length string:"
-    call print_str(s)
-
-    call s%assign_from(trim(fixedlen))
+    call s%assign_from(trim(paramstr))
     write(0, *) "Assigned from trimmed string:"
     call print_str(s)
 
-    simply_char = s%get(1)
-    write(0, *) "Second character: ", simply_char
-    call s%set(0, 'X')
-    call print_str(s)
-
-    call s%assign_from(paramstr)
-    write(0, *) "parameter string with trailing spaces:"
+    fixedlen = "fixed"
+    call s%assign_from(fixedlen)
+    write(0, *) "Assigned from fixed-length string:"
     call print_str(s)
 
     ! Cut it in half and read it back out to varlen
     write(0, *) "Halving..."
     call halve_str(s)
 
-    ! NOTE: for some reason you have to extract the size; it doesn't work as a
-    ! function call
-    i = s%size()
-    write(0, *) "Allocating size ", i, "..."
-    allocate(character(len=i)::varlen)
-    write(0, *) "Allocated size", len(varlen)
-    call s%copy_to(varlen)
-    write(0, *) "Copied back to varlen string: '"//varlen//"'"
-    deallocate(varlen)
+    ptrstr => s%view()
+    write(0, *) "String view size:", size(ptrstr)
 
+    ! Get a view of the string as an array of single chars
+    call halve_str(s)
+    ptrstr => s%view()
 
-    call halve_str(s)
-    call halve_str(s)
+    ! NOTE: putting the size call inside the allocate call crashes fortran.
+    write(0, *) "Allocating and copying to varlen"
+    i = size(ptrstr)
+    allocate(character(len=i) :: varlen)
+    do i = 1,len(varlen)
+        varlen(i:i) = ptrstr(i)
+    enddo
+
+    write(0, *) "Quarter-length string: '"//varlen//"'"
+
+    ! Copy string to fix-length array (alternate way of extracting)
+    fixedlen = "XXXXXXXXXXXXXXXX"
     call s%copy_to(fixedlen)
-    write(0, *) "Quarter-length string with auto-padding: '"//fixedlen//"'"
+    write(0, *) "Fixed-length string: '"//fixedlen//"'"
+
     write(0, *) "Destroying..."
     call s%release()
+    deallocate(varlen)
 
 end program
 

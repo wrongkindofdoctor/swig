@@ -10,6 +10,11 @@
 // Prevent identifiers from having a leading underscore
 // %rename("%(regex:/^_(.*)/\\1_/)s") "";
 
+%keywordwarn("'create' is reserved for SWIG constructors",
+             rename="create_") "*::create";
+%keywordwarn("'release' is reserved for SWIG destructors",
+             rename="release_") "*::release";
+
 #define FORTRANKW(x) %keywordwarn("'" `x` "' is a Fortran keyword")  `x`
 
 // FORTRAN 77

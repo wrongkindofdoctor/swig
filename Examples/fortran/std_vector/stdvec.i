@@ -10,43 +10,57 @@
 %module stdvec
 
 %{
+#include <utility>
 #include "stdvec.hh"
 %}
 
+//---------------------------------------------------------------------------//
+// EXTEND DOUBLE TO HAVE VIEWS
+//---------------------------------------------------------------------------//
+
+%include <typemaps.i>
+
+%define ADD_VIEW(TYPE)
+
+// Instantiate view typemap
+%fortran_view(double)
+
+// Extend vector
+%extend std::vector<TYPE> {
+    void fill(std::pair<const TYPE*, std::size_t> view)
+    {
+        $self->assign(view.first, view.first + view.second);
+    }
+
+    std::pair<TYPE*, std::size_t> view()
+    {
+        if ($self->empty())
+            return {nullptr, 0};
+        return {$self->data(), $self->size()};
+    }
+} // end extend
+
+%enddef
+
+//---------------------------------------------------------------------------//
+// Include double
+//---------------------------------------------------------------------------//
+
 %include <std_vector.i>
+ADD_VIEW(double)
 %template(VecDbl) std::vector<double>;
+
+//---------------------------------------------------------------------------//
+// Instantiate a view template and add a "view" method.
+//---------------------------------------------------------------------------//
 
 %include "stdvec.hh"
 
-%define TEMPLATE_VIEW(FCLASSNAME, TYPE, FTYPE)
-
-%extend VectorView<TYPE>
-{
-%fortrancode %{
-  function FCLASSNAME##_view(self) &
-     result(fresult)
-   use, intrinsic :: ISO_C_BINDING
-   real(FTYPE), pointer :: fresult(:)
-   real(FTYPE), pointer :: temp
-   class(FCLASSNAME) :: self
-   temp => self%data()
-   call c_f_pointer(c_loc(temp), fresult, [self%size()])
-  end function
-%}
-%fortranspec %{procedure :: view => FCLASSNAME##_view
-%}
-}
-
-%template(FCLASSNAME) VectorView<TYPE>;
-%enddef
-
-TEMPLATE_VIEW(VecViewDbl, double, C_DOUBLE)
-TEMPLATE_VIEW(const_VecViewDbl, const double, C_DOUBLE)
+//---------------------------------------------------------------------------//
 
 %template(make_viewdbl) make_view<double>;
 %template(make_const_viewdbl) make_const_view<double>;
 %template(print_viewdbl) print_view<double>;
-%template(print_vecdbl)  print_vec<double>;
 
 //---------------------------------------------------------------------------//
 // end of std_vector/stdvec.i

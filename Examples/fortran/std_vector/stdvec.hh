@@ -16,58 +16,19 @@
 
 //---------------------------------------------------------------------------//
 template<class T>
-class VectorView
-{
-  public:
-    typedef int size_type;
-    typedef T*  pointer_type;
-
-  private:
-    pointer_type d_begin;
-    pointer_type d_end;
-
-  public:
-    VectorView() : d_begin(NULL), d_end(NULL)
-    { /* * */ }
-
-    VectorView(pointer_type begin, pointer_type end)
-        : d_begin(begin)
-        , d_end(end)
-    { /* * */ }
-
-    template<class U>
-    VectorView(VectorView<U> other)
-        : d_begin(other.d_begin)
-        , d_end(other.d_end)
-    { /* * */ }
-
-    size_type size() const { return d_end - d_begin; }
-    pointer_type data() const { return d_begin; }
-
-#ifndef SWIG
-    pointer_type begin() const { return d_begin; }
-    pointer_type end() const { return d_end; }
-#endif
-
-    template<class U> friend class VectorView;
-};
-
-//---------------------------------------------------------------------------//
-template<class T>
-VectorView<const T> make_const_view(const std::vector<T>& v)
+std::pair<T*, size_t> make_view(std::vector<T>& v)
 {
     if (v.empty())
         return {};
-    return {v.data(), v.data() + v.size()};
+    return {v.data(), v.size()};
 }
-
 //---------------------------------------------------------------------------//
 template<class T>
-VectorView<T> make_view(std::vector<T>& v)
+std::pair<const T*, size_t> make_const_view(const std::vector<T>& v)
 {
     if (v.empty())
         return {};
-    return {v.data(), v.data() + v.size()};
+    return {v.data(), v.size()};
 }
 
 //---------------------------------------------------------------------------//
@@ -77,14 +38,7 @@ void print_vec(const std::vector<T>& v);
 
 //---------------------------------------------------------------------------//
 template<class T>
-void print_view(VectorView<T> view)
-{
-    print_view(VectorView<const T>(view));
-}
-
-//---------------------------------------------------------------------------//
-template<class T>
-void print_view(VectorView<const T> view);
+void print_view(std::pair<const T*, size_t> view);
 
 //---------------------------------------------------------------------------//
 #endif // std_vector_stdvec_hh

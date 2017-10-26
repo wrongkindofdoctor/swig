@@ -14,12 +14,6 @@
 
 %include "std_common.i"
 
-// Force inclusion of algorithm and stdexcept
-%fragment("<algorithm>");
-%fragment("ArraySizeCheck");
-
-%include <typemaps.i>
-
 namespace std
 {
 
@@ -58,35 +52,21 @@ class vector
     const_reference front() const;
     const_reference back() const;
 
-    // Extend for Fortran: c indexing!
+    // Extend for Fortran
 %extend {
+    // C indexing used here!
     void set(size_type index, const_reference v)
     {
         // TODO: check range
         (*$self)[index] = v;
     }
 
+    // C indexing used here!
     value_type get(size_type index)
     {
+        // TODO: check range
         return (*$self)[index];
     }
-
-    %apply (SWIGTYPE* ARRAY, SWIG_FORTRAN_STD_SIZETYPE SIZE)
-    { (pointer       arr, size_type arrsize),
-      (const_pointer arr, size_type arrsize) };
-
-    void assign_from(const_pointer arr, size_type arrsize)
-    {
-        $self->assign(arr, arr + arrsize);
-    }
-
-    // Copy the C++ data to the given Fortran arr. Sizes must match.
-    void copy_to(pointer arr, size_type arrsize)
-    {
-        swig::array_size_check($self->size(), arrsize);
-        std::copy($self->begin(), $self->end(), arr);
-    }
-
 } // end extend
 
 };
