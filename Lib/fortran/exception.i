@@ -42,9 +42,6 @@
 #define SWIG_FORTRAN_ERROR_STRLEN 1024
 #endif
 
-#define SWIG_exception(code, msg)\
-do { swig::fortran_store_exception(code, msg); return $null; } while(0)
-
 // Insert the fortran integer definition (only if %included)
 %fragment("SwigfErrorPub", "fpublic") {
  public :: SWIG_FORTRAN_ERROR_INT
@@ -55,34 +52,34 @@ do { swig::fortran_store_exception(code, msg); return $null; } while(0)
  character(kind=C_CHAR, len=SWIG_FORTRAN_ERROR_STRLEN), bind(C) :: SWIG_FORTRAN_ERROR_STR = ""
 }
 
-// Insert C declaration of fortran data
-%fragment("SwigfErrorVars_cpp", "header",
-          fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern int SWIG_FORTRAN_ERROR_INT;
-extern char SWIG_FORTRAN_ERROR_STR[SWIG_FORTRAN_ERROR_STRLEN];
-#ifdef __cplusplus
-}
-#endif
-}
-
-%fragment("SwigfErrorIncludes_cpp", "header")
-%{
-#include <string>
-#include <algorithm>
-#include <stdexcept>
+#ifndef SWIGIMPORTED
+// Override the default exception handler from fortranruntime.swg
+%insert(runtime) %{
+#undef SWIG_exception_impl
+#define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
+    swig::fortran_store_exception(CODE, MSG); return NULLRETURN;
 %}
 
+#define SWIG_exception(CODE, MSG) \
+    SWIG_exception_impl(CODE, MSG, $null)
+
+// Insert C++ declaration of fortran data
+%fragment("SwigfErrorVars_wrap", "header",
+          fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
+extern "C" {
+extern int SWIG_FORTRAN_ERROR_INT;
+extern char SWIG_FORTRAN_ERROR_STR[SWIG_FORTRAN_ERROR_STRLEN];
+}
+}
+
 // Exception handling code
-#ifndef SWIGIMPORTED
 %fragment("fortran_exception", "header",
-          fragment="SwigfErrorVars_cpp", fragment="SwigfErrorIncludes_cpp")
+          fragment="SwigfErrorVars_wrap", fragment="<string>",
+          fragment="<algorithm>", fragment="<stdexcept>")
 {
 namespace swig
 {
-// Stored exception message (XXX: is this safe if main() is fortran?)
+// Stored exception message
 std::string fortran_last_exception_msg;
 
 // Call this function before any new action
@@ -117,7 +114,7 @@ void fortran_store_exception(int code, const char *msg)
 }
 } // end namespace swig
 }
-#else
+#else // IMPORTED
 %fragment("fortran_exception", "header") {
 namespace swig
 {

@@ -7,14 +7,32 @@
  */
 //---------------------------------------------------------------------------//
 
+%include <typemaps/fragments.swg>
+
 // Needs to be in a .swg file to allow downstream modules to use definitions
 // such as SWIG_RuntimeError
 %insert(runtime) "swigerrors.swg";
 
+#ifdef __cplusplus
+%fragment("<stdexcept>");
+%insert(runtime) %{
+// Default exception handler
+#define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
+    throw std::logic_error(MSG); return NULLRETURN;
+%}
+#else
+%fragment("<assert.h>");
+%insert(runtime %{
+/* Default C exception handler */
+#define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
+    printf(stderr, MSG, NULL); assert(0); return NULLRETURN;
+%}
+#endif
+
 %insert(runtime) %{
 /* Contract support */
-#define SWIG_contract_assert(nullreturn, expr, msg) if (!(expr)) { \
-swig::fortran_store_exception(SWIG_ValueError, msg); return nullreturn; }
+#define SWIG_contract_assert(NULLRETURN, EXPR, MSG) \
+    if (!(EXPR)) { SWIG_exception_impl(SWIG_ValueError, MSG, NULLRETURN); }
 %}
 
 //---------------------------------------------------------------------------//
