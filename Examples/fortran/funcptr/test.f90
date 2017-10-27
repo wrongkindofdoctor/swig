@@ -3,17 +3,17 @@ program test_function_args
     use, intrinsic :: ISO_C_BINDING
     implicit none
 
-    integer(C_INT) :: a = 37
-    integer(C_INT) :: b = 42
+    integer(C_INT) :: a = 4
+    integer(C_INT) :: b = 3
 
 
     write(*,*) "Trying some C callback functions"
     write(*,*) "    a        = ", a
     write(*,*) "    b        = ", b
-    write(*,*) "    ADD(a,b) = ", do_op(a,b,example.ADD)
-    write(*,*) "    SUB(a,b) = ", do_op(a,b,example.SUB)
-    write(*,*) "    MUL(a,b) = ", do_op(a,b,example.MUL)
-    write(*,*) "    POW(a,b) = ", do_op(a,b,fortfunc)
+!    write(*,*) "    ADD(a,b) = ", do_op(a,b,c_funloc(add))
+!    write(*,*) "    SUB(a,b) = ", do_op(a,b,c_funloc(sub))
+!    write(*,*) "    MUL(a,b) = ", do_op(a,b,c_funloc(mul))
+    write(*,*) "    POW(a,b) = ", do_op(a,b,c_funloc(fortfunc))
 
 contains
     function fortfunc(alfa, bravo) BIND(C) &

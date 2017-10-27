@@ -4,7 +4,7 @@ SET(CMAKE_Fortran_FLAGS "-cpp ${CMAKE_Fortran_FLAGS}")
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
 
 # Generate SWIG module
-MAKE_SWIG(MODULE funcptr
+MAKE_SWIG(C MODULE funcptr
   EXTRASRC funcptr.c)
 
 # Create test executable

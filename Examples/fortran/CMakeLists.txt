@@ -7,7 +7,7 @@
 ##---------------------------------------------------------------------------##
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
-PROJECT(fortran-examples CXX Fortran)
+PROJECT(fortran-examples C CXX Fortran)
 
 SET(CMAKE_CXX_STANDARD 11)
 

@@ -21,8 +21,8 @@
     throw std::logic_error(MSG); return NULLRETURN;
 %}
 #else
-%fragment("<assert.h>");
-%insert(runtime %{
+%insert(runtime) %{
+#include <assert.h>
 /* Default C exception handler */
 #define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
     printf(stderr, MSG, NULL); assert(0); return NULLRETURN;

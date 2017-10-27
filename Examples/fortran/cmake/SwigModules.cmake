@@ -58,6 +58,7 @@ ENDMACRO()
 ##---------------------------------------------------------------------------##
 # MAKE_SWIG(
 #   MODULE module
+#   [C]
 #   [LANGUAGE fortran]
 #   [SOURCE src.i]
 #   [DEPLIBS lib1 [lib2 ...]]
@@ -66,6 +67,8 @@ ENDMACRO()
 #   )
 #
 # Create a SWIG-generated python module and shared object.
+#
+# Add the [C] flag if the input is to be treated as a C wrapper rather than C++.
 #
 # The MODULE argument is the name of the resulting module file. By default it
 # assumes the name "module.i", but that can be overriden with the SOURCE
@@ -81,7 +84,7 @@ ENDMACRO()
 # module target.
 
 function(MAKE_SWIG)
-  cmake_parse_arguments(PARSE "" "MODULE;LANGUAGE;SOURCE"
+  cmake_parse_arguments(PARSE "C" "MODULE;LANGUAGE;SOURCE"
       "DEPLIBS;DEPMODULES;EXTRASRC" ${ARGN})
 
   if(NOT PARSE_MODULE)
@@ -102,10 +105,14 @@ function(MAKE_SWIG)
 
   # Let SWIG know that we're compiling C++ files, and what the module is
   set_source_files_properties(${SRC_FILE} PROPERTIES
-    CPLUSPLUS TRUE
     SWIG_MODULE_NAME ${PARSE_MODULE})
 
-  SET(SWIG_FORTRAN_EXTRA_FILE_EXTENSION "f90")
+  if (NOT PARSE_C)
+    set_source_files_properties(${SRC_FILE} PROPERTIES
+      CPLUSPLUS TRUE)
+  endif()
+
+  set(SWIG_FORTRAN_EXTRA_FILE_EXTENSION "f90")
 
   # Get dependencies of main SWIG source file and the files it includes
   # we can't do recursive
