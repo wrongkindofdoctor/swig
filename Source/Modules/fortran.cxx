@@ -135,10 +135,6 @@ String* get_typemap(
                      Getfile(n), Getline(n),
                      "No '%s' typemap defined for %s\n", tmname,
                      SwigType_str(type, 0));
-
-        // Attach a mangled typemap
-        newresult = NewStringf("SWIGTYPE%s", SwigType_manglestr(type));
-        result = newresult;
     }
 
     if (ext)
@@ -612,7 +608,7 @@ int FORTRAN::functionWrapper(Node *n)
     // >>> RETURN TYPE
 
     // Actual return type of the C++ function
-    SwigType* cpp_returntype = Getattr(n, "type");
+    SwigType* cpp_return_type = Getattr(n, "type");
 
     // Get the SWIG type representation of the C return type, but first the
     // ctype typemap has to be attached
@@ -632,7 +628,7 @@ int FORTRAN::functionWrapper(Node *n)
     }
     else
     {
-        replace_fclassname(cpp_returntype, f_return_str);
+        replace_fclassname(cpp_return_type, f_return_str);
     }
 
     // Check whether the C routine returns a variable
@@ -727,7 +723,7 @@ int FORTRAN::functionWrapper(Node *n)
         // Add dummy argument to wrapper body
         String* ftype = get_typemap("ftype", n,
                                      WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
-        this->replace_fclassname(cpp_returntype, ftype);
+        this->replace_fclassname(cpp_return_type, ftype);
         Printv(fargs, "   ", ftype, " :: self\n", NULL);
     }
 
@@ -766,9 +762,12 @@ int FORTRAN::functionWrapper(Node *n)
         // >>> C ARGUMENT CONVERSION
 
         String* tm_in = get_typemap("in", p, WARN_TYPEMAP_IN_UNDEF);
-        Replaceall(tm_in, "$input", imname);
-        Setattr(p, "emit:input", imname);
-        Printv(cfunc->code, tm_in, "\n", NULL);
+        if (tm_in)
+        {
+            Replaceall(tm_in, "$input", imname);
+            Setattr(p, "emit:input", imname);
+            Printv(cfunc->code, tm_in, "\n", NULL);
+        }
 
         // >>> F WRAPPER ARGUMENTS
 
@@ -928,9 +927,9 @@ int FORTRAN::functionWrapper(Node *n)
     {
         Swig_warning(WARN_TYPEMAP_OUT_UNDEF, input_file, line_number,
                      "Unable to use return type %s in function %s.\n",
-                     SwigType_str(cpp_returntype, 0), Getattr(n, "name"));
+                     SwigType_str(cpp_return_type, 0), Getattr(n, "name"));
     }
-    emit_return_variable(n, cpp_returntype, cfunc);
+    emit_return_variable(n, cpp_return_type, cfunc);
 
     if (in_constructor)
     {
@@ -954,7 +953,7 @@ int FORTRAN::functionWrapper(Node *n)
         Printv(ffunc->code, fcall, "\n", NULL);
         
         // Get the typemap for output argument conversion
-        Parm* temp = NewParm(cpp_returntype, Getattr(n, "name"), n);
+        Parm* temp = NewParm(cpp_return_type, Getattr(n, "name"), n);
         Setattr(temp, "lname", "fresult"); // Replaces $1
         String* fbody = attach_typemap("fout", temp,
                                        WARN_FORTRAN_TYPEMAP_FOUT_UNDEF);
@@ -965,7 +964,7 @@ int FORTRAN::functionWrapper(Node *n)
         Replaceall(fbody, "$result", "swigf_result");
         Replaceall(fbody, "$owner",
                    (GetFlag(n, "feature:new") ? "1" : "0"));
-        replace_fclassname(cpp_returntype, fbody);
+        replace_fclassname(cpp_return_type, fbody);
         Printv(ffunc->code, fbody, "\n", NULL);
 
         Delete(fbody);
@@ -1705,15 +1704,17 @@ List* FORTRAN::emit_proxy_parm(Node* n, ParmList *parmlist, Wrapper *f)
     int i = 0;
     while (p)
     {
-        while (p && checkAttribute(p, "tmap:in:numinputs", "0"))
+        if (checkAttribute(p, "tmap:in:numinputs", "0"))
         {
             p = Getattr(p, "tmap:in:next");
             ++i;
+            continue;
         }
-        if (!p)
+        else if (!Getattr(p, "tmap:in"))
         {
-            // It's possible that the last argument is ignored
-            break;
+            p = nextSibling(p);
+            ++i;
+            continue;
         }
 
         // Set fortran intermediate name
