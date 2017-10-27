@@ -20,6 +20,7 @@ abs_top_srcdir = @abs_top_srcdir@
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
   apply_strings \
+  autodoc \
   cpp_basic \
   director_binary_string \
   dynamic_cast \
@@ -41,15 +42,15 @@ FAILING_CPP_TESTS += \
   template_basic \
   template_explicit \
   typedef_struct_cpp \
+  typemap_numinputs \
   typemap_various \
-  virtual_poly
-
+  varargs \
+  varargs_overload
 
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
   allprotected \
-  autodoc \
   constant_pointers \
   constructor_copy \
   contract \
@@ -74,7 +75,6 @@ FAILING_CPP_TESTS += \
   enum_thorough \
   evil_diamond_prop \
   extend_default \
-  extern_c \
   friends \
   fvirtual \
   global_namespace \
@@ -154,7 +154,9 @@ FAILING_CPP_TESTS += \
   valuewrapper_const \
   valuewrapper_opaque \
   variable_replacement \
+  virtual_poly \
   wallkw
+
 
 include $(srcdir)/../common.mk
 

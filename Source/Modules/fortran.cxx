@@ -261,9 +261,10 @@ class FORTRAN : public Language
     virtual int classHandler(Node *n);
     virtual int memberfunctionHandler(Node *n);
     virtual int membervariableHandler(Node *n);
+    virtual int globalvariableHandler(Node *n);
     virtual int staticmemberfunctionHandler(Node *n);
     virtual int staticmembervariableHandler(Node *n);
-    virtual int globalvariableHandler(Node *n);
+    virtual int constantWrapper(Node *n);
     virtual int importDirective(Node *n);
     virtual int enumDeclaration(Node *n);
     virtual int enumvalueDeclaration(Node *n);
@@ -1175,6 +1176,8 @@ int FORTRAN::classHandler(Node *n)
 
     if (!addSymbol(symname, n))
         return SWIG_ERROR;
+    
+    // TODO: addInterfaceSymbol for lowercase class name??
 
     // Process base classes
     List *baselist = Getattr(n, "bases");
@@ -1456,6 +1459,38 @@ int FORTRAN::staticmembervariableHandler(Node *n)
     // Add 'nopass' procedure qualifier for getters and setters
     Setattr(n, "fortran:procedure", "nopass");
     Language::staticmembervariableHandler(n);
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Process constants, including callbacks declared with
+%constant int (*ADD)(int,int) = add;
+ * 
+ */
+int FORTRAN::constantWrapper(Node *n)
+{
+    SwigType* type = Getattr(n, "type");
+    if (SwigType_isfunctionpointer(type))
+    {
+        String* name  = Getattr(n, "sym:name");
+        String* value = Getattr(n, "value");
+        assert(value);
+
+        // Add generic interface code instead of wrapping; function can be
+        // referenced with C_FUNPTR in fortran. Currently this only works for
+        // 'extern C' functions.
+        Printv(f_interfaces,
+               "  subroutine ", name, "() &\n"
+               "     bind(C, name=\"", value, "\")\n"
+               "  end subroutine\n",
+               NULL);
+        // Expose the function. Calling it directly will almost certainly crash
+        // the code!
+        Printv(f_public, " public :: ", name, "\n", NULL);
+
+        addSymbol(name, NULL);
+    }
     return SWIG_OK;
 }
 
