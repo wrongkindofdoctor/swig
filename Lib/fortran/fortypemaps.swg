@@ -476,7 +476,7 @@ FORT_FUND_VALREF_TYPEMAP(enum SWIGTYPE, "integer(C_INT)")
     %{$result = $1;%}
 %typemap(imtype, in="type(C_FUNPTR), intent(in), value") SWIGTYPE (*)(ANY)
     "type(C_FUNPTR)"
-%typemap(ftype)  SWIGTYPE (*)(ANY)
+%typemap(ftype, out="type(C_FUNPTR)")  SWIGTYPE (*)(ANY)
     "type(C_FUNPTR), intent(in), value"
 %typemap(fin)    SWIGTYPE (*)(ANY)
     "$1 = $input"

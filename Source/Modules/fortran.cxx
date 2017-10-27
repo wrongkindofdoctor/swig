@@ -96,9 +96,12 @@ String* get_typemap(
         const_String_or_char_ptr  ext,
         Node*                     n,
         int                       warning,
+        void* (*convert)(String*), // Optional conversion function
         bool                      attach)
 {
     String* result = NULL;
+    String* newresult = NULL;
+    String* key = NewStringf("tmap:%s", tmname);
 
     if (attach)
     {
@@ -112,9 +115,7 @@ String* get_typemap(
     else
     {
         // Look up a typemap that should already be attached
-        String* key = NewStringf("tmap:%s", tmname);
         result = Getattr(n, key);
-        Delete(key);
     }
 
     if (!result && warning != WARN_NONE)
@@ -135,48 +136,84 @@ String* get_typemap(
                      "No '%s' typemap defined for %s\n", tmname,
                      SwigType_str(type, 0));
 
-        if (attach)
-        {
-            // Attach a mangled typemap
-            String* key = NewStringf("tmap:%s", tmname);
-            result = NewStringf("SWIGTYPE%s", SwigType_manglestr(type));
-            Setattr(n, key, result);
-            Delete(key);
-            Delete(result); // Since we're returning a "reference"
-        }
+        // Attach a mangled typemap
+        newresult = NewStringf("SWIGTYPE%s", SwigType_manglestr(type));
+        result = newresult;
     }
 
     if (ext)
     {
-        String* key = NewStringf("tmap:%s:%s", tmname, ext);
-        String* suffixed_tm = Getattr(n, key);
+        String* tempkey = NewStringf("tmap:%s:%s", tmname, ext);
+        String* suffixed_tm = Getattr(n, tempkey);
         if (suffixed_tm)
         {
+            // Replace the output value with the specialization
             result = suffixed_tm;
+            // Replace the key with the specialized key
+            Delete(key);
+            key = tempkey;
+            tempkey = NULL;
         }
-        Delete(key);
+        Delete(tempkey);
     }
+
+    if (result && convert)
+    {
+        String* tempresult(newresult);
+        // Call the conversion function
+        newresult = convert(result);
+        Delete(tempresult);
+    }
+    if (newresult && attach)
+    {
+        // Set the result in the typemap
+        Setattr(n, key, newresult);
+        result = newresult;
+        Delete(newresult); // Since we're returning a "reference"
+    }
+
+    Delete(key);
     return result;
 }
 
 //---------------------------------------------------------------------------//
 //! Attach and return a typemap to the given node.
 String* attach_typemap(const_String_or_char_ptr tmname, Node* n, int warning)
-{ return get_typemap(tmname, NULL, n, warning, true); }
+{ return get_typemap(tmname, NULL, n, warning, NULL, true); }
 
 //! Attach and return a typemap (with extension) to the given node.
 String* attach_typemap(const_String_or_char_ptr tmname,
                        const_String_or_char_ptr ext, Node* n, int warning)
-{ return get_typemap(tmname, ext, n, warning, true); }
+{ return get_typemap(tmname, ext, n, warning, NULL, true); }
 
 //! Get and return a typemap to the given node.
 String* get_typemap(const_String_or_char_ptr tmname, Node* n, int warning)
-{ return get_typemap(tmname, NULL, n, warning, false); }
+{ return get_typemap(tmname, NULL, n, warning, NULL, false); }
 
 //! Get and return a typemap (with extension) to the given node.
 String* get_typemap(const_String_or_char_ptr tmname,
-                       const_String_or_char_ptr ext, Node* n, int warning)
-{ return get_typemap(tmname, ext, n, warning, false); }
+                    const_String_or_char_ptr ext, Node* n, int warning)
+{ return get_typemap(tmname, ext, n, warning, NULL, false); }
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Get a plain-text type like "int *", convert it to "p.int"
+ *
+ * This also sets the attribute in the node.
+ *
+ * This function is (exclusively?) used for the "tmap:ctype" attribute, which
+ * the user inputs as a plain-text C declaration but doesn't automatically get
+ * converted by the SWIG type system like the "type" attribute does.
+ *
+ * Caller is responsible for calling Delete on the return value. Will return
+ * NULL if the typemap isn't defined.
+ */
+SwigType* parse_typemap(const_String_or_char_ptr tmname,
+                        const_String_or_char_ptr ext, Node* n, int warning)
+{
+    SwigType* tm = get_typemap(tmname, ext, n, warning, Swig_cparse_type, true);
+    return tm;
+}
 
 //---------------------------------------------------------------------------//
 } // end anonymous namespace
@@ -510,7 +547,7 @@ int FORTRAN::functionWrapper(Node *n)
     // >>> INITIALIZE
 
     // Create wrapper name, taking into account overloaded functions
-    String* symname  = Getattr(n, "sym:name");
+    String* symname = Getattr(n, "sym:name");
     String* wname = Copy(Swig_name_wrapper(symname));
     const bool is_overloaded = Getattr(n, "sym:overloaded");
     if (is_overloaded)
@@ -574,38 +611,64 @@ int FORTRAN::functionWrapper(Node *n)
     // >>> RETURN TYPE
 
     // Actual return type of the C++ function
-    String* cpp_returntype = Getattr(n, "type");
+    SwigType* cpp_returntype = Getattr(n, "type");
 
-    // Constructors (which to SWIG is a function that returns a 'new'
-    // variable) gets turned into a subroutine with the dummy 'this'
-    // parameter that we bind to the result of the 'new' function
-    String* c_return_type = attach_typemap("ctype", "out", n, 
-                                           WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
-    String* im_return_type = attach_typemap("imtype", "out", n, 
+    // Get the SWIG type representation of the C return type, but first the
+    // ctype typemap has to be attached
+    Swig_typemap_lookup("ctype", n, Getattr(n, "name"), NULL);
+    SwigType* c_return_type = parse_typemap("ctype", "out", n, 
+                                            WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+    String* im_return_str = attach_typemap("imtype", "out", n, 
                                             WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
-    String* f_return_type = attach_typemap("ftype", "out", n, 
+    String* f_return_str = attach_typemap("ftype", "out", n, 
                                            WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
 
     if (in_constructor)
     {
         // Replace output with void
-        Delete(f_return_type);
-        f_return_type = NewString("");
+        Delete(f_return_str);
+        f_return_str = NewString("");
     }
     else
     {
-        replace_fclassname(cpp_returntype, f_return_type);
+        replace_fclassname(cpp_returntype, f_return_str);
     }
 
     // Check whether the C routine returns a variable
     const bool is_csubroutine = (Cmp(c_return_type, "void") == 0);
     // Check whether the Fortran routine returns a variable
-    const bool is_fsubroutine = (Len(f_return_type) == 0);
+    const bool is_fsubroutine = (Len(f_return_str) == 0);
 
     const char* im_func_type = (is_csubroutine ? "subroutine" : "function");
     const char* f_func_type  = (is_fsubroutine ? "subroutine" : "function");
 
-    Printv(cfunc->def, "SWIGEXPORT ", c_return_type, " ", wname, "(", NULL);
+    String* c_return_str = NULL;
+    if (SwigType_isfunctionpointer(c_return_type)
+        || SwigType_ismemberpointer(c_return_type))
+    {
+        // If the C return type is a function pointer, we have to either
+        // typedef it here *OR* wrap the entire function call in a set of
+        // parentheses. If we print the return type naively, we'll get
+        // something like:
+        //    int(*)(int,int) swigc_get()
+        // whereas we actually need
+        //    int(*swigc_get())(int,int) 
+        // but instead we will write
+        //    typedef int(*get_swigrtype)(int,int);
+        //    get_swigrtype swigc_get()
+        c_return_str = NewStringf("%s_swigrtype", symname);
+
+        String* typedef_str = SwigType_str(c_return_type, c_return_str);
+        Printv(cfunc->def, "typedef ", typedef_str, ";\n", NULL);
+        Delete(typedef_str);
+    }
+    else
+    {
+        // Typical case: convert return type into a regular string;
+        c_return_str = SwigType_str(c_return_type, NULL);
+    }
+
+    Printv(cfunc->def, "SWIGEXPORT ", c_return_str, " ", wname, "(", NULL);
     Printv(imfunc->def, im_func_type, " ", wname, "(", NULL);
     Printv(ffunc->def,  f_func_type,  " ", fname, "(", NULL);
 
@@ -613,12 +676,12 @@ int FORTRAN::functionWrapper(Node *n)
     {
         // Add local variables for result
         Wrapper_add_localv(cfunc, "fresult",
-                           c_return_type, "fresult", NULL);
+                           c_return_str, "fresult", NULL);
         Wrapper_add_localv(ffunc,  "fresult",
-                           im_return_type, ":: fresult", NULL);
+                           im_return_str, ":: fresult", NULL);
 
         // Add dummy variable for intermediate return value
-        Printv(imargs, im_return_type, " :: fresult\n", NULL);
+        Printv(imargs, im_return_str, " :: fresult\n", NULL);
 
         // Call function and set intermediate result
         Printv(fcall, "fresult = ", wname, "(", NULL);
@@ -631,11 +694,11 @@ int FORTRAN::functionWrapper(Node *n)
     if (!is_fsubroutine)
     {
         // Add dummy variable for Fortran proxy return
-        Printv(fargs, f_return_type, " :: swigf_result\n", NULL);
+        Printv(fargs, f_return_str, " :: swigf_result\n", NULL);
     }
 
     // If return type is a fortran class, add import statement
-    String* imimport = Swig_typemap_lookup("imimport", n, im_return_type, NULL);
+    String* imimport = Swig_typemap_lookup("imimport", n, im_return_str, NULL);
     if (imimport)
     {
         Setattr(imimport_hash, imimport, "1");
@@ -687,18 +750,17 @@ int FORTRAN::functionWrapper(Node *n)
         // Get the user-provided C type string, and convert it to a SWIG
         // internal representation using Swig_cparse_type . Then convert the
         // type and argument name to a valid C expression using SwigType_str.
-        String* tm = get_typemap("ctype", p,
-                                 WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
-        if (!tm)
+        SwigType* parsed_tm = parse_typemap("ctype", NULL, p,
+                                            WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+        if (!parsed_tm)
         {
             // Could be a vararg: no type defined
             continue;
         }
-        SwigType* parsed = Swig_cparse_type(tm);
-        String* carg = SwigType_str(parsed, imname);
+        String* carg = SwigType_str(parsed_tm, imname);
         Printv(cfunc->def, prepend_comma, carg, NULL);
         Delete(carg);
-        Delete(parsed);
+        Delete(parsed_tm);
 
         // >>> C ARGUMENT CONVERSION
 
@@ -893,7 +955,8 @@ int FORTRAN::functionWrapper(Node *n)
         // Get the typemap for output argument conversion
         Parm* temp = NewParm(cpp_returntype, Getattr(n, "name"), n);
         Setattr(temp, "lname", "fresult"); // Replaces $1
-        String* fbody = attach_typemap("fout", temp, WARN_FORTRAN_TYPEMAP_FOUT_UNDEF);
+        String* fbody = attach_typemap("fout", temp,
+                                       WARN_FORTRAN_TYPEMAP_FOUT_UNDEF);
         Delete(temp);
         
         // Output typemap is defined; emit the function call and result
@@ -921,7 +984,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     if (!is_csubroutine)
     {
-        String* qualified_return = SwigType_rcaststr(c_return_type, "fresult");
+        String* qualified_return = SwigType_rcaststr(c_return_str, "fresult");
         Printf(cfunc->code, "    return %s;\n", qualified_return);
         Delete(qualified_return);
     }
@@ -950,6 +1013,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     Delete(outarg);
     Delete(cleanup);
+    Delete(c_return_str);
     Delete(fcall);
     Delete(fargs);
     Delete(imargs);
