@@ -809,6 +809,15 @@ int FORTRAN::functionWrapper(Node *n)
         Replaceall(tm_in, "$input", farg);
         Printv(ffunc->code, tm_in, "\n", NULL);
 
+        // Add any needed temporary variables
+        String* fparm = get_typemap("findecl", p, WARN_NONE);
+        if (fparm)
+        {
+            Chop(fparm);
+            Printv(fargs, fparm, "\n", NULL);
+        }
+        Delete(fparm);
+
         // Next iteration
         prepend_comma = ", ";
     }
@@ -957,7 +966,16 @@ int FORTRAN::functionWrapper(Node *n)
         Setattr(temp, "lname", "fresult"); // Replaces $1
         String* fbody = attach_typemap("fout", temp,
                                        WARN_FORTRAN_TYPEMAP_FOUT_UNDEF);
+        String* fparm = attach_typemap("foutdecl", temp,
+                                       WARN_NONE);
         Delete(temp);
+
+        if (fparm)
+        {
+            Chop(fparm);
+            // Write fortran output parameters after dummy argument
+            Printv(ffunc->def, fparm, "\n", NULL);
+        }
         
         // Output typemap is defined; emit the function call and result
         // conversion code
@@ -968,7 +986,7 @@ int FORTRAN::functionWrapper(Node *n)
         Printv(ffunc->code, fbody, "\n", NULL);
 
         Delete(fbody);
-        Delete(temp);
+        Delete(fparm);
     }
 
     // Optional "append" proxy code
@@ -1743,6 +1761,7 @@ List* FORTRAN::emit_proxy_parm(Node* n, ParmList *parmlist, Wrapper *f)
 
     // Attach proxy input typemap (proxy arg -> farg1 in fortran function)
     Swig_typemap_attach_parms("fin", parmlist, f);
+    Swig_typemap_attach_parms("findecl", parmlist, f);
 
     for (Iterator it = First(proxparmlist); it.item; it = Next(it))
     {

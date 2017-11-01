@@ -40,17 +40,13 @@ end type
 %define FORT_VIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE...)
   #define PAIR_TYPE ::std::pair< CONST_CTYPE*, std::size_t >
   #define AW_TYPE swig::SwigfArrayWrapper< CONST_CTYPE >
-  // XXX: for some reason, using #define genereates a %constant and a warning
-  %define QAW_TYPE
-      "swig::SwigfArrayWrapper< " #CONST_CTYPE " >"
-  %enddef
 
   // C wrapper type: pointer to templated array wrapper
-  %typemap(ctype, noblock=1, out=QAW_TYPE,
+  %typemap(ctype, noblock=1, out=%str(swig::SwigfArrayWrapper< CONST_CTYPE >),
            fragment="SwigfArrayWrapper") PAIR_TYPE
     {AW_TYPE*}
 
-  // C input translation typemaps: $1 is PAIR_TYPE, $input is AW_TYPE
+  // C input initialization typemaps
   %typemap(arginit, noblock=1) PAIR_TYPE
     {$1 = PAIR_TYPE();}
 
@@ -98,7 +94,6 @@ end type
   %}
   #undef PAIR_TYPE
   #undef AW_TYPE
-  #undef QAW_TYPE
 %enddef
 
 // Declare wrapper functions for std::pair<T*,size_t> and <const T*, ...>
