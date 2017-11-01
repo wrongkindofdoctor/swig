@@ -42,27 +42,27 @@
 #define SWIG_FORTRAN_ERROR_STRLEN 1024
 #endif
 
-// Insert the fortran integer definition (only if %included)
-%fragment("SwigfErrorPub", "fpublic") {
- public :: SWIG_FORTRAN_ERROR_INT
- public :: SWIG_FORTRAN_ERROR_STR
-}
+//---------------------------------------------------------------------------//
+// Fortran variable definitions: used only if %included, not %imported
+//---------------------------------------------------------------------------//
+#ifndef SWIGIMPORTED
+// Fortran error variables
 %fragment("SwigfErrorParams", "fparams") {
  integer(C_INT), bind(C) :: SWIG_FORTRAN_ERROR_INT = 0
  character(kind=C_CHAR, len=SWIG_FORTRAN_ERROR_STRLEN), bind(C) :: SWIG_FORTRAN_ERROR_STR = ""
 }
 
-#ifndef SWIGIMPORTED
-// Override the default exception handler from fortranruntime.swg
-%insert(runtime) %{
-#undef SWIG_exception_impl
-#define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
-    swig::fortran_store_exception(CODE, MSG); return NULLRETURN;
-%}
+// Declare those variables public
+%fragment("SwigfErrorPub", "fpublic") {
+ public :: SWIG_FORTRAN_ERROR_INT
+ public :: SWIG_FORTRAN_ERROR_STR
+}
+#endif
 
-#define SWIG_exception(CODE, MSG) \
-    SWIG_exception_impl(CODE, MSG, $null)
-
+//---------------------------------------------------------------------------//
+// C++ Variable definitions: used only if %included, not %imported
+//---------------------------------------------------------------------------//
+#if defined(__cplusplus) && !defined(SWIGIMPORTED)
 // Insert C++ declaration of fortran data
 %fragment("SwigfErrorVars_wrap", "header",
           fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
@@ -71,9 +71,8 @@ extern int SWIG_FORTRAN_ERROR_INT;
 extern char SWIG_FORTRAN_ERROR_STR[SWIG_FORTRAN_ERROR_STRLEN];
 }
 }
-
 // Exception handling code
-%fragment("fortran_exception", "header",
+%fragment("SwigfExceptionDefinition", "header",
           fragment="SwigfErrorVars_wrap", fragment="<string>",
           fragment="<algorithm>", fragment="<stdexcept>")
 {
@@ -114,8 +113,56 @@ void fortran_store_exception(int code, const char *msg)
 }
 } // end namespace swig
 }
-#else // IMPORTED
-%fragment("fortran_exception", "header") {
+#endif
+
+//---------------------------------------------------------------------------//
+// C variable definitions: used only if %included, not %imported
+//---------------------------------------------------------------------------//
+#if !defined(__cplusplus) && !defined(SWIGIMPORTED)
+// Insert C declaration of fortran data
+%fragment("SwigfErrorVars_wrap_c", "header",
+          fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
+extern int SWIG_FORTRAN_ERROR_INT;
+extern char SWIG_FORTRAN_ERROR_STR[SWIG_FORTRAN_ERROR_STRLEN];
+}
+// Exception handling code
+%fragment("SwigfExceptionDefinition", "header",
+          fragment="SwigfErrorVars_wrap_c")
+{
+// Call this function before any new action
+void fortran_check_unhandled_exception()
+{
+    assert(SWIG_FORTRAN_ERROR_INT == 0);
+}
+
+// Save an exception to the fortran error code and string
+void fortran_store_exception(int code, const char *src)
+{
+    const char* dst = SWIG_FORTRAN_ERROR_STR;
+    const char* end = SWIG_FORTRAN_ERROR_STR + SWIG_FORTRAN_ERROR_STRLEN;
+
+    // Store exception code
+    SWIG_FORTRAN_ERROR_INT = code;
+
+    // Copy up to null terminator
+    while (dst != end && *src != 0)
+    {
+        *dst++ = *src++;
+    }
+    // Space-pad the remainder
+    while (dst != end)
+    {
+        *dst++ = ' ';
+    }
+}
+}
+#endif
+
+//---------------------------------------------------------------------------//
+// C++ Variable declarations: used only if %imported
+//---------------------------------------------------------------------------//
+#if defined(__cplusplus) && defined(SWIGIMPORTED)
+%fragment("SwigfExceptionDefinition", "header") {
 namespace swig
 {
 // Functions are defined in an imported module
@@ -126,9 +173,46 @@ void fortran_store_exception(int code, const char *msg);
 #endif
 
 //---------------------------------------------------------------------------//
+// C Variable declarations: used only if %imported
+//---------------------------------------------------------------------------//
+#if !defined(__cplusplus) && defined(SWIGIMPORTED)
+%fragment("SwigfExceptionDefinition", "header") {
+// Functions are defined in an imported module
+void fortran_check_unhandled_exception();
+void fortran_store_exception(int code, const char *msg);
+}
+#endif
 
-// Insert exception code
-%fragment("fortran_exception");
+//---------------------------------------------------------------------------//
+// Runtime code (always added)
+//---------------------------------------------------------------------------//
+#if defined(__cplusplus)
+// Override the default exception handler from fortranruntime.swg
+// Note that SWIG_exception_impl is used by SWIG_contract_assert, so the
+// *_impl* is the one that changes.
+%fragment("SwigfExceptionMacro", "runtime") %{
+#undef SWIG_exception_impl
+#define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
+    swig::fortran_store_exception(CODE, MSG); return NULLRETURN;
+%}
+#else
+%fragment("SwigfExceptionMacro", "runtime") %{
+#undef SWIG_exception_impl
+#define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
+    fortran_store_exception(CODE, MSG); return NULLRETURN;
+%}
+#endif
+
+// Note that this replaces wrapper code: the phrase "SWIG_exception" never
+// shows up in the .cxx file
+#define SWIG_exception(CODE, MSG) \
+    SWIG_exception_impl(CODE, MSG, $null)
+
+//---------------------------------------------------------------------------//
+// Insert exception code (will insert different code depending on if C/C++ and
+// whether or not this module is being %imported)
+%fragment("SwigfExceptionMacro");
+%fragment("SwigfExceptionDefinition");
 
 //---------------------------------------------------------------------------//
 // end of fortran/exception.i

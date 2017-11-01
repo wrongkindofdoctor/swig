@@ -9,6 +9,7 @@
 program main
     use ISO_FORTRAN_ENV
     use except
+    use downstream, only : throw_error
     implicit none
     integer :: val = 123
 
@@ -36,6 +37,16 @@ program main
     val = bravo()
     write(*,*) "Result of good function call:", val
 
+    ! Throw a downstream error
+    call throw_error()
+
+    if (ierr /= 0) then
+        write(*,*) "Got error ", ierr, ": ", trim(serr)
+        ! stop 0
+        write(*,*) "Recovering..."
+        ! Clear error flag
+        ierr = 0
+    endif
 
 end program
 
