@@ -10,6 +10,17 @@ IF (NOT DEFINED SWIG_DIR)
   MESSAGE(FATAL_ERROR "SWIG not loaded.")
 ENDIF()
 
+IF ("${CMAKE_VERSION}" VERSION_LESS "3.8.0")
+  # Old cmake that doesn't have support for non-'module' libraries: load a
+  # replacement for UseSWIG and define the "swig_add_library" macro
+  LIST(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/old_cmake)
+  MACRO(swig_add_library NAME)
+    cmake_parse_arguments(_SAM "" "LANGUAGE;TYPE" "SOURCES" ${ARGN})
+    SET(SWIG_LIBRARY_TYPE ${_SAM_TYPE})
+    SWIG_ADD_MODULE(${NAME} ${_SAM_LANGUAGE} ${_SAM_SOURCES})
+  ENDMACRO()
+ENDIF()
+
 # Load SWIG and other modules we need
 INCLUDE(UseSWIG)
 INCLUDE(CMakeParseArguments)
@@ -103,6 +114,11 @@ function(MAKE_SWIG)
     set(SRC_FILE "${PARSE_MODULE}.i")
   endif()
 
+  if(NOT CMAKE_SWIG_OUTDIR)
+    # XXX: turn this into an option
+    set(CMAKE_SWIG_OUTDIR "${CMAKE_CURRENT_BINARY_DIR}")
+  endif()
+
   # Let SWIG know that we're compiling C++ files, and what the module is
   set_source_files_properties(${SRC_FILE} PROPERTIES
     SWIG_MODULE_NAME ${PARSE_MODULE})
@@ -153,8 +169,16 @@ function(MAKE_SWIG)
   LIST(APPEND CMAKE_SWIG_FLAGS "${CMAKE_SWIG_${PARSE_LANGUAGE}_FLAGS}")
 
   # Create the SWIG module
-  swig_add_module(${PARSE_MODULE} ${PARSE_LANGUAGE}
-    ${SRC_FILE} ${PARSE_EXTRASRC})
+  IF ("${CMAKE_VERSION}" VERSION_LESS "3.8.0")
+    # NOTE: this uses the patched version of CMake
+    swig_add_module(${PARSE_MODULE} ${PARSE_LANGUAGE}
+      ${SRC_FILE} ${PARSE_EXTRASRC})
+  ELSE()
+    swig_add_library(${PARSE_MODULE}
+      LANGUAGE ${PARSE_LANGUAGE}
+      TYPE ${SWIG_LIBRARY_TYPE}
+      SOURCES ${SRC_FILE} ${PARSE_EXTRASRC})
+  ENDIF()
 
   # Restore original SWIG flags
   SET(CMAKE_SWIG_FLAGS _ORIG_CMAKE_SWIG_FLAGS)
