@@ -20,8 +20,11 @@
 %naturalvar TYPE;
 %naturalvar SWIGSP__;
 
-// destructor mods
-%feature("unref") TYPE "(void)arg1; delete smartarg1;"
+// Replace call to "delete (Foo*) arg1;" with call to delete the *shared
+// pointer* (so decrement the reference count instead of forcing the object to
+// be destroyed and causing a double-delete)
+%feature("unref") TYPE
+%{ (void)$self; delete smart$self; %}
 
 //---------------------------------------------------------------------------//
 // In/out typemaps
