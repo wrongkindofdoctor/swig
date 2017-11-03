@@ -34,6 +34,10 @@ IF(PYTHON_VERSION_STRING VERSION_GREATER 3.0)
   LIST(APPEND CMAKE_SWIG_PYTHON_FLAGS "-py3")
 ENDIF()
 
+# Define extra output files
+set(SWIG_FORTRAN_EXTRA_FILE_EXTENSION ".f90") # old CMake
+set(SWIG_FORTRAN_EXTRA_FILE_EXTENSIONS ".f90")# new CMake
+
 ##---------------------------------------------------------------------------##
 # Look through a header/SWIG file and find dependencies
 
@@ -115,7 +119,7 @@ function(MAKE_SWIG)
   endif()
 
   if(NOT CMAKE_SWIG_OUTDIR)
-    # XXX: turn this into an option
+    # XXX: turn this into an option passed into the function
     set(CMAKE_SWIG_OUTDIR "${CMAKE_CURRENT_BINARY_DIR}")
   endif()
 
@@ -128,15 +132,13 @@ function(MAKE_SWIG)
       CPLUSPLUS TRUE)
   endif()
 
-  set(SWIG_FORTRAN_EXTRA_FILE_EXTENSION "f90")
-
   # Get dependencies of main SWIG source file and the files it includes
   # we can't do recursive
   set(SUBDEPS ${SRC_FILE})
   set(DEPENDENCIES)
   foreach(RECURSION 0 1 2)
-    SET(OLD_SUBDEPS ${SUBDEPS})
-    SET(SUBDEPS)
+    set(OLD_SUBDEPS ${SUBDEPS})
+    set(SUBDEPS)
     foreach(DEPENDENCY ${OLD_SUBDEPS})
       if(DEPENDENCY MATCHES "\\.i$")
         get_swig_dependencies(SUBSUBDEPS ${DEPENDENCY})
@@ -151,34 +153,64 @@ function(MAKE_SWIG)
   set(SWIG_MODULE_${PARSE_MODULE}_EXTRA_DEPS ${DEPENDENCIES} )
 
   if (PARSE_LANGUAGE STREQUAL "FORTRAN")
-    LIST(APPEND PARSE_EXTRASRC "${CMAKE_CURRENT_BINARY_DIR}/${PARSE_MODULE}.f90")
+    set(SWIG_FORTRAN_GENERATED_SRC "${CMAKE_SWIG_OUTDIR}/${PARSE_MODULE}.f90")
     # Usually SWIG wrapper libraries need to be built as shared libraries that
     # are never linked into the CMake dependencies themselves (the "MODULE"
     # type); not the case with fortran. This relies on the patched UseSWIG.
     if(BUILD_SHARED_LIBS)
-      SET(SWIG_LIBRARY_TYPE SHARED)
+      set(SWIG_LIBRARY_TYPE SHARED)
     else()
-      SET(SWIG_LIBRARY_TYPE STATIC)
+      set(SWIG_LIBRARY_TYPE STATIC)
     endif()
   else()
-    SET(SWIG_LIBRARY_TYPE MODULE)
+    set(SWIG_LIBRARY_TYPE MODULE)
   endif()
 
   # Set up compiler flags
-  SET(_ORIG_CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS})
-  LIST(APPEND CMAKE_SWIG_FLAGS "${CMAKE_SWIG_${PARSE_LANGUAGE}_FLAGS}")
+  set(_ORIG_CMAKE_SWIG_FLAGS ${CMAKE_SWIG_FLAGS})
+  list(APPEND CMAKE_SWIG_FLAGS "${CMAKE_SWIG_${PARSE_LANGUAGE}_FLAGS}")
 
   # Create the SWIG module
-  IF ("${CMAKE_VERSION}" VERSION_LESS "3.8.0")
-    # NOTE: this uses the patched version of CMake
-    swig_add_module(${PARSE_MODULE} ${PARSE_LANGUAGE}
-      ${SRC_FILE} ${PARSE_EXTRASRC})
-  ELSE()
+  if (DEFINED TRIBITS_CMAKE_MINIMUM_REQUIRED AND PARSE_LANGUAGE STREQUAL "FORTRAN")
+    # Special case for Tribits build systems is needed to propagate includes,
+    # rpaths, etc.
+
+    # XXX hack to set up link/include directories BEFORE the call to
+    # TRIBITS_ADD_LIBRARY
+    TRIBITS_SORT_AND_APPEND_PACKAGE_INCLUDE_AND_LINK_DIRS_AND_LIBS(
+      ${PACKAGE_NAME}  LIB  LINK_LIBS)
+
+    TRIBITS_SORT_AND_APPEND_TPL_INCLUDE_AND_LINK_DIRS_AND_LIBS(
+      ${PACKAGE_NAME}  LIB  LINK_LIBS)
+
+    PRINT_VAR(${PACKAGE_NAME}_INCLUDE_DIRS)
+    #     # Add TriBITS include directories to the SWIG commands (because the
+    #     # add_library call comes after the SWIG creation, the "include_directories"
+    #     # command hasn't been called at this point.)
+    #     FOREACH(dir ${${PACKAGE_NAME}_INCLUDE_DIRS})
+    #       LIST(APPEND CMAKE_SWIG_FLAGS "-I${dir}")
+    #     ENDFOREACH()
+
+    # Generate the SWIG commands and targets
+    SWIG_MODULE_INITIALIZE(${PARSE_MODULE} ${PARSE_LANGUAGE})
+    SWIG_ADD_SOURCE_TO_MODULE(${PARSE_MODULE} swig_wrapper_src ${SRC_FILE})
+    get_directory_property(swig_extra_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
+    list(APPEND swig_extra_clean_files "${swig_wrapper_src}"
+      "${SWIG_FORTRAN_GENERATED_SRC}")
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
+                "${swig_extra_clean_files}")
+
+    # Add as a TriBITS library
+    TRIBITS_ADD_LIBRARY(${PARSE_MODULE}
+      SOURCES ${PARSE_EXTRASRC}
+              ${SWIG_FORTRAN_GENERATED_SRC}
+              ${swig_wrapper_src})
+  else()
     swig_add_library(${PARSE_MODULE}
       LANGUAGE ${PARSE_LANGUAGE}
       TYPE ${SWIG_LIBRARY_TYPE}
-      SOURCES ${SRC_FILE} ${PARSE_EXTRASRC})
-  ENDIF()
+      SOURCES ${SRC_FILE} ${SWIG_FORTRAN_GENERATED_SRC} ${PARSE_EXTRASRC})
+  endif()
 
   # Restore original SWIG flags
   SET(CMAKE_SWIG_FLAGS _ORIG_CMAKE_SWIG_FLAGS)
@@ -236,7 +268,7 @@ function(MAKE_SWIG)
   if (PARSE_LANGUAGE STREQUAL "PYTHON")
     install(TARGETS ${BUILT_LIBRARY}
       DESTINATION python)
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PARSE_MODULE}.py
+    install(FILES ${CMAKE_SWIG_OUTDIR}/${PARSE_MODULE}.py
       DESTINATION python)
   endif ()
 
