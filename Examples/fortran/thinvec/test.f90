@@ -8,30 +8,33 @@
 
 program main
     use ISO_FORTRAN_ENV
-    use thinvec, only : print_vec, Vec => ThinVecDbl
+    use, intrinsic :: ISO_C_BINDING
+    use thinvec, only : print_vec, print_offbyone, Vec => ThinVecInt
     implicit none
     integer :: i
     type(Vec) :: v
-    real(kind=8), dimension(3) :: dummy_data
-    real(kind=8), pointer, dimension(:) :: view
+    integer(kind=c_int), dimension(3) :: dummy_data
+    integer(kind=c_int), pointer, dimension(:) :: view
 
     ! This should be a null-op since the underlying pointer is initialized to
     ! null
     call v%release()
-    
+
     write(0, *) "Constructing..."
     call v%create()
     write(0, *) "Sizing..."
     call v%resize(4)
     call print_vec(v)
     write(0, *) "Resizing with fill..."
-    call v%resize_fill(10, 1.5d0)
+    call v%resize_fill(10, -999)
 
     write(0, *) "Setting"
     do i = 0, 7
-        call v%set(i, real(i) * 123.0d0)
+        call v%set(i, i * 2)
     end do
     call print_vec(v)
+    write(0, *) "Printing with off-by-one"
+    call print_offbyone(v)
 
     ! Pull data from the vector
     view => v%view()
@@ -39,7 +42,7 @@ program main
 
     ! Assign a vector
     do i = 1, 3
-        dummy_data(i) = real(i) + 1.5d0
+        dummy_data(i) = i + 23
     end do
     write(0, *) "Assigning vector", dummy_data
     call v%assign_from(dummy_data)

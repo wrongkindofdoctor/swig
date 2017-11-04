@@ -13,7 +13,7 @@
 
 #include <vector>
 
-template<class T>
+template<typename T>
 class ThinVec
 {
   private:
@@ -60,7 +60,10 @@ class ThinVec
     const std::vector<T>& data() const { return d_data; }
 };
 
-void print_vec(const ThinVec<double>& v);
+template<typename T>
+void print_vec(const ThinVec<T>& v);
+
+void print_offbyone(const ThinVec<int>& INDICES);
 
 #endif // thinvec_ThinVec_hh
 
