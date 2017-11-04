@@ -16,9 +16,6 @@
 template<typename T>
 class ThinVec
 {
-  private:
-    std::vector<T> d_data;
-
   public:
     typedef int size_type;
     typedef T            value_type;
@@ -26,6 +23,11 @@ class ThinVec
     typedef const T*     const_pointer;
     typedef std::pair<pointer, std::size_t> view_type;
     typedef std::pair<const_pointer, std::size_t> const_view_type;
+
+    typedef typename std::vector<T>::iterator iterator;
+    typedef typename std::vector<T>::const_iterator const_iterator;
+  private:
+    std::vector<T> d_data;
 
   public:
     // Constructors
@@ -58,6 +60,12 @@ class ThinVec
     view_type view();
 
     const std::vector<T>& data() const { return d_data; }
+#ifndef SWIG
+    iterator begin() { return d_data.begin(); }
+    iterator end() { return d_data.end(); }
+    const_iterator begin() const { return d_data.begin(); }
+    const_iterator end() const { return d_data.end(); }
+#endif
 };
 
 template<typename T>

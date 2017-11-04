@@ -12,7 +12,6 @@
 
 %module thinvec
 
-// Instantiate view to integers/double
 %include <typemaps.i>
 %fortran_view(int)
 %fortran_view(double)
@@ -31,65 +30,39 @@
 %ignore ThinVec::data() const;
 
 //---------------------------------------------------------------------------//
-// Create a typemap that subtracts one from the given indices
-//---------------------------------------------------------------------------//
-#define PAIR_T std::pair<const int*, std::size_t>
 #define THINVEC_T const ThinVec<int>& INDICES
 
-// For vectors with the "INDICES" variable name, use *views* for the interface
-%typemap(ctype)    THINVEC_T = PAIR_T;
-%typemap(imtype)   THINVEC_T = PAIR_T;
-%typemap(imimport) THINVEC_T = PAIR_T;
-
-// Declare temporary variables
-%typemap(findecl) THINVEC_T
-%{
-  integer(C_INT), dimension(:), pointer :: view$1
-  integer(C_INT), allocatable, target, dimension(:) :: temp$1
-  integer :: i$1
-  integer :: sz$1
-%}
-
-// Implement transformation before the wrapper call
-%typemap(fin) THINVEC_T
-%{
-  view$1 => $input%view()
-  sz$1 = size(view$1)
-  allocate(temp$1(sz$1))
-  do i$1=1,sz$1
-    temp$1(i$1) = view$1(i$1) + 1
-  enddo
-  $1%data = c_loc(temp$1)
-  $1%size = size(temp$1)
-%}
-
-// Free temporary memory after function call
-%typemap(ffreearg) THINVEC_T
-%{
-  deallocate(temp$1)
-%}
-
-// Since the C function call actually takes a ThinVec as an argument (not a
-// view), we have to translate back
-%typemap(in) THINVEC_T (ThinVec<int> tempvec)
-%{
-    tempvec.assign(std::make_pair($input->data, $input->size));
+// Note: since we use %const_cast and %static_cast, which are SWIG-defined
+// macros, we must use {} rather than %{ %} for the typemap. To prevent those
+// enclosing braces from being inserted in the wrapper code, we add the
+// noblock=1 argument to the typemap.
+%typemap(in, noblock=1) THINVEC_T (ThinVec<int> tempvec)
+{
+    // Original typemap: convert void* to thinvec reference
+    $1 = %static_cast(%const_cast($input, void*), $1_ltype);
+    // Resize temporary vec
+    tempvec.resize($1->size());
+    // Copy input vector incremented by one
+    $*1_ltype::const_iterator src = $1->begin();
+    for ($*1_ltype::iterator dst = tempvec.begin();
+         dst != tempvec.end();
+         ++dst)
+    {
+        *dst = *src++ + 1;
+    }
+    // Make the input argument point to our temporary vector
     $1 = &tempvec;
-%}
-//%typemap(arginit, noblock=1) const ThinVec<int>& INDICES;
-
+}
 #undef THINVEC_T
-#undef PAIR_T
-
-//---------------------------------------------------------------------------//
 
 // Load the thinvec class definition
 %include "ThinVec.hh"
 
-// Instantiate
+// Instantiate classes
 %template(ThinVecDbl) ThinVec<double>;
 %template(ThinVecInt) ThinVec<int>;
 
+// Instantiate functions
 %template(print_vec) print_vec<double>;
 %template(print_vec) print_vec<int>;
 
