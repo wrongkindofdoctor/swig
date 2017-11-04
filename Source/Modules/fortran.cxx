@@ -901,6 +901,25 @@ int FORTRAN::functionWrapper(Node *n)
         }
     }
 
+    // Insert Fortran cleanup code
+    String *fcleanup = NewString("");
+    p = parmlist;
+    while (p)
+    {
+        if (String* tm = Getattr(p, "tmap:ffreearg"))
+        {
+            Chop(tm);
+            Replaceall(tm, "$input", Getattr(p, "emit:input"));
+            // Write fortran output parameters after dummy argument
+            Printv(fcleanup, tm, "\n", NULL);
+            p = Getattr(p, "tmap:ffreearg:next");
+        }
+        else
+        {
+            p = nextSibling(p);
+        }
+    }
+
     // Insert argument output code
     String *outarg = NewString("");
     p = parmlist;
@@ -999,6 +1018,7 @@ int FORTRAN::functionWrapper(Node *n)
     // Output argument output and cleanup code
     Printv(cfunc->code, outarg, NULL);
     Printv(cfunc->code, cleanup, NULL);
+    Printv(ffunc->code, fcleanup, NULL);
 
     if (!is_csubroutine)
     {
@@ -1030,6 +1050,7 @@ int FORTRAN::functionWrapper(Node *n)
     DelWrapper(ffunc);
 
     Delete(outarg);
+    Delete(fcleanup);
     Delete(cleanup);
     Delete(c_return_str);
     Delete(fcall);
@@ -1762,6 +1783,7 @@ List* FORTRAN::emit_proxy_parm(Node* n, ParmList *parmlist, Wrapper *f)
     // Attach proxy input typemap (proxy arg -> farg1 in fortran function)
     Swig_typemap_attach_parms("fin", parmlist, f);
     Swig_typemap_attach_parms("findecl", parmlist, f);
+    Swig_typemap_attach_parms("ffreearg", parmlist, f);
 
     for (Iterator it = First(proxparmlist); it.item; it = Next(it))
     {
