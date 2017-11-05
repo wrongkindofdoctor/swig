@@ -224,18 +224,40 @@
 %enddef
 
 FORT_FUND_TYPEMAP(bool          , "logical(C_BOOL)"     )
-FORT_FUND_TYPEMAP(unsigned char , "integer(C_INT8_T)"   )
+FORT_FUND_TYPEMAP(signed char   , "integer(C_SIGNED_CHAR)")
 FORT_FUND_TYPEMAP(short         , "integer(C_SHORT)"    )
-FORT_FUND_TYPEMAP(unsigned short, "integer(C_SHORT)"    )
 FORT_FUND_TYPEMAP(int           , "integer(C_INT)"      )
-FORT_FUND_TYPEMAP(unsigned int  , "integer(C_INT)"      )
 FORT_FUND_TYPEMAP(long          , "integer(C_LONG)"     )
-FORT_FUND_TYPEMAP(unsigned long , "integer(C_LONG)"     )
 FORT_FUND_TYPEMAP(long long     , "integer(C_LONG_LONG)")
 FORT_FUND_TYPEMAP(size_t        , "integer(C_SIZE_T)"   )
 FORT_FUND_TYPEMAP(float         , "real(C_FLOAT)"       )
 FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
 
+/*!
+ * \def FORT_UNSIGNED_TYPEMAP
+ * \brief Add typemaps for unsigned values.
+ *
+ * Since Fortran does not have unsigned types, we might want to validate that
+ * the values being passed back and forth don't exceed the range of the signed
+ * values (or ensure that values being passed to C++ aren't negative). However,
+ * since some sentinel values are deliberately defined as e.g.
+ * \code static_cast<unsigned int> foo(-1); \endcode we don't want to do this
+ * by default.
+ */
+%define FORT_UNSIGNED_TYPEMAP(CTYPE, SCTYPE, FTYPE)
+  FORT_FUND_VALREF_TYPEMAP(CTYPE, FTYPE)
+  FORT_FUND_PTR_TYPEMAP(CTYPE, FTYPE)
+%enddef
+FORT_UNSIGNED_TYPEMAP(unsigned char ,     char ,     "integer(C_SIGNED_CHAR)")
+FORT_UNSIGNED_TYPEMAP(unsigned short,     short,     "integer(C_SHORT)"    )
+FORT_UNSIGNED_TYPEMAP(unsigned int  ,     int  ,     "integer(C_INT)"      )
+FORT_UNSIGNED_TYPEMAP(unsigned long ,     long ,     "integer(C_LONG)"     )
+FORT_UNSIGNED_TYPEMAP(unsigned long long, long long, "integer(C_LONG_LONG)")
+
+// Note: ssize_t is defined in <sys/types.h> and isn't part of the standard
+FORT_UNSIGNED_TYPEMAP(size_t        ,     ssize_t,    "integer(C_SIZE_T)"   )
+
+// Type checking isn't used for Fortran but is required for unit tests
 %typecheck(SWIG_TYPECHECK_BOOL)
     bool,
     const bool &
@@ -384,8 +406,6 @@ end type
 //---------------------------------------------------------------------------//
 // MORE POINTERS
 //---------------------------------------------------------------------------//
-
-// NOTE: handles are untested
 
 // Handles are returned as opaque C pointers
 FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE**)
