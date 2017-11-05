@@ -51,18 +51,18 @@ bool node_is_destructor(Node* n)
  */
 int print_wrapped_line(String* out, Iterator it, int line_length)
 {
-    const char* prepend_comma = "";
+    const char* prefix = "";
     for (; it.item; it = Next(it))
     {
         line_length += 2 + Len(it.item);
         if (line_length >= g_max_line_length)
         {
-            Printv(out, prepend_comma, NULL);
-            prepend_comma = "&\n    ";
-            line_length = 4;
+            Printv(out, prefix, NULL);
+            prefix = "&\n    ";
+            line_length = 4 + Len(it.item);
         }
-        Printv(out, prepend_comma, it.item, NULL);
-        prepend_comma = ", ";
+        Printv(out, prefix, it.item, NULL);
+        prefix = ", ";
     }
     return line_length;
 }
