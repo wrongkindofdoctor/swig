@@ -31,7 +31,7 @@
 
 %typemap(freearg) SWIGTYPE * ""
 %apply SWIGTYPE* {CharPtr};
-%apply SWIGTYPE* {CCharPtr};
+%apply const SWIGTYPE* {CCharPtr};
 
 %inline %{
   typedef char* CharPtr;
