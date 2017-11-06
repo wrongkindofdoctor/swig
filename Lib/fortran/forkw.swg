@@ -8,16 +8,19 @@
 //---------------------------------------------------------------------------//
 
 // By default SWIG gives these underscore prefix/suffix
+#ifdef __cplusplus
 %rename(deref) *::operator->;
 %rename(ref)   *::operator*();
 %rename(ref)   *::operator*() const;
-// Prevent identifiers from having a leading underscore
-// %rename("%(regex:/^_(.*)/\\1_/)s") "";
 
 %keywordwarn("'create' is reserved for SWIG constructors",
              rename="create_") "*::create";
 %keywordwarn("'release' is reserved for SWIG destructors",
              rename="release_") "*::release";
+#endif
+
+// Prevent identifiers from having a leading underscore
+// %rename("%(regex:/^_(.*)/\\1_/)s") "";
 
 #define FORTRANKW(x) %keywordwarn("'" `x` "' is a Fortran keyword")  `x`
 
