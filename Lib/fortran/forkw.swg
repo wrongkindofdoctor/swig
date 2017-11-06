@@ -7,6 +7,10 @@
  */
 //---------------------------------------------------------------------------//
 
+// By default SWIG gives these underscore prefix/suffix
+%rename(deref) *::operator->;
+%rename(ref)   *::operator*();
+%rename(ref)   *::operator*() const;
 // Prevent identifiers from having a leading underscore
 // %rename("%(regex:/^_(.*)/\\1_/)s") "";
 
