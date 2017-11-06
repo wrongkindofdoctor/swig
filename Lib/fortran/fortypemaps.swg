@@ -345,6 +345,7 @@ FORT_UNSIGNED_TYPEMAP(size_t        ,     ssize_t,    "integer(C_SIZE_T)"   )
 
 // Void pointers are returned as opaque C pointers
 FORT_OPAQUE_PTR_TYPEMAP(void*)
+FORT_OPAQUE_PTR_TYPEMAP(void[])
 
 //---------------------------------------------------------------------------//
 // CLASSES BY VALUE
@@ -409,7 +410,11 @@ end type
 
 // Handles are returned as opaque C pointers
 FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE**)
+FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* [])
+FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* [ANY])
 FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const*)
+FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const[])
+FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const[ANY])
 // Pointer references are returned as opaque C pointers
 FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE*&)
 FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
