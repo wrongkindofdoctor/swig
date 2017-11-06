@@ -7,6 +7,14 @@
  */
 //---------------------------------------------------------------------------//
 
+// This fragment is inserted by the fortran.cxx code when an unknown class is
+// encountered.
+%fragment("SwigfUnknownClass", "fpublic", noblock=1) %{
+type :: SwigfUnknownClass
+  type(C_PTR), public :: swigptr
+end type
+%}
+
 //---------------------------------------------------------------------------//
 // end of fortran/fragments.swg
 //---------------------------------------------------------------------------//

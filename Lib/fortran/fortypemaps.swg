@@ -359,14 +359,6 @@ FORT_OPAQUE_PTR_TYPEMAP(void[])
 // CLASSES BY VALUE
 //---------------------------------------------------------------------------//
 
-// This fragment is inserted by the fortran.cxx code when an unknown class is
-// encountered.
-%fragment("SwigfUnknownClass", "fpublic", noblock=1) %{
-type :: SwigfUnknownClass
-  type(C_PTR), public :: swigptr
-end type
-%}
-
 // Classes accepted by value are still passed by reference by fortran
 %typemap(ctype)  SWIGTYPE
   %{void*%}

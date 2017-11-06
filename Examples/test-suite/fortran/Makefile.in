@@ -41,7 +41,6 @@ FAILING_CPP_TESTS += \
   typedef_struct_cpp \
   typemap_various
 
-
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
@@ -50,7 +49,6 @@ FAILING_CPP_TESTS += \
   constructor_copy \
   contract \
   cpp_enum \
-  default_args \
   default_constructor \
   director_basic \
   director_classes \
@@ -98,6 +96,7 @@ FAILING_CPP_TESTS += \
   preproc_constants \
   refcount \
   return_const_value \
+  smart_pointer_inherit \
   smart_pointer_rename \
   smart_pointer_template_const_overload \
   smart_pointer_template_defaults_overload \

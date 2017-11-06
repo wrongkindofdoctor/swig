@@ -1604,6 +1604,8 @@ int FORTRAN::enumDeclaration(Node *n)
         {
             enum_name = NewStringf("%s_%s", Getattr(classnode, "sym:name"),
                                    symname);
+            // Save the alias name
+            Setattr(n, "fortran:alias", enum_name);
         }
         else
         {
@@ -1715,42 +1717,48 @@ bool FORTRAN::replace_fclassname(SwigType* intype, String *tm)
 void FORTRAN::replace_fspecial_impl(SwigType *classnametype, String *tm,
                                     const char *classnamespecialvariable)
 {
-    const_String_or_char_ptr replacementname = NULL;
+    String* replacementname = NULL;
+    String* alloc_string = NULL;
+    Node* lookup = NULL;
 
     if (SwigType_isenum(classnametype))
     {
-        Node *lookup = enumLookup(classnametype);
-        if (lookup)
-        {
-            replacementname = Getattr(lookup, "sym:name");
-        }
+        lookup = enumLookup(classnametype);
     }
     else
     {
-        Node* lookup = classLookup(classnametype);
-        if (lookup)
+        lookup = classLookup(classnametype);
+    }
+
+    if (lookup)
+    {
+        // Check first to see if there's a fortran alias on the node
+        replacementname = Getattr(lookup, "fortran:alias");
+        if (!replacementname)
         {
+            // If not, use the symbolic name
             replacementname = Getattr(lookup, "sym:name");
         }
     }
 
     if (!replacementname)
     {
-        // Use raw C pointer if SWIG does not know anything about this type.
+        // No class/enum type or symname was found:
+        // use raw C pointer since  SWIG does not know anything about this
+        // type.
         Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF,
                      input_file, line_number,
                      "No '$fclassname' replacement (wrapped type) "
                      "found for %s\n",
                      SwigType_str(classnametype, 0));
 
-        replacementname = "SwigfUnknownClass";
-        String* fragment_name = NewString(replacementname);
-        //Setfile(fname, Getfile(n));
-        //Setline(fname, Getline(n));
-        Swig_fragment_emit(fragment_name);
-        Delete(fragment_name);
+        // Emit the SwigfUnknownClass type fragment, and set that as the
+        // replacement name type
+        replacementname = alloc_string = NewString("SwigfUnknownClass");
+        Swig_fragment_emit(replacementname);
     }
     Replaceall(tm, classnamespecialvariable, replacementname);
+    Delete(alloc_string);
 }
 
 //---------------------------------------------------------------------------//
