@@ -618,9 +618,9 @@ int FORTRAN::functionWrapper(Node *n)
     SwigType* c_return_type = parse_typemap("ctype", "out", n, 
                                             WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
     String* im_return_str = attach_typemap("imtype", "out", n, 
-                                            WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
+                                           WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
     String* f_return_str = attach_typemap("ftype", "out", n, 
-                                           WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
+                                          WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
 
     if (in_constructor)
     {
@@ -634,7 +634,7 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     // Check whether the C routine returns a variable
-    const bool is_csubroutine = (Cmp(c_return_type, "void") == 0);
+    const bool is_csubroutine = (Len(im_return_str) == 0);
     // Check whether the Fortran routine returns a variable
     const bool is_fsubroutine = (Len(f_return_str) == 0);
 
@@ -714,8 +714,7 @@ int FORTRAN::functionWrapper(Node *n)
     Setattr(n, "wrap:parms", parmlist);
 
     // Emit local variables in fortran code
-    List* proxparmlist = emit_proxy_parm(n, parmlist, ffunc);
-    
+    List* proxparmlist = emit_proxy_parm(n, parmlist, ffunc); 
     if (in_constructor)
     {
         // Prepend "self" to the parameter list (with trailing comma if
