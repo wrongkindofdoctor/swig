@@ -11,7 +11,6 @@ program main
     use bare
     implicit none
     real(kind=8) :: temp
-    real(kind=8), dimension(1) :: temparr
     real(kind=8), dimension(9) :: arr
     integer :: i
     real(kind=8), pointer :: rptr
@@ -25,8 +24,8 @@ program main
     rptr => get_something_rref(2)
     rptr = 512.0d0
 
-    call get_something_ptr(2, temparr)
-    write(0, *) "Got ", temparr
+    call get_something_ptr(2, temp)
+    write(0, *) "Got ", temp
     call get_something_ref(1, temp)
     write(0, *) "Got ", temp
 

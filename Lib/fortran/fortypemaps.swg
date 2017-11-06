@@ -149,7 +149,7 @@
     {$result = %reinterpret_cast($1, CTYPE*);}
   %typemap(imtype, in="type(C_PTR), value") CTYPE&
     "type(C_PTR)"
-  %typemap(ftype, out=FTYPE ", pointer")  CTYPE&
+  %typemap(ftype, out=FTYPE ", pointer") CTYPE&
     FTYPE ", target, intent(inout)"
   %typemap(fin)  CTYPE&
     "$1 = c_loc($input)"
@@ -162,38 +162,25 @@
  * \def FORT_FUND_PTR_TYPEMAP
  * \brief Add array/pointer typemaps for basic fortran types.
  *
- * This adds pointer and array handling to primitive types.
- * Pointers in return values are returned as Fortran array pointers (constness
- * is ignored!) as though they are poniters to scalar values and not arrays.
- * More advanced application-specific typemaps will need to be generated for
- * that case.
- *
- * Otherwise, pointers and arrays are treated as standard fortran arrays.
+ * This adds pointer and array handling to primitive types. Fixed-size arrays
+ * are passed as known-size array pointers, but otherwise they are treated as
+ * pointers to scalar data.
  */
 %define FORT_FUND_PTR_TYPEMAP(CTYPE, FTYPE)
-  // Mutable pointers and arrays are returned as actual pointers
-  %typemap(ctype, out="CTYPE*") CTYPE*, CTYPE[], CTYPE[ANY]
-    %{CTYPE*%}
-  %typemap(in) CTYPE*, CTYPE[], CTYPE[ANY]
-    %{$1 = $input;%}
-  %typemap(out) CTYPE*, CTYPE[], CTYPE[ANY]
-    %{$result = $1;%}
-  %typemap(imtype, in="type(C_PTR), value") CTYPE*, CTYPE[], CTYPE[ANY]
-    "type(C_PTR)"
-  %typemap(ftype, out=FTYPE ", pointer") CTYPE*, CTYPE[], CTYPE[ANY]
-    FTYPE ", dimension(:), target, intent(inout)"
-  %typemap(fin)  CTYPE*, CTYPE[], CTYPE[ANY]
-    %{$1 = c_loc($input);%}
-  %typemap(fout) CTYPE*, CTYPE[], CTYPE[ANY]
-    %{call c_f_pointer($1, $result)%}
+  %apply CTYPE& { CTYPE*, CTYPE[], CTYPE[ANY] };
 
-  // Overrides for constness and Fortran intent
-  %typemap(in, noblock=1) const CTYPE*, const CTYPE[], const CTYPE[ANY]
-    {$1 = %static_cast(%const_cast($input, CTYPE*), $1_ltype);}
-  %typemap(out) const CTYPE*, const CTYPE[], const CTYPE[ANY]
-    %{$result = %const_cast($1, CTYPE*);%}
-  %typemap(ftype, out=FTYPE ", pointer") const CTYPE*, const CTYPE[], CTYPE[ANY]
+  %typemap(out, noblock=1) const CTYPE*, const CTYPE[], const CTYPE[ANY]
+    {$result = %const_cast(%reinterpret_cast($1, const CTYPE*), CTYPE*);}
+
+  // Arrays of known size are returned as pointers to known-size arrays
+  %typemap(ftype, out=FTYPE ", dimension(:), pointer") CTYPE[ANY]
+    FTYPE ", dimension(:), target, intent(inout)"
+  %typemap(ftype, out=FTYPE ", dimension(:), pointer") const CTYPE[ANY]
     FTYPE ", dimension(:), target, intent(in)"
+  %typemap(fout) CTYPE[ANY], const CTYPE[ANY]
+  %{
+      call c_f_pointer($1, $result, [$1_dim0])
+  %}
 %enddef
 
 //---------------------------------------------------------------------------//
@@ -240,6 +227,8 @@ FORT_FUND_TYPEMAP(long long     , "integer(C_LONG_LONG)")
 FORT_FUND_TYPEMAP(size_t        , "integer(C_SIZE_T)"   )
 FORT_FUND_TYPEMAP(float         , "real(C_FLOAT)"       )
 FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
+
+FORT_FUND_TYPEMAP(char          , "integer(C_SIGNED_CHAR)")
 
 /*!
  * \def FORT_UNSIGNED_TYPEMAP
@@ -418,43 +407,6 @@ FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const[ANY])
 // Pointer references are returned as opaque C pointers
 FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE*&)
 FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
-
-//---------------------------------------------------------------------------//
-// STRING TYPES
-//
-// Note that currently strings can be passed as character arrays, but returning
-// a C string gives just an opaque C pointer
-//---------------------------------------------------------------------------//
-
-%define FORT_CHARPTR_TYPEMAP(CTYPE, FTYPE)
-  %typemap(ctype)  CTYPE*, CTYPE[], CTYPE[ANY]
-    %{CTYPE*%}
-  %typemap(in)     CTYPE*, CTYPE[], CTYPE[ANY]
-    %{$1 = $input;%}
-  %typemap(out)    CTYPE*, CTYPE[], CTYPE[ANY]
-    %{$result = $1;%}
-  %typemap(imtype, out="type(C_PTR)") CTYPE*, CTYPE[], CTYPE[ANY]
-    "character(" FTYPE ")"
-  %typemap(ftype, out="type(C_PTR)") CTYPE*, CTYPE[], CTYPE[ANY]
-    "character(kind=" FTYPE ", len=*)"
-  %typemap(fin)    CTYPE*, CTYPE[], CTYPE[ANY]
-    "$1 = $input"
-  %typemap(fout)   CTYPE*, CTYPE[], CTYPE[ANY]
-    "$result = $1"
-
-  %typemap(ctype)  const CTYPE*, const CTYPE[], const CTYPE[ANY]
-    %{const CTYPE*%}
-  %typemap(in, noblock=1) const CTYPE*, const CTYPE[], const CTYPE[ANY]
-    {$1 = %const_cast($input, $1_ltype);}
-  %typemap(out, noblock=1) const CTYPE*, const CTYPE[], const CTYPE[ANY]
-    {$result = %const_cast($1, $1_ltype);}
-%enddef
-
-
-FORT_FUND_VALREF_TYPEMAP(char, "integer(C_SIGNED_CHAR)")
-FORT_CHARPTR_TYPEMAP(char, "C_CHAR")
-
-#undef FORT_CHARPTR_TYPEMAP
 
 //---------------------------------------------------------------------------//
 // ENUMS

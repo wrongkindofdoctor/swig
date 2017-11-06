@@ -45,7 +45,12 @@ FAILING_CPP_TESTS += \
 FAILING_CPP_TESTS += \
   abstract_signature \
   allprotected \
+  arrays_dimensionless \
+  arrays_global \
+  arrays_scope \
   autodoc \
+  bloody_hell \
+  char_strings \
   constructor_copy \
   contract \
   cpp_enum \
