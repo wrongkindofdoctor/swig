@@ -9,6 +9,8 @@
 
 %fragment("<stdexcept>");
 
+%include <exception.i>
+
 %define %std_exception_map(Exception, Code)
   %typemap(throws,noblock=1) Exception {
     SWIG_exception(Code, $1.what());
@@ -32,8 +34,6 @@ namespace std {
   %std_exception_map(runtime_error,      SWIG_RuntimeError);
   %std_exception_map(underflow_error,    SWIG_OverflowError);
 }
-
-%include <exception.i>
 
 //---------------------------------------------------------------------------//
 // end of fortran/std_except.i
