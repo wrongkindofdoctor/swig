@@ -643,7 +643,8 @@ int FORTRAN::functionWrapper(Node *n)
 
     String* c_return_str = NULL;
     if (SwigType_isfunctionpointer(c_return_type)
-        || SwigType_ismemberpointer(c_return_type))
+        || SwigType_ismemberpointer(c_return_type)
+        || SwigType_isarraypointer(c_return_type))
     {
         // If the C return type is a function pointer, we have to either
         // typedef it here *OR* wrap the entire function call in a set of
@@ -655,6 +656,11 @@ int FORTRAN::functionWrapper(Node *n)
         // but instead we will write
         //    typedef int(*get_swigrtype)(int,int);
         //    get_swigrtype swigc_get()
+        //
+        // Same thing with complicated array types: getter for
+        //   const int* chitMat2[32][32] 
+        // incorrectly is
+        //  int *(*)[32]
         c_return_str = NewStringf("%s_swigrtype", symname);
 
         String* typedef_str = SwigType_str(c_return_type, c_return_str);
