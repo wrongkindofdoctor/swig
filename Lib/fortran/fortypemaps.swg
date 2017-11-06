@@ -112,16 +112,20 @@
     "$1 = *$input;"
   %typemap(out) CTYPE
     "$result = $1;"
-  %typemap(ctype, out="$1_ltype") CTYPE
-    "const $&1_ltype"
+  %typemap(ctype, out="CTYPE") CTYPE
+    "const CTYPE*"
 
-  // Const references are returned by value
+  // To avoid problems with such atrocities as
+  //    %apply const signed char & {const char &};
+  // we have to add a reinterpret cast to convert from const char* to const
+  // signed char* .
   %typemap(in, noblock=1) const CTYPE&
-    {$1 = %const_cast($input, $1_ltype);}
+    {$1 = %reinterpret_cast(%const_cast($input, CTYPE*), $1_ltype);}
+  // Const references are returned by value
   %typemap(out) const CTYPE&
     "$result = *$1;"
-  %typemap(ctype, out="$*1_ltype") const CTYPE&
-    "const $1_ltype"
+  %typemap(ctype, out="CTYPE") const CTYPE&
+    "const CTYPE*"
 
   // All other aspects of const reference vs value are the same
   %typemap(imtype, in=FTYPE ", intent(in)") CTYPE, const CTYPE&
@@ -137,12 +141,12 @@
 
   // Mutable references are passed by pointers as arguments, but they're
   // *returned* as actual pointers (becoming Fortran pointers)
-  %typemap(ctype, out="$1_ltype") CTYPE&
-    "$1_ltype"
-  %typemap(in) CTYPE&
-    "$1 = $input;"
-  %typemap(out) CTYPE&
-    "$result = $1;"
+  %typemap(ctype, out="CTYPE*") CTYPE&
+    "CTYPE*"
+  %typemap(in, noblock=1) CTYPE&
+    {$1 = %reinterpret_cast($input, $1_ltype);}
+  %typemap(out, noblock=1) CTYPE&
+    {$result = %reinterpret_cast($1, CTYPE*);}
   %typemap(imtype, in="type(C_PTR), value") CTYPE&
     "type(C_PTR)"
   %typemap(ftype, out=FTYPE ", pointer")  CTYPE&
@@ -168,8 +172,8 @@
  */
 %define FORT_FUND_PTR_TYPEMAP(CTYPE, FTYPE)
   // Mutable pointers and arrays are returned as actual pointers
-  %typemap(ctype, out="$1_ltype") CTYPE*, CTYPE[], CTYPE[ANY]
-    %{$1_ltype%}
+  %typemap(ctype, out="CTYPE*") CTYPE*, CTYPE[], CTYPE[ANY]
+    %{CTYPE*%}
   %typemap(in) CTYPE*, CTYPE[], CTYPE[ANY]
     %{$1 = $input;%}
   %typemap(out) CTYPE*, CTYPE[], CTYPE[ANY]
@@ -183,9 +187,11 @@
   %typemap(fout) CTYPE*, CTYPE[], CTYPE[ANY]
     %{call c_f_pointer($1, $result)%}
 
-  // Overrides for const Fortran intent
+  // Overrides for constness and Fortran intent
   %typemap(in, noblock=1) const CTYPE*, const CTYPE[], const CTYPE[ANY]
-    {$1 = %const_cast($input, $1_ltype);}
+    {$1 = %static_cast(%const_cast($input, CTYPE*), $1_ltype);}
+  %typemap(out) const CTYPE*, const CTYPE[], const CTYPE[ANY]
+    %{$result = %const_cast($1, CTYPE*);%}
   %typemap(ftype, out=FTYPE ", pointer") const CTYPE*, const CTYPE[], CTYPE[ANY]
     FTYPE ", dimension(:), target, intent(in)"
 %enddef
