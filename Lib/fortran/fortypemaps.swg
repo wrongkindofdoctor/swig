@@ -112,16 +112,18 @@
     "$1 = *$input;"
   %typemap(out) CTYPE
     "$result = $1;"
+  %typemap(ctype, out="$1_ltype") CTYPE
+    "const $&1_ltype"
 
   // Const references are returned by value
   %typemap(in, noblock=1) const CTYPE&
     {$1 = %const_cast($input, $1_ltype);}
   %typemap(out) const CTYPE&
     "$result = *$1;"
+  %typemap(ctype, out="$*1_ltype") const CTYPE&
+    "const $1_ltype"
 
   // All other aspects of const reference vs value are the same
-  %typemap(ctype, out="CTYPE") CTYPE, const CTYPE&
-    "const CTYPE*"
   %typemap(imtype, in=FTYPE ", intent(in)") CTYPE, const CTYPE&
     FTYPE
   %typemap(ftype, out=FTYPE) CTYPE, const CTYPE&
@@ -135,8 +137,8 @@
 
   // Mutable references are passed by pointers as arguments, but they're
   // *returned* as actual pointers (becoming Fortran pointers)
-  %typemap(ctype, out="CTYPE*") CTYPE&
-    "CTYPE*"
+  %typemap(ctype, out="$1_ltype") CTYPE&
+    "$1_ltype"
   %typemap(in) CTYPE&
     "$1 = $input;"
   %typemap(out) CTYPE&
