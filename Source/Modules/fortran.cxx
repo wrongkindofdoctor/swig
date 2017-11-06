@@ -290,7 +290,7 @@ class FORTRAN : public Language
     List* emit_proxy_parm(Node* n, ParmList *l, Wrapper *f);
 
     // Add lowercase symbol (fortran)
-    int add_fsymbol(String *s, const Node *n);
+    int add_fsymbol(String *s, Node *n);
 };
 
 //---------------------------------------------------------------------------//
@@ -589,8 +589,8 @@ int FORTRAN::functionWrapper(Node *n)
     Setattr(n, "wrap:name",  wname);
     Setattr(n, "wrap:fname", fname);
 
-    if (!add_fsymbol(fname, n))
-        return SWIG_ERROR;
+    if (add_fsymbol(fname, n) == SWIG_NOWRAP)
+        return SWIG_NOWRAP;
 
     // A new wrapper function object for the C code, the interface code
     // (Fortran declaration of C function interface), and the Fortran code
@@ -1230,8 +1230,8 @@ int FORTRAN::classHandler(Node *n)
     String* symname = Getattr(n, "sym:name");
     String* basename = NULL;
 
-    if (!add_fsymbol(symname, n))
-        return SWIG_ERROR;
+    if (add_fsymbol(symname, n) == SWIG_NOWRAP)
+        return SWIG_NOWRAP;
     
     // Process base classes
     List *baselist = Getattr(n, "bases");
@@ -1531,6 +1531,9 @@ int FORTRAN::constantWrapper(Node *n)
         String* value = Getattr(n, "value");
         assert(value);
 
+        if (add_fsymbol(name, n) == SWIG_NOWRAP)
+            return SWIG_NOWRAP;
+        
         // Add generic interface code instead of wrapping; function can be
         // referenced with C_FUNPTR in fortran. Currently this only works for
         // 'extern C' functions.
@@ -1542,8 +1545,6 @@ int FORTRAN::constantWrapper(Node *n)
         // Expose the function. Calling it directly will almost certainly crash
         // the code!
         Printv(f_public, " public :: ", name, "\n", NULL);
-
-        add_fsymbol(name, n);
     }
     return SWIG_OK;
 }
@@ -1604,7 +1605,8 @@ int FORTRAN::enumDeclaration(Node *n)
             enum_name = Copy(symname);
         }
 
-        this->add_fsymbol(enum_name, n);
+        if (add_fsymbol(enum_name, n) == SWIG_NOWRAP)
+            return SWIG_NOWRAP;
 
         // Print the enumerator with a placeholder so we can use 'kind(ENUM)'
         Printv(f_params, " enum, bind(c)\n",
@@ -1837,12 +1839,36 @@ void FORTRAN::replaceSpecialVariables(String* method, String* tm, Parm* parm)
 /*!
  * \brief Add lowercase symbol since fortran is case insensitive
  */
-int FORTRAN::add_fsymbol(String *s, const Node *n)
+int FORTRAN::add_fsymbol(String *s, Node *n)
 {
+    const char scope[] = "fortran";
     String* lower = Swig_string_lower(s);
-    int result = this->addSymbol(lower, n, "fortran");
+    Node* existing = this->symbolLookup(lower, scope);
+
+    if (existing)
+    {
+        String *n1 = Getattr(n, "sym:name");
+        if (!n1)
+        {
+            n1 = Getattr(n, "name");
+        }
+        String *n2 = Getattr(existing, "sym:name");
+        if (!n2)
+        {
+            n2 = Getattr(existing, "name");
+        }
+        Swig_warning(WARN_FORTRAN_NAME_CONFLICT, input_file, line_number,
+                     "Ignoring '%s' due to Fortran name ('%s') conflict "
+                     "with '%s'\n",
+                     n1, lower, n2);
+        Delete(lower);
+        return SWIG_NOWRAP;
+    }
+
+    int success = this->addSymbol(lower, n, scope);
+    assert(success);
     Delete(lower);
-    return result;
+    return success;
 }
 
 //---------------------------------------------------------------------------//
