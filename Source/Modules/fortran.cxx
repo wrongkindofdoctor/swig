@@ -49,7 +49,7 @@ bool node_is_destructor(Node* n)
 /*!
  * \brief Print a comma-joined line of items to the given output.
  */
-int print_wrapped_line(String* out, Iterator it, int line_length)
+int print_wrapped_list(String* out, Iterator it, int line_length)
 {
     const char* prefix = "";
     for (; it.item; it = Next(it))
@@ -288,6 +288,9 @@ class FORTRAN : public Language
                                    const char* classnamespecialvariable);
 
     List* emit_proxy_parm(Node* n, ParmList *l, Wrapper *f);
+
+    // Add lowercase symbol (fortran)
+    int add_fsymbol(String *s, const Node *n);
 };
 
 //---------------------------------------------------------------------------//
@@ -347,53 +350,54 @@ int FORTRAN::top(Node *n)
 {
     // Module name (from the SWIG %module command)
     d_module = Getattr(n, "name");
+    add_fsymbol(d_module, n);
     // Output file name
     d_outpath = Getattr(n, "outfile");
 
     /* Initialize temporary file-like output strings */
 
     // run time code (beginning of .cxx file)
-    f_begin = NewString("");
+    f_begin = NewStringEmpty();
     Swig_register_filebyname("begin", f_begin);
 
     // run time code (beginning of .cxx file)
-    f_runtime = NewString("");
+    f_runtime = NewStringEmpty();
     Swig_register_filebyname("runtime", f_runtime);
 
     // header code (after run time)
-    f_header = NewString("");
+    f_header = NewStringEmpty();
     Swig_register_filebyname("header", f_header);
 
     // C++ wrapper code (middle of .cxx file)
-    f_wrapper = NewString("");
+    f_wrapper = NewStringEmpty();
     Swig_register_filebyname("wrapper", f_wrapper);
 
     // initialization code (end of .cxx file)
-    f_init = NewString("");
+    f_init = NewStringEmpty();
     Swig_register_filebyname("init", f_init);
 
     // Other imported fortran modules
-    f_imports = NewString("");
+    f_imports = NewStringEmpty();
     Swig_register_filebyname("fimports", f_imports);
 
     // Public interface functions
-    f_public = NewString("");
+    f_public = NewStringEmpty();
     Swig_register_filebyname("fpublic", f_public);
 
     // Enums and parameters
-    f_params = NewString("");
+    f_params = NewStringEmpty();
     Swig_register_filebyname("fparams", f_params);
 
     // Fortran classes
-    f_types = NewString("");
+    f_types = NewStringEmpty();
     Swig_register_filebyname("ftypes", f_types);
 
     // Fortran class constructors
-    f_interfaces = NewString("");
+    f_interfaces = NewStringEmpty();
     Swig_register_filebyname("finterfaces", f_interfaces);
 
     // Fortran subroutines (proxy code)
-    f_proxy = NewString("");
+    f_proxy = NewStringEmpty();
     Swig_register_filebyname("fproxy", f_proxy);
 
     // Tweak substitution code
@@ -551,11 +555,6 @@ int FORTRAN::functionWrapper(Node *n)
     {
         Append(wname, Getattr(n, "sym:overname"));
     }
-    else
-    {
-        if (!addSymbol(symname, n))
-            return SWIG_ERROR;
-    }
 
     // Create name of Fortran proxy subroutine/function
     String* fname = NULL;
@@ -590,6 +589,9 @@ int FORTRAN::functionWrapper(Node *n)
     Setattr(n, "wrap:name",  wname);
     Setattr(n, "wrap:fname", fname);
 
+    if (!add_fsymbol(fname, n))
+        return SWIG_ERROR;
+
     // A new wrapper function object for the C code, the interface code
     // (Fortran declaration of C function interface), and the Fortran code
     Wrapper* cfunc = NewWrapper();
@@ -597,10 +599,10 @@ int FORTRAN::functionWrapper(Node *n)
     Wrapper* ffunc = NewFortranWrapper();
 
     // Separate intermediate block for dummy arguments
-    String* imargs = NewString("");
-    String* fargs  = NewString("");
+    String* imargs = NewStringEmpty();
+    String* fargs  = NewStringEmpty();
     // String for calling the wrapper on the fortran side (the "action")
-    String* fcall  = NewString("");
+    String* fcall  = NewStringEmpty();
 
     // Hash of import statements needed for the interface code
     Hash* imimport_hash = NewHash();
@@ -624,7 +626,7 @@ int FORTRAN::functionWrapper(Node *n)
     {
         // Replace output with void
         Delete(f_return_str);
-        f_return_str = NewString("");
+        f_return_str = NewStringEmpty();
     }
     else
     {
@@ -885,7 +887,7 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     // Insert cleanup code
-    String *cleanup = NewString("");
+    String *cleanup = NewStringEmpty();
     p = parmlist;
     while (p)
     {
@@ -902,7 +904,7 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     // Insert Fortran cleanup code
-    String *fcleanup = NewString("");
+    String *fcleanup = NewStringEmpty();
     p = parmlist;
     while (p)
     {
@@ -921,7 +923,7 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     // Insert argument output code
-    String *outarg = NewString("");
+    String *outarg = NewStringEmpty();
     p = parmlist;
     while (p)
     {
@@ -1113,7 +1115,7 @@ int FORTRAN::write_function_interface(Node* n)
     const bool is_overloaded = Getattr(n, "sym:overloaded");
     if (is_wrapping_class())
     {
-        String* qualifiers = NewString("");
+        String* qualifiers = NewStringEmpty();
 
         if (is_overloaded)
         {
@@ -1199,6 +1201,22 @@ String* FORTRAN::makeParameterName(Node *n, Parm *p,
         // names clash with keywords with (less useful) "argN".
         name = Language::makeParameterName(n, p, arg_num, setter);
     }
+    // Fortran parameters will all be lowercase
+    String* oldname = name;
+    name = Swig_string_lower(oldname);
+    Delete(oldname);
+    oldname = NULL;
+
+    // If the parameter name is in the fortran scope, mangle it
+    Hash* symtab = this->symbolScopeLookup("fortran");
+    String* origname = name; // save pointer to unmangled name
+    while (Getattr(symtab, name))
+    {
+        // Rename
+        Delete(oldname);
+        oldname = name;
+        name = NewStringf("%s%d", origname, arg_num++);
+    }
     return name;
 }
 
@@ -1212,11 +1230,9 @@ int FORTRAN::classHandler(Node *n)
     String* symname = Getattr(n, "sym:name");
     String* basename = NULL;
 
-    if (!addSymbol(symname, n))
+    if (!add_fsymbol(symname, n))
         return SWIG_ERROR;
     
-    // TODO: addInterfaceSymbol for lowercase class name??
-
     // Process base classes
     List *baselist = Getattr(n, "bases");
     if (baselist && Len(baselist) > 0)
@@ -1339,7 +1355,7 @@ int FORTRAN::classHandler(Node *n)
         int line_length = 13 + Len(kv.key) + 4 - 2;
 
         // Write overloaded procedure names
-        print_wrapped_line(f_types, First(kv.item), line_length);
+        print_wrapped_list(f_types, First(kv.item), line_length);
         Printv(f_types, "\n", NULL);
     }
 
@@ -1527,7 +1543,7 @@ int FORTRAN::constantWrapper(Node *n)
         // the code!
         Printv(f_public, " public :: ", name, "\n", NULL);
 
-        addSymbol(name, NULL);
+        add_fsymbol(name, n);
     }
     return SWIG_OK;
 }
@@ -1588,6 +1604,8 @@ int FORTRAN::enumDeclaration(Node *n)
             enum_name = Copy(symname);
         }
 
+        this->add_fsymbol(enum_name, n);
+
         // Print the enumerator with a placeholder so we can use 'kind(ENUM)'
         Printv(f_params, " enum, bind(c)\n",
                         "  enumerator :: ", enum_name, " = -1\n", NULL);
@@ -1607,7 +1625,7 @@ int FORTRAN::enumDeclaration(Node *n)
 
         // Make the enum class *and* its values public
         Printv(f_public, " public :: ", NULL);
-        print_wrapped_line(f_public, First(d_enumvalues), 11);
+        print_wrapped_list(f_public, First(d_enumvalues), 11);
         Printv(f_public, "\n", NULL);
         Delete(d_enumvalues);
         d_enumvalues = NULL;
@@ -1733,9 +1751,9 @@ void FORTRAN::replace_fspecial_impl(SwigType *classnametype, String *tm,
 List* FORTRAN::emit_proxy_parm(Node* n, ParmList *parmlist, Wrapper *f)
 {
     // Bind wrapper types to parameter arguments
-    Swig_typemap_attach_parms("imtype", parmlist, f);
+    Swig_typemap_attach_parms("imtype",   parmlist, f);
     Swig_typemap_attach_parms("imimport", parmlist, f);
-    Swig_typemap_attach_parms("ftype",  parmlist, f);
+    Swig_typemap_attach_parms("ftype",    parmlist, f);
     
     // Assign parameter names
     Parm* p = parmlist;
@@ -1781,8 +1799,8 @@ List* FORTRAN::emit_proxy_parm(Node* n, ParmList *parmlist, Wrapper *f)
     }
 
     // Attach proxy input typemap (proxy arg -> farg1 in fortran function)
-    Swig_typemap_attach_parms("fin", parmlist, f);
-    Swig_typemap_attach_parms("findecl", parmlist, f);
+    Swig_typemap_attach_parms("fin",      parmlist, f);
+    Swig_typemap_attach_parms("findecl",  parmlist, f);
     Swig_typemap_attach_parms("ffreearg", parmlist, f);
 
     for (Iterator it = First(proxparmlist); it.item; it = Next(it))
@@ -1813,6 +1831,18 @@ void FORTRAN::replaceSpecialVariables(String* method, String* tm, Parm* parm)
     (void)method;
     SwigType *type = Getattr(parm, "type");
     this->replace_fclassname(type, tm);
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Add lowercase symbol since fortran is case insensitive
+ */
+int FORTRAN::add_fsymbol(String *s, const Node *n)
+{
+    String* lower = Swig_string_lower(s);
+    int result = this->addSymbol(lower, n, "fortran");
+    Delete(lower);
+    return result;
 }
 
 //---------------------------------------------------------------------------//

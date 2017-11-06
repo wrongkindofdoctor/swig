@@ -3205,7 +3205,7 @@ Hash* Language::symbolAddScope(const_String_or_char_ptr scope) {
  * Lookup and returns a symtable (hash) representing given scope. Hash contains
  * all symbols in this scope.
  * ----------------------------------------------------------------------------- */
-Hash* Language::symbolScopeLookup( const_String_or_char_ptr scope ) {
+Hash* Language::symbolScopeLookup( const_String_or_char_ptr scope ) const {
   Hash *symbols = Getattr(symtabs, scope ? scope : "");
   return symbols;
 }
