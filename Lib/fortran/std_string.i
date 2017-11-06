@@ -18,7 +18,7 @@ namespace std
 class string
 {
   public:
-    typedef SWIG_FORTRAN_STD_SIZETYPE size_type;
+    typedef std::size_t size_type;
     typedef char        value_type;
     //typedef const char& const_reference;
     typedef const char* const_pointer;
