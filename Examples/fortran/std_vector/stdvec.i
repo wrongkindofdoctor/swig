@@ -25,6 +25,9 @@
 // Instantiate view typemap
 %fortran_view(double)
 
+// Replace ULL type with fortran standard integer
+%apply int { std::vector<TYPE>::size_type };
+
 // Extend vector
 %extend std::vector<TYPE> {
     void fill(std::pair<const TYPE*, std::size_t> view)
@@ -47,6 +50,7 @@
 //---------------------------------------------------------------------------//
 
 %include <std_vector.i>
+
 ADD_VIEW(double)
 %template(VecDbl) std::vector<double>;
 

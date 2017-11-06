@@ -21,8 +21,7 @@ template<class _Tp, class _Alloc = std::allocator< _Tp > >
 class vector
 {
   public:
-    // NOTE: using int rather than size_t for fortran compatibility
-    typedef SWIG_FORTRAN_STD_SIZETYPE  size_type;
+    typedef std::size_t       size_type;
     typedef _Tp               value_type;
     typedef value_type*       pointer;
     typedef const value_type* const_pointer;

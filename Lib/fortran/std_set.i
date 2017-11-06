@@ -19,7 +19,7 @@ template <class _Key,
 class set
 {
   public:
-    typedef SWIG_FORTRAN_STD_SIZETYPE size_type;
+    typedef std::size_t size_type;
     typedef ptrdiff_t difference_type;
     typedef _Key value_type;
     typedef _Key key_type;
