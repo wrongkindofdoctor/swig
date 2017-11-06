@@ -264,6 +264,7 @@ class FORTRAN : public Language
     virtual int importDirective(Node *n);
     virtual int enumDeclaration(Node *n);
     virtual int enumvalueDeclaration(Node *n);
+    virtual int classforwardDeclaration(Node *n);
 
     virtual String *makeParameterName(Node *n, Parm *p, int arg_num,
                                       bool is_setter = false) const;
@@ -406,6 +407,10 @@ int FORTRAN::top(Node *n)
     Swig_name_register("get", "get_%n%v");
 
     d_overloads = NewHash();
+
+    // Declare scopes: fortran types and forward-declared types
+    this->symbolAddScope("fortran");
+    this->symbolAddScope("fortran_fwd");
 
     /* Emit all other wrapper code */
     Language::top(n);
@@ -1212,10 +1217,12 @@ String* FORTRAN::makeParameterName(Node *n, Parm *p,
     Delete(oldname);
     oldname = NULL;
 
-    // If the parameter name is in the fortran scope, mangle it
+    // If the parameter name is in the fortran scope, or in the
+    // forward-declared classes, mangle it
     Hash* symtab = this->symbolScopeLookup("fortran");
+    Hash* fwdsymtab = this->symbolScopeLookup("fortran_fwd");
     String* origname = name; // save pointer to unmangled name
-    while (Getattr(symtab, name))
+    while (Getattr(symtab, name) || Getattr(fwdsymtab, name))
     {
         // Rename
         Delete(oldname);
@@ -1678,6 +1685,37 @@ int FORTRAN::enumvalueDeclaration(Node *n)
     }
 
     return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Handle a forward declaration of a class.
+ *
+ * This is necessary for the case:
+ *
+ *   struct A;
+ *   void foo(A a);
+ *
+ * to allow 'a' to be correctly renamed.
+ */
+int FORTRAN::classforwardDeclaration(Node *n)
+{
+    // Add symbolic name to the forward declaration symbol table
+    String* symname = Getattr(n, "sym:name");
+    if (symname)
+    {
+        String* lower = Swig_string_lower(symname);
+
+        const char scope[] = "fortran_fwd";
+        Node* existing = this->symbolLookup(lower, scope);
+        if (!existing)
+        {
+            this->addSymbol(lower, n, "fortran_fwd");
+        }
+        Delete(lower);
+    }
+
+    return Language::classforwardDeclaration(n);
 }
 
 //---------------------------------------------------------------------------//
