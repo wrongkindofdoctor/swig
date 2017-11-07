@@ -26,8 +26,7 @@ FAILING_CPP_TESTS += \
   member_funcptr_galore \
   memberin_extend \
   template_basic \
-  template_explicit \
-  typemap_various
+  template_explicit
 
 # failed to compile fortran
 FAILING_CPP_TESTS += \
@@ -110,6 +109,7 @@ FAILING_CPP_TESTS += \
   template_typedef_inherit \
   typedef_struct_cpp \
   typemap_ns_using \
+  typemap_various \
   using1 \
   using2 \
   using_inherit \

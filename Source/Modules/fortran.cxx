@@ -1051,6 +1051,13 @@ int FORTRAN::functionWrapper(Node *n)
     Printv(cfunc->code, cleanup, NULL);
     Printv(ffunc->code, fcleanup, NULL);
 
+    if (String* ret_code
+        = Swig_typemap_lookup("ret", n, Swig_cresult_name(), NULL))
+    {
+        Chop(ret_code);
+        Printv(cfunc->code, ret_code, "\n", NULL);
+    }
+
     if (!is_csubroutine)
     {
         String* qualified_return = SwigType_rcaststr(c_return_str, "fresult");
