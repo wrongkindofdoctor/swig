@@ -169,6 +169,8 @@
 %define FORT_FUND_PTR_TYPEMAP(CTYPE, FTYPE)
   %apply CTYPE& { CTYPE*, CTYPE[], CTYPE[ANY] };
 
+  %typemap(ctype, out="CTYPE*") const CTYPE*, const CTYPE[], const CTYPE[ANY]
+    "CTYPE*"
   %typemap(out, noblock=1) const CTYPE*, const CTYPE[], const CTYPE[ANY]
     {$result = %const_cast(%reinterpret_cast($1, const CTYPE*), CTYPE*);}
 
