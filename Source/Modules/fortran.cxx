@@ -36,17 +36,6 @@ bool node_is_constructor(Node* n)
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Whether a node is a constructor.
- *
- * Node should be a function
- */
-bool node_is_destructor(Node* n)
-{
-    return Cmp(Getattr(n, "nodeType"), "destructor") == 0;
-}
-
-//---------------------------------------------------------------------------//
-/*!
  * \brief Print a comma-joined line of items to the given output.
  */
 int print_wrapped_list(String* out, Iterator it, int line_length)
@@ -564,16 +553,11 @@ int FORTRAN::functionWrapper(Node *n)
     // Create name of Fortran proxy subroutine/function
     String* fname = NULL;
     bool in_constructor = false;
-    bool in_destructor = false;
     if (is_wrapping_class())
     {
         if (node_is_constructor(n))
         {
             in_constructor = true;
-        }
-        else if (node_is_destructor(n))
-        {
-            in_destructor = true;
         }
 
         fname = NewStringf("swigf_%s", symname);
@@ -624,19 +608,16 @@ int FORTRAN::functionWrapper(Node *n)
                                             WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
     String* im_return_str = attach_typemap("imtype", "out", n, 
                                            WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
-    String* f_return_str = attach_typemap("ftype", "out", n, 
-                                          WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
 
-    if (in_constructor)
+    // Allow ftype to be overridden by a feature
+    String* f_return_str = Getattr(n, "feature:ftype");
+    if (!f_return_str)
     {
-        // Replace output with void
-        Delete(f_return_str);
-        f_return_str = NewStringEmpty();
+        f_return_str = attach_typemap("ftype", "out", n, 
+                                      WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
     }
-    else
-    {
-        replace_fclassname(cpp_return_type, f_return_str);
-    }
+    Chop(f_return_str);
+    replace_fclassname(cpp_return_type, f_return_str);
 
     // Check whether the C routine returns a variable
     const bool is_csubroutine = (Len(im_return_str) == 0);
@@ -733,8 +714,8 @@ int FORTRAN::functionWrapper(Node *n)
         Printv(ffunc->def, "self", (Len(proxparmlist) > 0 ? ", " : ""), NULL);
 
         // Add dummy argument to wrapper body
-        String* ftype = get_typemap("ftype", n,
-                                     WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
+        String* ftype = attach_typemap("ftype", n,
+                                       WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
         this->replace_fclassname(cpp_return_type, ftype);
         Printv(fargs, "   ", ftype, " :: self\n", NULL);
     }
@@ -971,54 +952,53 @@ int FORTRAN::functionWrapper(Node *n)
     }
     emit_return_variable(n, cpp_return_type, cfunc);
 
-    if (in_constructor)
+    // Emit code to make the Fortran function call in the proxy code
+    Printv(ffunc->code, fcall, "\n", NULL);
+    
+    // Get transformations on the output data in the fortran proxy code
+    String* fbody = Getattr(n, "feature:fout");
+    String* fparm = Getattr(n, "feature:foutdecl");
+
+    if (!fbody)
     {
-        Printv(ffunc->code,
-               fcall, "\n"
-               "if (c_associated(self%swigptr)) call self%release()\n"
-               "self%swigptr = fresult\n", //i.e. $result%swigptr = $1
-               NULL);
-    }
-    else if (in_destructor)
-    {
-        Printv(ffunc->code,
-               "if (.not. c_associated(self%swigptr)) return\n",
-               fcall, "\n"
-               "self%swigptr = C_NULL_PTR\n", //i.e. $result%swigptr = $1
-               NULL);
-    }
-    else
-    {
-        // Emit code to make the Fortran function call in the proxy code
-        Printv(ffunc->code, fcall, "\n", NULL);
-        
+        // Instead of using a feature (overriding), use a typemap
+        if (fparm)
+        {
+            // Foutdecl *must* have fout
+            Swig_warning(WARN_NONE, input_file, line_number,
+                         "'feature:foutdecl' is being ignored for %s "
+                         "because 'feature:fout' is not defined for it\n",
+                         Getattr(n, "name"));
+        }
+
         // Get the typemap for output argument conversion
         Parm* temp = NewParm(cpp_return_type, Getattr(n, "name"), n);
         Setattr(temp, "lname", "fresult"); // Replaces $1
-        String* fbody = attach_typemap("fout", temp,
-                                       WARN_FORTRAN_TYPEMAP_FOUT_UNDEF);
-        String* fparm = attach_typemap("foutdecl", temp,
-                                       WARN_NONE);
+        fbody = attach_typemap("fout", temp,
+                               WARN_FORTRAN_TYPEMAP_FOUT_UNDEF);
+        fparm = attach_typemap("foutdecl", temp, WARN_NONE);
         Delete(temp);
-
-        if (fparm)
-        {
-            Chop(fparm);
-            // Write fortran output parameters after dummy argument
-            Printv(ffunc->def, fparm, "\n", NULL);
-        }
-        
-        // Output typemap is defined; emit the function call and result
-        // conversion code
-        Replaceall(fbody, "$result", "swigf_result");
-        Replaceall(fbody, "$owner",
-                   (GetFlag(n, "feature:new") ? "1" : "0"));
-        replace_fclassname(cpp_return_type, fbody);
-        Printv(ffunc->code, fbody, "\n", NULL);
-
-        Delete(fbody);
-        Delete(fparm);
     }
+    else
+    {
+        // Replace special variables in feature
+        Replaceall(fbody, "$1", "fresult");
+    }
+
+    if (fparm)
+    {
+        Chop(fparm);
+        // Write fortran output parameters after dummy argument
+        Printv(ffunc->def, fparm, "\n", NULL);
+    }
+    
+    // Output typemap is defined; emit the function call and result
+    // conversion code
+    Replaceall(fbody, "$result", "swigf_result");
+    Replaceall(fbody, "$owner",
+               (GetFlag(n, "feature:new") ? "1" : "0"));
+    replace_fclassname(cpp_return_type, fbody);
+    Printv(ffunc->code, fbody, "\n", NULL);
 
     // Optional "append" proxy code
     String* append = Getattr(n, "feature:fortranappend");
@@ -1060,6 +1040,9 @@ int FORTRAN::functionWrapper(Node *n)
     DelWrapper(cfunc);
     DelWrapper(imfunc);
     DelWrapper(ffunc);
+
+    Delete(fparm);
+    Delete(fbody);
 
     Delete(outarg);
     Delete(fcleanup);
@@ -1325,7 +1308,7 @@ int FORTRAN::classHandler(Node *n)
            "   use, intrinsic :: ISO_C_BINDING\n"
            "   class(", symname, "), intent(inout) :: self\n"
            "   type(", symname, "), intent(in) :: other\n"
-           "   call self%release()\n"
+               "if (c_associated(self%swigptr)) call self%release()\n"
            "   self%swigptr = ", wrapname, "(other%swigptr)\n"
            "  end subroutine\n",
            NULL);
@@ -1407,8 +1390,36 @@ int FORTRAN::constructorHandler(Node* n)
         Delete(mrename);
     }
     Setattr(n, "fortran:alias", alias);
+
+    // Override proxy return type and output code using the "feature": returns
+    // nothing (create is a subroutine) 
+    Setattr(n, "feature:ftype", "");
+
+    // Add statement to deallocate if already allocated
+    const char constructor_prepend[]
+        = "if (c_associated(self%swigptr)) call self%release()\n";
+    if (String* prependstr = Getattr(n, "feature:fortranprepend"))
+    {
+        Printv(prependstr, "\n", constructor_prepend, NULL);
+    }
+    else
+    {
+        Setattr(n, "feature:fortranprepend", constructor_prepend);
+    }
     
-    // NOTE: type not yet assigned at this point
+    // Add statement to assign pointer at the end
+    const char constructor_fout[]
+        = "self%swigptr = $1\n"; 
+    if (String* foutstr = Getattr(n, "feature:fout"))
+    {
+        Printv(foutstr, "\n", constructor_fout, NULL);
+    }
+    else
+    {
+        Setattr(n, "feature:fout", constructor_fout);
+    }
+    
+    // NOTE: return type has not yet been assigned at this point
     Language::constructorHandler(n);
 
     return SWIG_OK;
@@ -1422,15 +1433,40 @@ int FORTRAN::destructorHandler(Node* n)
 {
     Setattr(n, "fortran:alias", "release");
     
+    // Add statement to skip if not allocated
+    const char destructor_prepend[]
+        = "if (.not. c_associated(self%swigptr)) return\n";
+    if (String* prependstr = Getattr(n, "feature:fortranprepend"))
+    {
+        Printv(prependstr, "\n", destructor_prepend, NULL);
+    }
+    else
+    {
+        Setattr(n, "feature:fortranprepend", destructor_prepend);
+    }
+    
+    // Add statement to clear pointer at the end
+    const char destructor_append[]
+        = "self%swigptr = C_NULL_PTR\n";
+    if (String* appendstr = Getattr(n, "feature:fortranappend"))
+    {
+        Printv(appendstr, "\n", destructor_append, NULL);
+    }
+    else
+    {
+        Setattr(n, "feature:fortranappend", destructor_append);
+    }
+    
     Language::destructorHandler(n);
 
-    if (Getattr(n, "feature:final"))
+    Node* classnode = getCurrentClass();
+    if (Getattr(classnode, "feature:final"))
     {
         // TODO: use actual function wrapper mechanics to generate this
-        
+        //this->functionWrapper(final_node);
         // Create 'final' name wrapper
-        String* fname = NewStringf("swigf_final_%s", Getattr(n, "sym:name"));
-        String* classname = Getattr(getCurrentClass(), "sym:name");
+        String* classname = Getattr(classnode, "sym:name");
+        String* fname = NewStringf("swigf_final_%s", classname);
 
         // Add the 'final' subroutine to the methods
         Printv(f_types, "  final     :: ", fname, "\n",
@@ -1440,9 +1476,8 @@ int FORTRAN::destructorHandler(Node* n)
         Printv(f_proxy,
            "  subroutine ", fname, "(self)\n"
            "   use, intrinsic :: ISO_C_BINDING\n"
-           "   class(", classname, ") :: self\n"
-           "   call ", Getattr(n, "wrap:name"), "(self%swigptr)\n"
-           "   self%swigptr = C_NULL_PTR\n"
+           "   type(", classname, ") :: self\n"
+           "   call self%", Getattr(n, "fortran:alias"), "()\n"
            "  end subroutine\n",
            NULL);
 
