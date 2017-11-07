@@ -19,21 +19,14 @@ abs_top_srcdir = @abs_top_srcdir@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  director_binary_string \
-  dynamic_cast \
   extend \
   li_attribute \
   li_attribute_template \
   li_cdata_cpp \
   member_funcptr_galore \
   memberin_extend \
-  namespace_typemap \
-  operator_pointer_ref \
-  smart_pointer_const_overload \
-  special_variable_macros \
   template_basic \
   template_explicit \
-  typedef_struct_cpp \
   typemap_various
 
 # failed to compile fortran
@@ -99,6 +92,7 @@ FAILING_CPP_TESTS += \
   preproc_constants \
   refcount \
   return_const_value \
+  smart_pointer_const_overload \
   smart_pointer_inherit \
   smart_pointer_rename \
   smart_pointer_template_const_overload \
@@ -113,6 +107,7 @@ FAILING_CPP_TESTS += \
   template_ref_type \
   template_specialization_enum \
   template_typedef_inherit \
+  typedef_struct_cpp \
   typemap_ns_using \
   using1 \
   using2 \
