@@ -69,7 +69,6 @@ FAILING_CPP_TESTS += \
   member_pointer \
   member_pointer_const \
   mixed_types \
-  multiple_inheritance \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
   multiple_inheritance_nspace \
@@ -90,6 +89,7 @@ FAILING_CPP_TESTS += \
   overload_template \
   overload_template_fast \
   preproc_constants \
+  pure_virtual \
   refcount \
   return_const_value \
   smart_pointer_const_overload \
@@ -102,6 +102,7 @@ FAILING_CPP_TESTS += \
   template_default_arg \
   template_enum \
   template_extend_overload \
+  template_inherit_abstract \
   template_methods \
   template_ns \
   template_ref_type \
@@ -111,8 +112,6 @@ FAILING_CPP_TESTS += \
   typemap_ns_using \
   using1 \
   using2 \
-  using_composition \
-  using_extend \
   using_inherit \
   using_protected \
   valuewrapper_base \
