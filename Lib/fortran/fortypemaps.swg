@@ -460,19 +460,36 @@ FORT_FUND_VALREF_TYPEMAP(enum SWIGTYPE, "integer(C_INT)")
 %typemap(fin)    SWIGTYPE (*)(ANY)
     "$1 = $input"
 %typemap(fout)   SWIGTYPE (*)(ANY)
-%{
-   $result = $1
-%}
+    "$result = $1"
 
-// Member function pointers are not available
-%apply SWIGTYPE (*)(ANY) { SWIGTYPE (CLASS::*) } ;
-%typemap(in) SWIGTYPE (CLASS::*) %{
-#error "Member function pointers are not available in Fortran"
-%}
-%typemap(out) SWIGTYPE (CLASS::*) %{
-#error "Member function pointers are not available in Fortran"
-%}
+//---------------------------------------------------------------------------//
+// MEMBER FUNCTION POINTERS
+//---------------------------------------------------------------------------//
+#ifdef __cplusplus
 
+%typemap(ctype, fragment="SwigfOpaqueMemFunPtr_cpp")
+        SWIGTYPE (CLASS::*)
+    %{swig::SwigfOpaqueMemFunPtr%}
+%typemap(in, fragment="SwigfBruteCast")
+        SWIGTYPE (CLASS::*)
+    %{$1 = brute_cast<$1_ltype>($input);%}
+%typemap(out, fragment="SwigfBruteCast")
+        SWIGTYPE (CLASS::*)
+    %{$result = brute_cast<swig::SwigfOpaqueMemFunPtr>($1);%}
+%typemap(imtype, in="type(SwigfOpaqueMemFunPtr), intent(in), value",
+         fragment="SwigfOpaqueMemFunPtr")
+        SWIGTYPE (CLASS::*)
+    "type(SwigfOpaqueMemFunPtr)"
+%typemap(ftype, out="type(SwigfOpaqueMemFunPtr)",
+         fragment="SwigfOpaqueMemFunPtr")
+        SWIGTYPE (CLASS::*)
+    "type(SwigfOpaqueMemFunPtr), intent(in), value"
+%typemap(fin)    SWIGTYPE (CLASS::*)
+    "$1 = $input"
+%typemap(fout)   SWIGTYPE (CLASS::*)
+    "$result = $1"
+
+#endif
 //---------------------------------------------------------------------------//
 // end of fortran/fortrantypemaps.swg
 //---------------------------------------------------------------------------//

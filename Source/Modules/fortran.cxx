@@ -1281,9 +1281,10 @@ int FORTRAN::classHandler(Node *n)
     if (baselist && Len(baselist) > 1)
     {
         Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
-                "Multiple inheritance (class '%s') is not supported in Fortran",
-                "\n",
+                "Multiple inheritance (class '%s') is not currently "
+                "supported in Fortran\n",
                 SwigType_namestr(symname));
+        return SWIG_NOWRAP;
     }
 
     // Make the class publicly accessible
@@ -1341,7 +1342,8 @@ int FORTRAN::classHandler(Node *n)
                "  procedure, private :: ", fname, "\n",
                NULL);
         
-        // Add the proxy code implementation of assignment
+        // Add the proxy code implementation of assignment (increments the
+        // reference counter)
         Printv(f_proxy,
            "  subroutine ", fname, "(self, other)\n"
            "   use, intrinsic :: ISO_C_BINDING\n"

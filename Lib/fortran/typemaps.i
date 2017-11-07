@@ -16,27 +16,6 @@
 // fortran) that defines the start and size of a contiguous array.
 //
 //---------------------------------------------------------------------------//
-// Add array wrapper to C++ code when used by Fortran fragment
-%fragment("SwigfArrayWrapper_cpp", "header") %{
-namespace swig {
-template<class T>
-struct SwigfArrayWrapper
-{
-    T* data;
-    std::size_t size;
-};
-}
-%}
-
-// Add array wrapper to Fortran types when used
-%fragment("SwigfArrayWrapper", "fpublic", fragment="SwigfArrayWrapper_cpp",
-          noblock="1") %{
-type, public, bind(C) :: SwigfArrayWrapper
-  type(C_PTR), public :: data
-  integer(C_SIZE_T), public :: size
-end type
-%}
-
 %define FORT_VIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE...)
   #define PAIR_TYPE ::std::pair< CONST_CTYPE*, std::size_t >
   #define AW_TYPE swig::SwigfArrayWrapper< CONST_CTYPE >
