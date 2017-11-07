@@ -201,6 +201,45 @@ SwigType* parse_typemap(const_String_or_char_ptr tmname,
 }
 
 //---------------------------------------------------------------------------//
+/*!
+ * \brief Print as a python dict
+ */
+void print_pydict(Node* n)
+{
+    assert(n);
+
+    // Print name
+    const_String_or_char_ptr name = Getattr(n, "name");
+    if (!name)
+        name = Getattr(n, "sym:name");
+    if (!name)
+        name = "UNKNOWN";
+    Printf(stdout, "'%s': {\n", name);
+
+    // Print values
+    for (Iterator ki = First(n); ki.key != NULL; ki = Next(ki))
+    {
+        Printf(stdout, " '%s': ", ki.key);
+        if (DohIsString(ki.item))
+        {
+            if (Len(ki.item) > 80 || Strstr(ki.item, "\n"))
+            {
+                Printf(stdout, "r'''\\\n%s''',\n", ki.item);
+            }
+            else
+            {
+                Printf(stdout, "r'%s',\n", ki.item);
+            }
+        }
+        else
+        {
+            Printf(stdout, "None,\n");
+        }
+    }
+    Printf(stdout, "},\n\n", name);
+}
+
+//---------------------------------------------------------------------------//
 } // end anonymous namespace
 
 
