@@ -61,8 +61,15 @@
     FTYPE ", dimension(:), target, intent(inout)"
 
   // Fortran proxy translation code: convert from ftype $input to imtype $1
+  // Note that we take the address of the first element instead of the array,
+  // because nonallocatable deferred-size arrays *cannot* be referenced in
+  // standard F2003. This is because they might be slices of other arrays
+  // (noncontiguous). It is the caller's responsibility to ensure only
+  // contiguous arrays are passed. Conceivably we could improve this to use
+  // strided access by also passing c_loc($input(2)) and doing pointer
+  // arithmetic.
   %typemap(fin) PAIR_TYPE
-    %{$1%data = c_loc($input)
+    %{$1%data = c_loc($input(1))
       $1%size = size($input)%}
 
   // Instantiate type so that SWIG respects %novaluewrapper
