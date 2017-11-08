@@ -77,7 +77,6 @@ program main
     
     ! Instead, do this since allocatable data is contiguous:
     do i = 1,3
-        ! This doesn't work???
         write(0, *) "Printing 2D array row ", i, " slice..."
         alloc(:) = mat(i,:)
         call print_array(alloc)
