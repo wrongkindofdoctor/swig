@@ -536,7 +536,7 @@ void FORTRAN::write_module()
         const char* prepend_comma = "";
         Printv(out, " public :: ", kv.key, "\n"
                     " interface ", kv.key, "\n"
-                    "  module procedure :: ", NULL);
+                    "  module procedure ", NULL);
 
         // Write overloaded procedure names
         for (Iterator it = First(kv.item); it.item; it = Next(it))

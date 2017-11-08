@@ -10,6 +10,3 @@ SET(SWIG_DIR "/Users/s3j/_local/swig-debug/share/3.0.10" CACHE PATH "")
 
 SET(BUILD_SHARED_LIBS ON CACHE BOOL "")
 SET(CMAKE_BUILD_TYPE Debug CACHE STRING "")
-
-# If this compiler supports the 'final' keyword...
-# SET(CMAKE_SWIG_FORTRAN_FLAGS "-final" CACHE STRING "")
