@@ -14,11 +14,34 @@
 
 #ifdef SWIGFORTRAN
 
+%{
+#include <iostream>
+using std::cout;
+using std::endl;
+%}
+
+%inline %{
+void print_pointer(int msg, void* ptr)
+{
+    cout << "F " << (msg == 0 ? "Constructed" : "Releasing")
+        << ' ' << ptr << endl;
+}
+%}
+
+
+/*
+ * Note: this used to be: \code
+    write(0, "(a, z16)") "F Constructed ", self%swigptr
+ * \endcode
+ *
+ * but printing pointers is not standards-compliant.
+ */
+
 %fortranappend SimpleClass::SimpleClass %{
-   write(0, "(a, z16)") "F Constructed ", self%swigptr
+    call print_pointer(0, self%swigptr)
 %}
 %fortranprepend SimpleClass::~SimpleClass %{
-   write(0, "(a, z16)") "F Releasing   ", self%swigptr
+    call print_pointer(1, self%swigptr)
 %}
 
 #endif
