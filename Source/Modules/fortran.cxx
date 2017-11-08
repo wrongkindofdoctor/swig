@@ -274,7 +274,7 @@ class FORTRAN : public Language
     // Current class parameters
     Hash* d_method_overloads; //!< Overloaded subroutine -> overload names
 
-    List* d_enumvalues; //!< List of enumerator values
+    List* d_enum_public; //!< List of enumerator values
 
   public:
     virtual void main(int argc, char *argv[]);
@@ -301,7 +301,7 @@ class FORTRAN : public Language
     FORTRAN()
         : d_module(NULL)
         , d_outpath(NULL)
-        , d_enumvalues(NULL)
+        , d_enum_public(NULL)
     {
         /* * */
     }
@@ -357,7 +357,7 @@ void FORTRAN::main(int argc, char *argv[])
     {
         Preprocessor_define("SWIG_CPLUSPLUS_CAST", 0);
     }
-    
+
     /* Set language-specific preprocessing symbol */
     Preprocessor_define("SWIGFORTRAN 1", 0);
 
@@ -643,16 +643,16 @@ int FORTRAN::functionWrapper(Node *n)
     // Get the SWIG type representation of the C return type, but first the
     // ctype typemap has to be attached
     Swig_typemap_lookup("ctype", n, Getattr(n, "name"), NULL);
-    SwigType* c_return_type = parse_typemap("ctype", "out", n, 
+    SwigType* c_return_type = parse_typemap("ctype", "out", n,
                                             WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
-    String* im_return_str = attach_typemap("imtype", "out", n, 
+    String* im_return_str = attach_typemap("imtype", "out", n,
                                            WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
 
     // Allow ftype to be overridden by a feature
     String* f_return_str = Getattr(n, "feature:ftype");
     if (!f_return_str)
     {
-        f_return_str = attach_typemap("ftype", "out", n, 
+        f_return_str = attach_typemap("ftype", "out", n,
                                       WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
     }
     Chop(f_return_str);
@@ -677,13 +677,13 @@ int FORTRAN::functionWrapper(Node *n)
         // something like:
         //    int(*)(int,int) swigc_get()
         // whereas we actually need
-        //    int(*swigc_get())(int,int) 
+        //    int(*swigc_get())(int,int)
         // but instead we will write
         //    typedef int(*get_swigrtype)(int,int);
         //    get_swigrtype swigc_get()
         //
         // Same thing with complicated array types: getter for
-        //   const int* chitMat2[32][32] 
+        //   const int* chitMat2[32][32]
         // incorrectly is
         //  int *(*)[32]
         c_return_str = NewStringf("%s_swigrtype", symname);
@@ -745,7 +745,7 @@ int FORTRAN::functionWrapper(Node *n)
     Setattr(n, "wrap:parms", parmlist);
 
     // Emit local variables in fortran code
-    List* proxparmlist = emit_proxy_parm(n, parmlist, ffunc); 
+    List* proxparmlist = emit_proxy_parm(n, parmlist, ffunc);
     if (in_constructor)
     {
         // Prepend "self" to the parameter list (with trailing comma if
@@ -819,7 +819,7 @@ int FORTRAN::functionWrapper(Node *n)
         {
             Setattr(imimport_hash, imimport, "1");
         }
-        
+
         // >>> F PROXY ARGUMENTS
 
         String* cpptype = Getattr(p, "type");
@@ -993,7 +993,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     // Emit code to make the Fortran function call in the proxy code
     Printv(ffunc->code, fcall, "\n", NULL);
-    
+
     // Get transformations on the output data in the fortran proxy code
     String* fbody = Getattr(n, "feature:fout");
     String* fparm = Getattr(n, "feature:foutdecl");
@@ -1030,7 +1030,7 @@ int FORTRAN::functionWrapper(Node *n)
         // Write fortran output parameters after dummy argument
         Printv(ffunc->def, fparm, "\n", NULL);
     }
-    
+
     // Output typemap is defined; emit the function call and result
     // conversion code
     Replaceall(fbody, "$result", "swigf_result");
@@ -1188,7 +1188,7 @@ int FORTRAN::write_function_interface(Node* n)
                NULL);
         Delete(qualifiers);
     }
-    else 
+    else
     {
         // Not a class: make the function public (and alias the name)
         if (is_overloaded)
@@ -1273,7 +1273,7 @@ int FORTRAN::classHandler(Node *n)
 
     if (add_fsymbol(symname, n) == SWIG_NOWRAP)
         return SWIG_NOWRAP;
-    
+
     // Process base classes
     List *baselist = Getattr(n, "bases");
     if (baselist && Len(baselist) > 0)
@@ -1310,7 +1310,7 @@ int FORTRAN::classHandler(Node *n)
         Printv(f_types, ", abstract", NULL);
     }
     Printv(f_types, " :: ", symname, "\n", NULL);
-    
+
     // Insert the class data. Only do this if the class has no base classes
     if (!basename)
     {
@@ -1320,7 +1320,7 @@ int FORTRAN::classHandler(Node *n)
                NULL);
     }
     Printv(f_types, " contains\n", NULL);
-    
+
     // Initialize output strings that will be added by 'functionHandler'
     d_method_overloads = NewHash();
 
@@ -1348,7 +1348,7 @@ int FORTRAN::classHandler(Node *n)
         Printv(f_types,
                "  procedure, private :: ", fname, "\n",
                NULL);
-        
+
         // Add the proxy code implementation of assignment (increments the
         // reference counter)
         Printv(f_proxy,
@@ -1440,7 +1440,7 @@ int FORTRAN::constructorHandler(Node* n)
     Setattr(n, "fortran:alias", alias);
 
     // Override proxy return type and output code using the "feature": returns
-    // nothing (create is a subroutine) 
+    // nothing (create is a subroutine)
     Setattr(n, "feature:ftype", "");
 
     // Add statement to deallocate if already allocated
@@ -1454,10 +1454,10 @@ int FORTRAN::constructorHandler(Node* n)
     {
         Setattr(n, "feature:fortranprepend", constructor_prepend);
     }
-    
+
     // Add statement to assign pointer at the end
     const char constructor_fout[]
-        = "self%swigptr = $1\n"; 
+        = "self%swigptr = $1\n";
     if (String* foutstr = Getattr(n, "feature:fout"))
     {
         Printv(foutstr, "\n", constructor_fout, NULL);
@@ -1466,7 +1466,7 @@ int FORTRAN::constructorHandler(Node* n)
     {
         Setattr(n, "feature:fout", constructor_fout);
     }
-    
+
     // NOTE: return type has not yet been assigned at this point
     Language::constructorHandler(n);
 
@@ -1480,7 +1480,7 @@ int FORTRAN::constructorHandler(Node* n)
 int FORTRAN::destructorHandler(Node* n)
 {
     Setattr(n, "fortran:alias", "release");
-    
+
     // Add statement to skip if not allocated
     const char destructor_prepend[]
         = "if (.not. c_associated(self%swigptr)) return\n";
@@ -1492,7 +1492,7 @@ int FORTRAN::destructorHandler(Node* n)
     {
         Setattr(n, "feature:fortranprepend", destructor_prepend);
     }
-    
+
     // Add statement to clear pointer at the end
     const char destructor_append[]
         = "self%swigptr = C_NULL_PTR\n";
@@ -1504,7 +1504,7 @@ int FORTRAN::destructorHandler(Node* n)
     {
         Setattr(n, "feature:fortranappend", destructor_append);
     }
-    
+
     Language::destructorHandler(n);
 
     Node* classnode = getCurrentClass();
@@ -1544,7 +1544,7 @@ int FORTRAN::memberfunctionHandler(Node *n)
 {
     // Preserve original member name
     Setattr(n, "fortran:alias", Getattr(n, "sym:name"));
-    
+
     Language::memberfunctionHandler(n);
     return SWIG_OK;
 }
@@ -1580,10 +1580,10 @@ int FORTRAN::staticmemberfunctionHandler(Node *n)
 {
     // Preserve original function name
     Setattr(n, "fortran:alias", Getattr(n, "sym:name"));
-    
+
     // Add 'nopass' procedure qualifier
     Setattr(n, "fortran:procedure", "nopass");
-    
+
     Language::staticmemberfunctionHandler(n);
     return SWIG_OK;
 }
@@ -1615,7 +1615,7 @@ int FORTRAN::staticmembervariableHandler(Node *n)
 /*!
  * \brief Process constants, including callbacks declared with
 %constant int (*ADD)(int,int) = add;
- * 
+ *
  */
 int FORTRAN::constantWrapper(Node *n)
 {
@@ -1628,7 +1628,7 @@ int FORTRAN::constantWrapper(Node *n)
 
         if (add_fsymbol(name, n) == SWIG_NOWRAP)
             return SWIG_NOWRAP;
-        
+
         // Add generic interface code instead of wrapping; function can be
         // referenced with C_FUNPTR in fortran. Currently this only works for
         // 'extern C' functions.
@@ -1682,16 +1682,20 @@ int FORTRAN::enumDeclaration(Node *n)
         return SWIG_OK;
 
     // Symname is not present if the enum is not being wrapped
-    // (protected/private)
-    // XXX: do we also need to check for 'ignore'?
+    // (protected/private).
     String* symname = Getattr(n, "sym:name");
 
     if (symname)
     {
-        // Scope the enum if it's in a class
         String* enum_name = NULL;
-        if (Node* classnode = getCurrentClass())
+        if (Strstr(symname, "$unnamed"))
         {
+            // No name for this enum
+            Swig_print_node(n);
+        }
+        else if (Node* classnode = getCurrentClass())
+        {
+            // Scope the enum since it's in a class
             enum_name = NewStringf("%s_%s", Getattr(classnode, "sym:name"),
                                    symname);
             // Save the alias name
@@ -1702,16 +1706,21 @@ int FORTRAN::enumDeclaration(Node *n)
             enum_name = Copy(symname);
         }
 
-        if (add_fsymbol(enum_name, n) == SWIG_NOWRAP)
+        // Make sure the enum name isn't a duplicate
+        if (enum_name && (add_fsymbol(enum_name, n) == SWIG_NOWRAP))
             return SWIG_NOWRAP;
 
-        // Print the enumerator with a placeholder so we can use 'kind(ENUM)'
-        Printv(f_params, " enum, bind(c)\n",
-                        "  enumerator :: ", enum_name, " = -1\n", NULL);
+        d_enum_public = NewList();
+        Printv(f_params, " enum, bind(c)\n", NULL);
 
-        d_enumvalues = NewList();
-        Append(d_enumvalues, enum_name);
-        Delete(enum_name);
+        if (enum_name)
+        {
+            // Print a placeholder enum value so we can use 'kind(ENUM)'
+            Printv(f_params, "  enumerator :: ", enum_name, " = -1\n", NULL);
+            // Add enum name to list of public items
+            Append(d_enum_public, enum_name);
+            Delete(enum_name);
+        }
     }
 
     // Emit enum items
@@ -1724,10 +1733,10 @@ int FORTRAN::enumDeclaration(Node *n)
 
         // Make the enum class *and* its values public
         Printv(f_public, " public :: ", NULL);
-        print_wrapped_list(f_public, First(d_enumvalues), 11);
+        print_wrapped_list(f_public, First(d_enum_public), 11);
         Printv(f_public, "\n", NULL);
-        Delete(d_enumvalues);
-        d_enumvalues = NULL;
+        Delete(d_enum_public);
+        d_enum_public = NULL;
     }
 
     return SWIG_OK;
@@ -1742,28 +1751,71 @@ int FORTRAN::enumDeclaration(Node *n)
 int FORTRAN::enumvalueDeclaration(Node *n)
 {
     Language::enumvalueDeclaration(n);
-    String* name = Getattr(n, "sym:name");
-    String* value = Getattr(n, "enumvalue");
 
+    // >>> Get enum name
+    String* name = Getattr(n, "sym:name");
+    assert(name);
+    {
+        // Since enum values are in the same namespace as everything else in the
+        // module, make sure they're not duplicated with the scope
+        Hash* symtab = this->symbolScopeLookup("fortran");
+        Hash* fwdsymtab = this->symbolScopeLookup("fortran_fwd");
+
+        // Lower-cased name for scope checking
+        String* orig_lower = Swig_string_lower(name);
+        String* lower = orig_lower;
+
+        int i = 0;
+        while (Getattr(symtab, lower) || Getattr(fwdsymtab, lower))
+        {
+            // Duplicate symbol!
+            if (i != 0)
+                Delete(lower);
+
+            // Check with an extra number
+            ++i;
+            lower = NewStringf("%s%d", orig_lower, i);
+        }
+        if (i != 0)
+        {
+            // Warn that name has changed
+            String* newname = NewStringf("%s%d", name, i);
+            Swig_warning(WARN_FORTRAN_NAME_CONFLICT, input_file, line_number,
+                         "Renaming duplicate enum '%s' (Fortran name '%s') "
+                         " to '%s'\n",
+                         name, lower, newname);
+            name = newname;
+        }
+
+        // Add lowercase enum name to symbol table
+        Setattr(symtab, lower, n);
+
+        Delete(lower);
+    }
+
+    // >>> Get enum value
+
+    String* value = Getattr(n, "enumvalue");
     if (!value)
     {
         // Implicit enum value (if no value specified, it's PREVIOUS + 1)
         value = Getattr(n, "enumvalueex");
     }
-    assert(name);
     assert(value);
 
-    if (d_enumvalues)
+    // >>> Save enum
+
+    if (d_enum_public)
     {
         // Add to the list of enums being built
-        Append(d_enumvalues, name);
+        Append(d_enum_public, name);
         // Print the enum to the list
         Printv(f_params, "  enumerator :: ", name, " = ", value, "\n", NULL);
     }
     else
     {
         // Convert anonymous enum to an integer parameter
-        Printv(f_params, "  integer(C_INT), parameter :: ", name,
+        Printv(f_params, "  integer(C_INT), parameter, public :: ", name,
                    " = ", value, "\n", NULL);
     }
 
@@ -1890,7 +1942,7 @@ List* FORTRAN::emit_proxy_parm(Node* n, ParmList *parmlist, Wrapper *f)
     Swig_typemap_attach_parms("imtype",   parmlist, f);
     Swig_typemap_attach_parms("imimport", parmlist, f);
     Swig_typemap_attach_parms("ftype",    parmlist, f);
-    
+
     // Assign parameter names
     Parm* p = parmlist;
     List* proxparmlist = NewList();
@@ -1951,7 +2003,7 @@ List* FORTRAN::emit_proxy_parm(Node* n, ParmList *parmlist, Wrapper *f)
                                      WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
         Wrapper_add_localv(f, imname, imtype, "::", imname, NULL);
 
-        // Restore local variable name 
+        // Restore local variable name
         Setattr(p, "lname", lname);
         Delattr(p, "lname:saved");
     }
