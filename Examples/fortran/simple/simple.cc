@@ -1,9 +1,12 @@
-/* File : example.c */
+/** 
+ * @file simple.cc 
+ * @brief simple test
+*/
 
-/* A global variable */
+/** A global variable */
 double Foo = 3.0;
 
-/* Compute the greatest common divisor of positive integers */
+/** Compute the greatest common divisor of positive integers */
 int gcd(int x, int y) {
   int g;
   g = y;
