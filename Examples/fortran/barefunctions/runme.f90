@@ -11,7 +11,6 @@ program main
     call test_consts()
     call test_funcs()
     call test_enum()
-end program
 
 contains
 
@@ -22,20 +21,36 @@ subroutine test_consts()
     write(0, *) "MY_SPECIAL_NUMBERS ", MY_SPECIAL_NUMBERS
     write(0, *) "octoconst   ", octal_const
     write(0, *) "wrapped_const ", wrapped_const
+    write(0, *) "pi is approximately ", approx_pi
+    write(0, *) "2pi is approximately ", get_approx_twopi()
+    write(0, *) "extern const int is ", get_linked_const_int()
     ! Can't assign these
 !     wrapped_const = 2
 !     MY_SPECIAL_NUMBERS = 4
 end subroutine test_consts
 
+subroutine test_enum()
+    use bare
+    implicit none
+    call print_rgb(RED)
+    call print_rgb(GREEN)
+    call print_rgb(BLUE)
+    call print_rgb(BLACK)
+    call print_cmyk(BLACK)
+!    call print_color(GREEN)
+!    BLACK = BLUE
+!    call print_color(BLACK)
+end subroutine
+
 subroutine test_funcs()
     use bare
+    implicit none
     real(kind=8) :: temp
     real(kind=8), dimension(9) :: arr
     real(kind=8), allocatable, dimension(:) :: alloc
     real(kind=8), dimension(3,3) :: mat
     integer :: i, j
     real(kind=8), pointer :: rptr
-    implicit none
     call set_something(2, 200.0d0)
     call set_something(1, 10.0d0)
     call set_something(0, 1.0d0)
@@ -103,18 +118,7 @@ subroutine test_funcs()
     
 end subroutine test_funcs
 
-subroutine test_enum()
-    use simple_class
-    implicit none
-    call print_color(RED)
-    call print_color(GREEN)
-    call print_color(BLUE)
-    call print_color(BLACK)
-    GREEN = BLUE
-    call print_color(GREEN)
-!    BLACK = BLUE
-!    call print_color(BLACK)
-end subroutine
+end program
 
 !-----------------------------------------------------------------------------!
 ! end of swig-fortran/test.f90

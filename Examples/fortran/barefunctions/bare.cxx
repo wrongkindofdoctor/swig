@@ -20,6 +20,8 @@ namespace
 double data[10];
 }
 
+const int linked_const_int = -1234;
+
 //---------------------------------------------------------------------------//
 namespace foo
 {
@@ -90,16 +92,31 @@ void print_array(std::pair<const double*, size_t> view)
 
 //---------------------------------------------------------------------------//
 
-void print_color(MyEnum c)
+void print_rgb(RgbEnum c)
 {
-    const char* str = "ERROR";
+    const char* str = "BAD RGB";
 
     switch (c)
     {
         case RED:   str = "red"; break;
         case GREEN: str = "green"; break;
         case BLUE:  str = "blue"; break;
-        case BLACK: str = "black"; break;
+    }
+    cout << str << endl;
+}
+
+//---------------------------------------------------------------------------//
+
+void print_cmyk(CmykEnum c)
+{
+    const char* str = "BAD CMYK";
+
+    switch (c)
+    {
+        case CYAN:   str = "CYAN";    break;
+        case MAGENTA:str = "MAGENTA"; break;
+        case YELLOW: str = "YELLOW";  break;
+        case BLACK:  str = "BLACK";   break;
     }
     cout << str << endl;
 }

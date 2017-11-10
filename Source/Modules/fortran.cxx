@@ -69,12 +69,13 @@ Wrapper* NewFortranWrapper()
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Whether an expression is a standard base-10 integer
+ * \brief Whether an expression is a standard base-10 integer compatible with
+ * fortran
  *
- * Note that if it has a suffix e.g. `l` or `u`, or a prefix `0`, it's not
- * simple.
+ * Note that if it has a suffix e.g. `l` or `u`, or a prefix `0` (octal), it's
+ * not compatible.
  */
-bool is_simple_integer(String* s)
+bool is_fortran_integer(String* s)
 {
     const char* p = Char(s);
 
@@ -104,33 +105,30 @@ bool is_simple_integer(String* s)
 bool is_native_enum(Node *n)
 {
     String* enum_feature = Getattr(n, "feature:enumerator");
-    bool result;
     if (!enum_feature)
     {
         // Determine from enum values
         for (Node* c = firstChild(n); c; c = nextSibling(c))
         {
             String* enum_value = Getattr(c, "enumvalue");
-            if (enum_value && !is_simple_integer(enum_value))
+            if (enum_value && !is_fortran_integer(enum_value))
             {
-                result = false;
-                break;
+                return false;
             }
         }
         // No bad values
-        result = true;
+        return true;
     }
     else if (Strcmp(enum_feature, "0") == 0)
     {
         // User forced it not to be a native enum
-        result = false;
+        return false;
     }
     else
     {
         // "feature:enumerator" was set as a flag
-        result = true;
+        return true;
     }
-    return result;
 }
 
 //---------------------------------------------------------------------------//
@@ -140,24 +138,22 @@ bool is_native_enum(Node *n)
 bool is_native_parameter(Node *n)
 {
     String* param_feature = Getattr(n, "feature:parameter");
-    bool result;
     if (!param_feature)
     {
         // No user override given
         String* value = Getattr(n, "value");
-        result = is_simple_integer(value);
+        return is_fortran_integer(value);
     }
     else if (Strcmp(param_feature, "0") == 0)
     {
         // Not a native param
-        result = false;
+        return false;
     }
     else
     {
         // Value specified and isn't "0"
-        result = true;
+        return true;
     }
-    return result;
 }
 
 //---------------------------------------------------------------------------//
@@ -381,10 +377,9 @@ class FORTRAN : public Language
     virtual int globalvariableHandler(Node *n);
     virtual int staticmemberfunctionHandler(Node *n);
     virtual int staticmembervariableHandler(Node *n);
-    virtual int constantWrapper(Node *n);
     virtual int importDirective(Node *n);
     virtual int enumDeclaration(Node *n);
-    virtual int enumvalueDeclaration(Node *n);
+    virtual int constantWrapper(Node *n);
     virtual int classforwardDeclaration(Node *n);
 
     virtual String *makeParameterName(Node *n, Parm *p, int arg_num,
@@ -413,6 +408,8 @@ class FORTRAN : public Language
 
     // Add lowercase symbol (fortran)
     int add_fsymbol(String *s, Node *n);
+    // Make a unique symbolic name
+    String* make_unique_symname(Node* n);
 };
 
 //---------------------------------------------------------------------------//
@@ -1228,20 +1225,16 @@ int FORTRAN::write_function_interface(Node* n)
     // Get modified Fortran member name, defaulting to sym:name
     if (String* varname = Getattr(n, "fortran:variable"))
     {
-        String* new_alias;
+        String* new_alias = NULL;
         if (Getattr(n, "varset") || Getattr(n, "memberset"))
         {
             new_alias = Swig_name_set(getNSpace(), varname);
         }
-        else if(Getattr(n, "varget") || Getattr(n, "memberget"))
+        else if (Getattr(n, "varget") || Getattr(n, "memberget"))
         {
             new_alias = Swig_name_get(getNSpace(), varname);
         }
-        else
-        {
-            Swig_print_node(n);
-            assert(0);
-        }
+        assert(new_alias);
         Setattr(n, "fortran:alias", new_alias);
         Delete(new_alias);
     }
@@ -1677,7 +1670,14 @@ int FORTRAN::membervariableHandler(Node *n)
  */
 int FORTRAN::globalvariableHandler(Node *n)
 {
-    Language::globalvariableHandler(n);
+    if (GetFlag(n, "feature:parameter"))
+    {
+        this->constantWrapper(n);
+    }
+    else
+    {
+        Language::globalvariableHandler(n);
+    }
     return SWIG_OK;
 }
 
@@ -1722,6 +1722,128 @@ int FORTRAN::staticmembervariableHandler(Node *n)
 
 //---------------------------------------------------------------------------//
 /*!
+ * \brief Process an '%import' directive.
+ *
+ * Besides importing typedefs, this should add a "use MODULENAME" line inside
+ * the "module" block of the proxy code (before the "contains" line).
+ */
+int FORTRAN::importDirective(Node *n)
+{
+    String* modname = Getattr(n, "module");
+    if (modname)
+    {
+        // The actual module contents should be the first child
+        // of the provided %import node 'n'.
+        Node* mod = firstChild(n);
+        assert(Strcmp(nodeType(mod), "module") == 0);
+
+        // I don't know if the module name could ever be different from the
+        // 'module' attribute of the import node, but just in case... ?
+        modname = Getattr(mod, "name");
+        Printv(f_imports, " use ", modname, "\n", NULL);
+    }
+
+    return Language::importDirective(n);
+}
+
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Wrap an enum declaration
+ */
+int FORTRAN::enumDeclaration(Node *n)
+{
+    if (ImportMode)
+        return SWIG_OK;
+
+    // Symname is not present if the enum is not being wrapped
+    // (protected/private).
+    String* symname = Getattr(n, "sym:name");
+
+    if (!symname)
+    {
+        return SWIG_OK;
+    }
+
+    String* enum_name = NULL;
+    if (Strstr(symname, "$unnamed") != NULL)
+    {
+        // No name for this enum
+    }
+    else if (Node* classnode = getCurrentClass())
+    {
+        // Scope the enum since it's in a class
+        enum_name = NewStringf("%s_%s", Getattr(classnode, "sym:name"),
+                               symname);
+        // Save the alias name
+        Setattr(n, "fortran:alias", enum_name);
+    }
+    else
+    {
+        enum_name = Copy(symname);
+    }
+
+    // Make sure the enum name isn't a duplicate
+    if (enum_name && (add_fsymbol(enum_name, n) == SWIG_NOWRAP))
+        return SWIG_NOWRAP;
+
+    // Determine whether to add enum as a native fortran enumeration. If false,
+    // the values are all wrapped as constants.
+    if (is_native_enum(n))
+    {
+        // Create enumerator statement and initialize list of enum values
+        d_enum_public = NewList();
+        Printv(f_params, " enum, bind(c)\n", NULL);
+        // Change "value" of enum value nodes from the C symbol name to the
+        // actual value. Note that "rawval" overrides value.
+        for (Node* c = firstChild(n); c; c = nextSibling(c))
+        {
+            String* enum_value = Getattr(c, "enumvalue");
+            if (!enum_value)
+            {
+                // Implicit enum value (if no value specified, it's PREVIOUS + 1)
+                enum_value = Getattr(c, "enumvalueex");
+            }
+            assert(enum_value);
+            Setattr(c, "rawval", enum_value);
+        }
+    }
+
+    if (enum_name)
+    {
+        // Print a placeholder enum value so we can use 'kind(ENUM)'
+        Swig_save("constantWrapper", n, "sym:name", "value", NULL);
+
+        // Create placeholder for the enumeration type
+        Setattr(n, "sym:name", enum_name);
+        Setattr(n, "value", "-1");
+        constantWrapper(n);
+
+        Swig_restore(n);
+        Delete(enum_name);
+    }
+
+    // Emit enum items
+    Language::enumDeclaration(n);
+
+    if (d_enum_public)
+    {
+        // End enumeration
+        Printv(f_params, " end enum\n", NULL);
+
+        // Make the enum class *and* its values public
+        Printv(f_public, " public :: ", NULL);
+        print_wrapped_list(f_public, First(d_enum_public), 11);
+        Printv(f_public, "\n", NULL);
+        Delete(d_enum_public);
+        d_enum_public = NULL;
+    }
+
+    return SWIG_OK;
+}
+
+//---------------------------------------------------------------------------//
+/*!
  * \brief Process constants
  *
  * These include callbacks declared with
@@ -1732,11 +1854,31 @@ int FORTRAN::staticmembervariableHandler(Node *n)
 
      %constant int wrapped_const = (1 << 3) | 1;
 
- * that need to be interpreted by the C compiler
+ * that need to be interpreted by the C compiler.
+ *
+ * They're also called inside enumvalueDeclaration (either directly or through
+ * memberconstantHandler)
  */
 int FORTRAN::constantWrapper(Node* n)
 {
+    String* nodetype = nodeType(n);
     String* symname = Getattr(n, "sym:name");
+    if (Strcmp(nodetype, "enumitem") == 0)
+    {
+        // Make unique enum values for the user
+        symname = this->make_unique_symname(n);
+    }
+    else if (Strcmp(nodetype, "enum") == 0)
+    {
+        // Symbolic name is already unique
+    }
+    else
+    {
+        // Some other kind of global constant
+        if (add_fsymbol(symname, n) == SWIG_NOWRAP)
+            return SWIG_NOWRAP;
+    }
+
     String* value = Getattr(n, "rawval");
     if (!value)
     {
@@ -1744,18 +1886,48 @@ int FORTRAN::constantWrapper(Node* n)
     }
     assert(value);
 
-    if (add_fsymbol(symname, n) == SWIG_NOWRAP)
-        return SWIG_NOWRAP;
-
     // Get Fortran data type
     String* im_typestr = attach_typemap(
             "imtype", n, WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
     if (!im_typestr)
         return SWIG_NOWRAP;
 
-
-    if (is_native_parameter(n))
+    if (d_enum_public)
     {
+        // We're wrapping a native enumerator: add to the list of enums being built
+        Append(d_enum_public, symname);
+        // Print the enum to the list
+        Printv(f_params, "  enumerator :: ", symname, " = ", value, "\n", NULL);
+    }
+    else if (is_native_parameter(n))
+    {
+        const char* start = Char(im_typestr);
+        const char* stop  = start + Len(im_typestr);
+        for (; start != stop; ++start)
+        {
+            if (*start == '(')
+            {
+                ++start;
+                break;
+            }
+        }
+        for (; stop != start; --stop)
+        {
+            if (*stop == ')')
+            {
+                break;
+            }
+        }
+
+        if (stop != start)
+        {
+            // Append fortran type specifier; otherwise e.g. 1.000000001 will
+            // be truncated to 1 because fortran will think it's a float
+            String* suffix = NewStringWithSize(start, (int)(stop - start));
+            Printv(value, "_", suffix, NULL);
+            Delete(suffix);
+        }
+
         Printv(f_params, " ", im_typestr, ", parameter, public :: ",
                symname, " = ", value, "\n", NULL);
     }
@@ -1797,7 +1969,7 @@ int FORTRAN::constantWrapper(Node* n)
 
         // Wrirte SWIG code
         Replaceall(cwrap_code, "$result", declstring);
-        Printv(f_wrapper, "SWIGEXPORT extern ", cwrap_code, "\n", NULL);
+        Printv(f_wrapper, "SWIGEXPORT extern ", cwrap_code, "\n\n", NULL);
 
         // Add bound variable to interfaces
         Printv(f_params, " ", im_typestr, ", protected, public, &\n",
@@ -1806,184 +1978,6 @@ int FORTRAN::constantWrapper(Node* n)
 
         Delete(declstring);
         Delete(wname);
-    }
-
-    Swig_print_node(n);
-
-    return SWIG_OK;
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Process an '%import' directive.
- *
- * Besides importing typedefs, this should add a "use MODULENAME" line inside
- * the "module" block of the proxy code (before the "contains" line).
- */
-int FORTRAN::importDirective(Node *n)
-{
-    String* modname = Getattr(n, "module");
-    if (modname)
-    {
-        // The actual module contents should be the first child
-        // of the provided %import node 'n'.
-        Node* mod = firstChild(n);
-        assert(Strcmp(nodeType(mod), "module") == 0);
-
-        // I don't know if the module name could ever be different from the
-        // 'module' attribute of the import node, but just in case... ?
-        modname = Getattr(mod, "name");
-        Printv(f_imports, " use ", modname, "\n", NULL);
-    }
-
-    return Language::importDirective(n);
-}
-
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Wrap an enum declaration
- *
- */
-int FORTRAN::enumDeclaration(Node *n)
-{
-    if (ImportMode)
-        return SWIG_OK;
-
-    // Symname is not present if the enum is not being wrapped
-    // (protected/private).
-    String* symname = Getattr(n, "sym:name");
-
-    if (!symname)
-    {
-        return SWIG_OK;
-    }
-
-    String* enum_name = NULL;
-    if (Strstr(symname, "$unnamed"))
-    {
-        // No name for this enum
-    }
-    else if (Node* classnode = getCurrentClass())
-    {
-        // Scope the enum since it's in a class
-        enum_name = NewStringf("%s_%s", Getattr(classnode, "sym:name"),
-                               symname);
-        // Save the alias name
-        Setattr(n, "fortran:alias", enum_name);
-    }
-    else
-    {
-        enum_name = Copy(symname);
-    }
-
-    // Make sure the enum name isn't a duplicate
-    if (enum_name && (add_fsymbol(enum_name, n) == SWIG_NOWRAP))
-        return SWIG_NOWRAP;
-
-    d_enum_public = NewList();
-    Printv(f_params, " enum, bind(c)\n", NULL);
-
-    if (enum_name)
-    {
-        // Print a placeholder enum value so we can use 'kind(ENUM)'
-        Printv(f_params, "  enumerator :: ", enum_name, " = -1\n", NULL);
-        // Add enum name to list of public items
-        Append(d_enum_public, enum_name);
-        Delete(enum_name);
-    }
-
-    // Emit enum items
-    Language::enumDeclaration(n);
-
-    // End enumeration
-    Printv(f_params, " end enum\n", NULL);
-
-    // Make the enum class *and* its values public
-    Printv(f_public, " public :: ", NULL);
-    print_wrapped_list(f_public, First(d_enum_public), 11);
-    Printv(f_public, "\n", NULL);
-    Delete(d_enum_public);
-    d_enum_public = NULL;
-
-    return SWIG_OK;
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Wrap a value in an enum
- *
- * This is called inside enumDeclaration
- */
-int FORTRAN::enumvalueDeclaration(Node *n)
-{
-    Language::enumvalueDeclaration(n);
-
-    // >>> Get enum name
-    String* name = Getattr(n, "sym:name");
-    assert(name);
-    {
-        // Since enum values are in the same namespace as everything else in the
-        // module, make sure they're not duplicated with the scope
-        Hash* symtab = this->symbolScopeLookup("fortran");
-        Hash* fwdsymtab = this->symbolScopeLookup("fortran_fwd");
-
-        // Lower-cased name for scope checking
-        String* orig_lower = Swig_string_lower(name);
-        String* lower = orig_lower;
-
-        int i = 0;
-        while (Getattr(symtab, lower) || Getattr(fwdsymtab, lower))
-        {
-            // Duplicate symbol!
-            if (i != 0)
-                Delete(lower);
-
-            // Check with an extra number
-            ++i;
-            lower = NewStringf("%s%d", orig_lower, i);
-        }
-        if (i != 0)
-        {
-            // Warn that name has changed
-            String* newname = NewStringf("%s%d", name, i);
-            Swig_warning(WARN_FORTRAN_NAME_CONFLICT, input_file, line_number,
-                         "Renaming duplicate enum '%s' (Fortran name '%s') "
-                         " to '%s'\n",
-                         name, lower, newname);
-            name = newname;
-        }
-
-        // Add lowercase enum name to symbol table
-        Setattr(symtab, lower, n);
-
-        Delete(lower);
-    }
-
-    // >>> Get enum value
-
-    String* value = Getattr(n, "enumvalue");
-    if (!value)
-    {
-        // Implicit enum value (if no value specified, it's PREVIOUS + 1)
-        value = Getattr(n, "enumvalueex");
-    }
-    assert(value);
-
-    // >>> Save enum
-
-    if (d_enum_public)
-    {
-        // Add to the list of enums being built
-        Append(d_enum_public, name);
-        // Print the enum to the list
-        Printv(f_params, "  enumerator :: ", name, " = ", value, "\n", NULL);
-    }
-    else
-    {
-        // Convert anonymous enum to an integer parameter
-        Printv(f_params, "  integer(C_INT), parameter, public :: ", name,
-                   " = ", value, "\n", NULL);
     }
 
     return SWIG_OK;
@@ -2194,6 +2188,7 @@ void FORTRAN::replaceSpecialVariables(String* method, String* tm, Parm* parm)
  */
 int FORTRAN::add_fsymbol(String *s, Node *n)
 {
+    assert(s);
     const char scope[] = "fortran";
     String* lower = Swig_string_lower(s);
     Node* existing = this->symbolLookup(lower, scope);
@@ -2224,6 +2219,54 @@ int FORTRAN::add_fsymbol(String *s, Node *n)
     return success;
 }
 
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Make a unique fortran symbol name by appending numbers.
+ */
+String* FORTRAN::make_unique_symname(Node* n)
+{
+    String* symname = Getattr(n, "sym:name");
+
+    // Since enum values are in the same namespace as everything else in the
+    // module, make sure they're not duplicated with the scope
+    Hash* symtab = this->symbolScopeLookup("fortran");
+    Hash* fwdsymtab = this->symbolScopeLookup("fortran_fwd");
+
+    // Lower-cased name for scope checking
+    String* orig_lower = Swig_string_lower(symname);
+    String* lower = orig_lower;
+
+    int i = 0;
+    while (Getattr(symtab, lower) || Getattr(fwdsymtab, lower))
+    {
+        // Duplicate symbol!
+        if (i != 0)
+            Delete(lower);
+
+        // Check with an extra number
+        ++i;
+        lower = NewStringf("%s%d", orig_lower, i);
+    }
+    if (i != 0)
+    {
+        // Warn that name has changed
+        String* newname = NewStringf("%s%d", symname, i);
+        Swig_warning(WARN_FORTRAN_NAME_CONFLICT, input_file, line_number,
+                     "Renaming duplicate %s '%s' (Fortran name '%s') "
+                     " to '%s'\n",
+                    nodeType(n), symname, lower, newname);
+        symname = newname;
+        // Replace symname and decrement reference counter
+        Setattr(n, "sym:name", newname);
+        Delete(newname);
+    }
+
+    // Add lowercase name to symbol table
+    Setattr(symtab, lower, n);
+    Delete(lower);
+
+    return symname;
+}
 //---------------------------------------------------------------------------//
 // Expose the code to the SWIG main function.
 //---------------------------------------------------------------------------//

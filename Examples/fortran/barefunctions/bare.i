@@ -8,6 +8,9 @@
 //---------------------------------------------------------------------------//
 %module bare
 
+%{
+#include "bare.hh"
+%}
 
 //! A const integer
 // const int param_int = 4;
@@ -18,16 +21,15 @@
 %constant int octal_const = 0777;
 %constant int wrapped_const = 0xdeadbeef;
 
+// Force a constant to be a compile-time native fortran parameter
+%parameter approx_pi;
+
 #ifdef SWIGFORTRAN
 %include <typemaps.i>
 
 // Instantiate array pointer conversion for doubles from pair<double*,size_t>
 %fortran_view(double)
 #endif
-
-%{
-#include "bare.hh"
-%}
 
 %include "bare.hh"
 

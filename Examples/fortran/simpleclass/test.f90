@@ -14,19 +14,6 @@ program main
 
 contains
 
-subroutine test_enum()
-    use simple_class
-    implicit none
-    call print_color(RED)
-    call print_color(GREEN)
-    call print_color(BLUE)
-    call print_color(BLACK)
-    GREEN = BLUE
-    call print_color(GREEN)
-!    BLACK = BLUE
-!    call print_color(BLACK)
-end subroutine
-
 subroutine test_class()
     use simple_class
     implicit none
