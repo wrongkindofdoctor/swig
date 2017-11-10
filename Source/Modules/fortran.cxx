@@ -1706,14 +1706,6 @@ int FORTRAN::staticmemberfunctionHandler(Node *n)
  */
 int FORTRAN::staticmembervariableHandler(Node *n)
 {
-#if 0
-    // Preserve variable name as Class_n
-    String* symname = Getattr(n, "sym:name");
-    String* varname = NewStringf("%s_%s", getClassPrefix(), symname);
-    Setattr(n, "fortran:variable", varname);
-    Delete(varname);
-#endif
-
     // Preserve variable name
     Setattr(n, "fortran:variable", Getattr(n, "sym:name"));
 
