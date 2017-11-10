@@ -7,6 +7,17 @@
  */
 //---------------------------------------------------------------------------//
 
+// Define SWIGEXTERN for global variables: 'extern' if C++, nothing if C
+%insert("runtime") %{
+#ifndef SWIGEXTERN
+#ifdef __cplusplus
+#define SWIGEXTERN extern
+#else
+#define SWIGEXTERN
+#endif
+#endif
+%}
+
 //---------------------------------------------------------------------------//
 // UNKNOWN CLASS
 //---------------------------------------------------------------------------//

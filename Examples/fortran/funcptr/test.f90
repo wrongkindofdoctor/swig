@@ -47,9 +47,9 @@ subroutine test()
     write(*,*) "Trying some C callback functions"
     write(*,*) "    a        = ", a
     write(*,*) "    b        = ", b
-    write(*,*) "    ADD(a,b) = ", do_op(a,b,c_funloc(add))
-    write(*,*) "    SUB(a,b) = ", do_op(a,b,c_funloc(sub))
-    write(*,*) "    MUL(a,b) = ", do_op(a,b,c_funloc(mul))
+    write(*,*) "    ADD(a,b) = ", do_op(a,b,add)
+    write(*,*) "    SUB(a,b) = ", do_op(a,b,sub)
+    write(*,*) "    MUL(a,b) = ", do_op(a,b,mul)
     write(*,*) "    POW(a,b) = ", do_op(a,b,c_funloc(fortfunc))
 
     ! Get the original function pointer, which should be add
@@ -58,7 +58,7 @@ subroutine test()
     write(*,*) "   *ADD(a,b) = ", my_ffunc(a,b)
 
     ! Set the function pointer to a different function
-    call set_funcvar(c_funloc(sub))
+    call set_funcvar(sub)
     temp_funptr = get_funcvar()
     call c_f_procpointer(temp_funptr, my_ffunc)
     write(*,*) "   *SUB(a,b) = ", my_ffunc(a, b)

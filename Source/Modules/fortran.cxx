@@ -1969,7 +1969,7 @@ int FORTRAN::constantWrapper(Node* n)
 
         // Wrirte SWIG code
         Replaceall(cwrap_code, "$result", declstring);
-        Printv(f_wrapper, "SWIGEXPORT extern ", cwrap_code, "\n\n", NULL);
+        Printv(f_wrapper, "SWIGEXPORT SWIGEXTERN ", cwrap_code, "\n\n", NULL);
 
         // Add bound variable to interfaces
         Printv(f_params, " ", im_typestr, ", protected, public, &\n",
