@@ -130,12 +130,12 @@ using swig::brute_cast;
 %fragment("SwigfOpaqueMemFunPtr_cpp", "header") %{
 namespace swig {
 namespace detail {
-class UndefinedClass_;
+class UndefinedClass;
 }
 
 struct SwigfOpaqueMemFunPtr
 {
-    enum { MEMPTR_SIZE = sizeof(void (UndefinedClass_::*)()); }
+    enum { MEMPTR_SIZE = sizeof(void (detail::UndefinedClass::*)()) };
     char data[MEMPTR_SIZE];
 };
 }
@@ -148,7 +148,9 @@ struct SwigfOpaqueMemFunPtr
 // preprocessor.
 %fragment("SwigfOpaqueMemFunPtr", "fpublic", noblock=1,
           fragment="SwigfOpaqueMemFunPtr_cpp") %{
+#ifndef MEMPTR_SIZE 16
 #define MEMPTR_SIZE 16
+#endif
 type :: SwigfOpaqueMemFunPtr
   integer(C_SIGNED_CHAR), dimension(MEMPTR_SIZE), public :: data
 end type

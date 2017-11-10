@@ -19,16 +19,12 @@ abs_top_srcdir = @abs_top_srcdir@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  cpp_basic \
   extend \
   li_attribute \
   li_attribute_template \
   li_cdata_cpp \
   member_funcptr_galore \
-  member_pointer \
-  member_pointer_const \
   memberin_extend \
-  namespace_spaces \
   template_basic \
   template_explicit
 
@@ -43,6 +39,7 @@ FAILING_CPP_TESTS += \
   char_strings \
   constructor_copy \
   contract \
+  cpp_basic \
   cpp_enum \
   default_args \
   default_constructor \
@@ -67,6 +64,8 @@ FAILING_CPP_TESTS += \
   global_vars \
   inherit_target_language \
   li_boost_shared_ptr \
+  member_pointer \
+  member_pointer_const \
   mixed_types \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
@@ -76,6 +75,7 @@ FAILING_CPP_TESTS += \
   namespace_class \
   namespace_enum \
   namespace_nested \
+  namespace_spaces \
   nested_scope \
   nested_workaround \
   operator_overload \
