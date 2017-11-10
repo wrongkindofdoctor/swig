@@ -9,8 +9,7 @@
 program main
     use ISO_FORTRAN_ENV
 
-    call test_enum()
-    !call test_class()
+    call test_class()
 
 contains
 
