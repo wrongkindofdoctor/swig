@@ -774,25 +774,16 @@ int FORTRAN::functionWrapper(Node *n)
     const char* f_func_type  = (is_fsubroutine ? "subroutine" : "function");
 
     String* c_return_str = NULL;
-    if (SwigType_isfunctionpointer(c_return_type)
-        || SwigType_ismemberpointer(c_return_type)
-        || SwigType_isarraypointer(c_return_type))
+    String* strprefix = SwigType_prefix(c_return_type);
+    if (Strstr(strprefix, "p.a(")
+        || Strstr(strprefix, "p.f(")
+        || Strstr(strprefix, "p.m("))
     {
-        // If the C return type is a function pointer, we have to either
-        // typedef it here *OR* wrap the entire function call in a set of
-        // parentheses. If we print the return type naively, we'll get
-        // something like:
-        //    int(*)(int,int) swigc_get()
-        // whereas we actually need
-        //    int(*swigc_get())(int,int)
-        // but instead we will write
-        //    typedef int(*get_swigrtype)(int,int);
-        //    get_swigrtype swigc_get()
-        //
-        // Same thing with complicated array types: getter for
-        //   const int* chitMat2[32][32]
-        // incorrectly is
-        //  int *(*)[32]
+        // For these types (where the name is the middle of the expression
+        // rather than at the right side,
+        // i.e. void (*func)() instead of int func,
+        // we either have to add a new typedef OR wrap the
+        // entire function in parens. The former is easier.
         c_return_str = NewStringf("%s_swigrtype", symname);
 
         String* typedef_str = SwigType_str(c_return_type, c_return_str);
@@ -804,6 +795,7 @@ int FORTRAN::functionWrapper(Node *n)
         // Typical case: convert return type into a regular string;
         c_return_str = SwigType_str(c_return_type, NULL);
     }
+    Delete(strprefix);
 
     Printv(cfunc->def, "SWIGEXPORT ", c_return_str, " ", wname, "(", NULL);
     Printv(imfunc->def, im_func_type, " ", wname, "(", NULL);
