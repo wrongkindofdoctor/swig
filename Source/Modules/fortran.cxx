@@ -110,6 +110,9 @@ bool is_native_enum(Node *n)
         // Determine from enum values
         for (Node* c = firstChild(n); c; c = nextSibling(c))
         {
+            if (Getattr(c, "error") || GetFlag(c, "feature:ignore"))
+                continue;
+            
             String* enum_value = Getattr(c, "enumvalue");
             if (enum_value && !is_fortran_integer(enum_value))
             {
@@ -1798,6 +1801,9 @@ int FORTRAN::enumDeclaration(Node *n)
         // actual value. Note that "rawval" overrides value.
         for (Node* c = firstChild(n); c; c = nextSibling(c))
         {
+            if (Getattr(c, "error") || GetFlag(c, "feature:ignore"))
+                continue;
+            
             String* enum_value = Getattr(c, "enumvalue");
             if (!enum_value)
             {
