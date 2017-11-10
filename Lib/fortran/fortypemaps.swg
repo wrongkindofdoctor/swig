@@ -173,9 +173,9 @@
 
   // Arrays of known size are returned as pointers to known-size arrays
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") CTYPE[ANY]
-    FTYPE ", dimension(:), target, intent(inout)"
+    FTYPE ", dimension($1_dim0), target, intent(inout)"
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") const CTYPE[ANY]
-    FTYPE ", dimension(:), target, intent(in)"
+    FTYPE ", dimension($1_dim0), target, intent(in)"
   %typemap(fout) CTYPE[ANY], const CTYPE[ANY]
   %{
       call c_f_pointer($1, $result, [$1_dim0])
