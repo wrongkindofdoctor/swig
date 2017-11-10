@@ -15,18 +15,15 @@
  *
  * ctype      : type in C wrapper code (input parameter, default return value)
  * ctype:out  : *return* type (overrides ctype)
- * imtype     : Fortran type to pass to "BIND" interface (must be Fortran
- *              equivalent of ctype)
- * imtype:bind : Fortran type to pass to "BIND" interface (must be Fortran
- *              equivalent of ctype)
- * imtype:out : Fortran return type for "BIND" interface (overrides imtype;
- *              must be Fortran equivalent of ctype:out)
- * ftype      : Fortran proxy (shadow) type
- * fin        : Fortran proxy code used to translate a Fortan argument to a
+ * imtype     : Fortran type returned from "BIND" interface (must be Fortran
+ *              equivalent of ctype:out)
+ * imtype:in  : Fortran dummy argument type for "BIND" interface (must be
+ *              Fortran equivalent of ctype)
+ * imimport   : Import this fortran type into the interface declaration
+ * ftype      : Fortran proxy type
+ * fin        : Fortran proxy code used to translate a Fortran argument to a
  *              wrapper argument
- * fin:pre    : Proxy code inserted before the wrapper call
- * fin:post   : Proxy code inserted after the wrapper call
- * fdata      : Proxy code for member data inserted into fortran code
+ * fout       : Fortran proxy code to translate return value
  */
 
 /*! SPECIAL TYPEMAP VARIABLES.

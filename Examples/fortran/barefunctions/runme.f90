@@ -7,16 +7,35 @@
 !-----------------------------------------------------------------------------!
 
 program main
-    use ISO_FORTRAN_ENV
-    use bare
     implicit none
+    call test_consts()
+    call test_funcs()
+    call test_enum()
+end program
+
+contains
+
+subroutine test_consts()
+    use bare
+    use, intrinsic :: ISO_C_BINDING
+    implicit none
+    write(0, *) "MY_SPECIAL_NUMBERS ", MY_SPECIAL_NUMBERS
+    write(0, *) "octoconst   ", octal_const
+    write(0, *) "wrapped_const ", wrapped_const
+    ! Can't assign these
+!     wrapped_const = 2
+!     MY_SPECIAL_NUMBERS = 4
+end subroutine test_consts
+
+subroutine test_funcs()
+    use bare
     real(kind=8) :: temp
     real(kind=8), dimension(9) :: arr
     real(kind=8), allocatable, dimension(:) :: alloc
     real(kind=8), dimension(3,3) :: mat
     integer :: i, j
     real(kind=8), pointer :: rptr
-
+    implicit none
     call set_something(2, 200.0d0)
     call set_something(1, 10.0d0)
     call set_something(0, 1.0d0)
@@ -82,7 +101,20 @@ program main
         call print_array(alloc)
     enddo
     
-end program
+end subroutine test_funcs
+
+subroutine test_enum()
+    use simple_class
+    implicit none
+    call print_color(RED)
+    call print_color(GREEN)
+    call print_color(BLUE)
+    call print_color(BLACK)
+    GREEN = BLUE
+    call print_color(GREEN)
+!    BLACK = BLUE
+!    call print_color(BLACK)
+end subroutine
 
 !-----------------------------------------------------------------------------!
 ! end of swig-fortran/test.f90

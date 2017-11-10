@@ -17,14 +17,6 @@ struct BasicStruct
     int val;
 };
 
-//! A typeless enumeration
-enum MyEnum {
-    RED = 0,
-    GREEN,
-    BLUE,
-    BLACK = -1
-};
-
 //===========================================================================//
 /*!
  * \class SimpleClass
@@ -87,9 +79,6 @@ const SimpleClass& get_class();
 
 // Pass class as a parameter
 void set_class_by_copy(SimpleClass c);
-
-// Get a color name
-void print_color(MyEnum color);
 
 //---------------------------------------------------------------------------//
 #endif // simple_class_SimpleClass_hh

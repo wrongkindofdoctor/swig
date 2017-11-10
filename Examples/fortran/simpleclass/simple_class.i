@@ -49,6 +49,8 @@ void print_pointer(int msg, void* ptr)
 // %ignore make_class;
 // %ignore get_class;
 
+%parameter approx_pi;
+
 // %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"
 

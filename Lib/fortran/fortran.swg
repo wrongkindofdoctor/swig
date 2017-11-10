@@ -10,15 +10,27 @@
 
 //---------------------------------------------------------------------------//
 /*! LANGUAGE EXTENSIONS.
-   %fortrancode : Insert proxy code into a module
    %fortranprepend : Add code at the beginning of a proxy function
    %fortranappend  : Add code at the end of a proxy function
+
+   %parameter : Force a global constant to be treated as a compile-time value
+           (value MUST be interpretable by Fortran)
+   %enumerator : Force an enum to be treated as a compile-time Fortran enum
+           (enum values MUST be interpretable by Fortran)
  */
 #define %fortranprepend       %feature("fortranprepend")
 #define %clearfortranprepend  %feature("fortranprepend","")
 
 #define %fortranappend         %feature("fortranappend")
 #define %clearfortranappend    %feature("fortranappend","")
+
+#define %parameter      %feature("parameter")
+#define %noparameter    %feature("parameter","0")
+#define %clearparameter %feature("parameter","")
+
+#define %enumerator      %feature("enumerator")
+#define %noenumerator    %feature("enumerator","0")
+#define %clearenumerator %feature("enumerator","")
 
 //---------------------------------------------------------------------------//
 // STANDARD TYPE DEFINITIONS
@@ -41,7 +53,10 @@ using std::ptrdiff_t;
 
 //---------------------------------------------------------------------------//
 // CUSTOM TYPEMAP DESCRIPTIONS.
+%include "fortypemaps.swg"
 
+//---------------------------------------------------------------------------//
+// ENUMERATOR OVERRIDES
 %include "fortypemaps.swg"
 
 //---------------------------------------------------------------------------//

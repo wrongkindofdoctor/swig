@@ -69,6 +69,99 @@ Wrapper* NewFortranWrapper()
 
 //---------------------------------------------------------------------------//
 /*!
+ * \brief Whether an expression is a standard base-10 integer
+ *
+ * Note that if it has a suffix e.g. `l` or `u`, or a prefix `0`, it's not
+ * simple.
+ */
+bool is_simple_integer(String* s)
+{
+    const char* p = Char(s);
+
+    // Empty string is not an integer
+    if (*p == 0)
+        return false;
+
+    // If it's a multi-digit number that starts with 0, it's octal, and thus
+    // not a simple integer
+    if (*p == '0' && *(p+1) != 0)
+        return false;
+
+    // See if all numbers are digits
+    while (*p != 0)
+    {
+        if (!isdigit(*p))
+            return false;
+        ++p;
+    }
+    return true;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Determine whether to wrap an enum as a value.
+ */
+bool is_native_enum(Node *n)
+{
+    String* enum_feature = Getattr(n, "feature:enumerator");
+    bool result;
+    if (!enum_feature)
+    {
+        // Determine from enum values
+        for (Node* c = firstChild(n); c; c = nextSibling(c))
+        {
+            String* enum_value = Getattr(c, "enumvalue");
+            if (enum_value && !is_simple_integer(enum_value))
+            {
+                result = false;
+                break;
+            }
+        }
+        // No bad values
+        result = true;
+    }
+    else if (Strcmp(enum_feature, "0") == 0)
+    {
+        // User forced it not to be a native enum
+        result = false;
+    }
+    else
+    {
+        // "feature:enumerator" was set as a flag
+        result = true;
+    }
+    return result;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Determine whether to wrap an enum as a value.
+ */
+bool is_native_parameter(Node *n)
+{
+    String* param_feature = Getattr(n, "feature:parameter");
+    bool result;
+    if (!param_feature)
+    {
+        // No user override given
+        String* value = Getattr(n, "value");
+        result = is_simple_integer(value);
+    }
+    else if (Strcmp(param_feature, "0") == 0)
+    {
+        // Not a native param
+        result = false;
+    }
+    else
+    {
+        // Value specified and isn't "0"
+        result = true;
+    }
+    return result;
+}
+
+//---------------------------------------------------------------------------//
+/*!
  * \brief Get/attach and return a typemap to the given node.
  *
  * If 'ext' is non-null, then after binding/searchinbg, a search will be made
@@ -526,9 +619,12 @@ void FORTRAN::write_module()
                 " use, intrinsic :: ISO_C_BINDING\n",
                 f_imports,
                 " implicit none\n"
-                "\n"
-                " ! PUBLIC METHODS AND TYPES\n",
-                f_public, NULL);
+                " private\n" , NULL);
+    if (Len(f_public) > 0 || Len(d_overloads) > 0)
+    {
+        Printv(out, "\n ! PUBLIC METHODS AND TYPES\n",
+                    f_public, NULL);
+    }
 
     // Write overloads
     for (Iterator kv = First(d_overloads); kv.key; kv = Next(kv))
@@ -548,22 +644,33 @@ void FORTRAN::write_module()
                     " end interface\n", NULL);
     }
 
-    Printv(out, " ! PARAMETERS\n",
-                f_params,
-                "\n"
-                " ! TYPES\n",
-                f_types,
-                "\n"
-                " ! WRAPPER DECLARATIONS\n"
-                " private\n"
-                " interface\n",
-                f_interfaces,
-                " end interface\n"
-                "\n"
-                "contains\n"
-                "  ! FORTRAN PROXY CODE\n",
-                f_proxy,
-                "end module ", d_module, "\n",
+    if (Len(f_params) > 0)
+    {
+        Printv(out, "\n ! PARAMETERS\n",
+                    f_params,
+                    NULL);
+    }
+    if (Len(f_types) > 0)
+    {
+        Printv(out, "\n ! TYPES\n",
+                    f_types,
+                    "\n", NULL);
+    }
+    if (Len(f_interfaces) > 0)
+    {
+        Printv(out, "\n ! WRAPPER DECLARATIONS\n"
+                    " interface\n",
+                    f_interfaces,
+                    " end interface\n"
+                    "\n", NULL);
+    }
+    if (Len(f_proxy) > 0)
+    {
+        Printv(out, "\ncontains\n"
+                    " ! FORTRAN PROXY CODE\n",
+                    f_proxy, NULL);
+    }
+    Printv(out, "\nend module ", d_module, "\n",
                 NULL);
 
     // Close file
@@ -582,7 +689,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     // Create wrapper name, taking into account overloaded functions
     String* symname = Getattr(n, "sym:name");
-    String* wname = Copy(Swig_name_wrapper(symname));
+    String* wname = Swig_name_wrapper(symname);
     const bool is_overloaded = Getattr(n, "sym:overloaded");
     if (is_overloaded)
     {
@@ -1331,6 +1438,8 @@ int FORTRAN::classHandler(Node *n)
     String* spclass = Getattr(n, "feature:smartptr");
     if (spclass)
     {
+        // TODO: use function_wrapper for this instead
+
         // Create overloaded aliased name
         String* alias = NewString("assignment(=)");
         String* fname = NewStringf("swigf_assign_%s",
@@ -1613,34 +1722,94 @@ int FORTRAN::staticmembervariableHandler(Node *n)
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Process constants, including callbacks declared with
-%constant int (*ADD)(int,int) = add;
+ * \brief Process constants
  *
- */
-int FORTRAN::constantWrapper(Node *n)
-{
-    SwigType* type = Getattr(n, "type");
-    if (SwigType_isfunctionpointer(type))
-    {
-        String* name  = Getattr(n, "sym:name");
-        String* value = Getattr(n, "value");
-        assert(value);
+ * These include callbacks declared with
+ 
+     %constant int (*ADD)(int,int) = add;
 
-        if (add_fsymbol(name, n) == SWIG_NOWRAP)
+ * as well as values such as
+
+     %constant int wrapped_const = (1 << 3) | 1;
+
+ * that need to be interpreted by the C compiler
+ */
+int FORTRAN::constantWrapper(Node* n)
+{
+    String* symname = Getattr(n, "sym:name");
+    String* value = Getattr(n, "rawval");
+    if (!value)
+    {
+        value = Getattr(n, "value");
+    }
+    assert(value);
+
+    if (add_fsymbol(symname, n) == SWIG_NOWRAP)
+        return SWIG_NOWRAP;
+
+    // Get Fortran data type
+    String* im_typestr = attach_typemap(
+            "imtype", n, WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
+    if (!im_typestr)
+        return SWIG_NOWRAP;
+
+
+    if (is_native_parameter(n))
+    {
+        Printv(f_params, " ", im_typestr, ", parameter, public :: ",
+               symname, " = ", value, "\n", NULL);
+    }
+    else
+    {
+        /*! Add to public fortran code:
+         *
+         *   IMTYPE, protected, bind(C, name="swigc_SYMNAME") :: SYMNAME
+         *
+         * Add to wrapper code:
+         *
+         *   {const_CTYPE = SwigType_add_qualifier(CTYPE, "const")}
+         *   {SwigType_str(const_CTYPE, swigc_SYMNAME) = VALUE;}
+         */
+        // SYMNAME -> swigc_SYMNAME
+        String* wname = Swig_name_wrapper(symname);
+        Setattr(n, "wrap:name",  wname);
+
+        // Set the value to replace $1 with in the 'out' typemap
+        Setattr(n, "lname", value);
+
+        // Get type of C value
+        Swig_typemap_lookup("ctype", n, symname, NULL);
+        SwigType* c_return_type = attach_typemap(
+                "ctype", "out", n, WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+        if (!c_return_type)
             return SWIG_NOWRAP;
 
-        // Add generic interface code instead of wrapping; function can be
-        // referenced with C_FUNPTR in fortran. Currently this only works for
-        // 'extern C' functions.
-        Printv(f_interfaces,
-               "  subroutine ", name, "() &\n"
-               "     bind(C, name=\"", value, "\")\n"
-               "  end subroutine\n",
+        // Add a const to the return type
+        SwigType_add_qualifier(c_return_type, "const");
+        String* declstring = SwigType_str(c_return_type, wname);
+
+        // Get conversion to C type from native c++ type
+        // TODO: this only works for simple data types
+        String* cwrap_code = attach_typemap(
+                "out", n, WARN_TYPEMAP_OUT_UNDEF);
+        if (!cwrap_code)
+            return SWIG_NOWRAP;
+
+        // Wrirte SWIG code
+        Replaceall(cwrap_code, "$result", declstring);
+        Printv(f_wrapper, "SWIGEXPORT extern ", cwrap_code, "\n", NULL);
+
+        // Add bound variable to interfaces
+        Printv(f_params, " ", im_typestr, ", protected, public, &\n",
+               "   bind(C, name=\"", wname, "\") :: ", symname, "\n",
                NULL);
-        // Expose the function. Calling it directly will almost certainly crash
-        // the code!
-        Printv(f_public, " public :: ", name, "\n", NULL);
+
+        Delete(declstring);
+        Delete(wname);
     }
+
+    Swig_print_node(n);
+
     return SWIG_OK;
 }
 
@@ -1685,59 +1854,57 @@ int FORTRAN::enumDeclaration(Node *n)
     // (protected/private).
     String* symname = Getattr(n, "sym:name");
 
-    if (symname)
+    if (!symname)
     {
-        String* enum_name = NULL;
-        if (Strstr(symname, "$unnamed"))
-        {
-            // No name for this enum
-            Swig_print_node(n);
-        }
-        else if (Node* classnode = getCurrentClass())
-        {
-            // Scope the enum since it's in a class
-            enum_name = NewStringf("%s_%s", Getattr(classnode, "sym:name"),
-                                   symname);
-            // Save the alias name
-            Setattr(n, "fortran:alias", enum_name);
-        }
-        else
-        {
-            enum_name = Copy(symname);
-        }
+        return SWIG_OK;
+    }
 
-        // Make sure the enum name isn't a duplicate
-        if (enum_name && (add_fsymbol(enum_name, n) == SWIG_NOWRAP))
-            return SWIG_NOWRAP;
+    String* enum_name = NULL;
+    if (Strstr(symname, "$unnamed"))
+    {
+        // No name for this enum
+    }
+    else if (Node* classnode = getCurrentClass())
+    {
+        // Scope the enum since it's in a class
+        enum_name = NewStringf("%s_%s", Getattr(classnode, "sym:name"),
+                               symname);
+        // Save the alias name
+        Setattr(n, "fortran:alias", enum_name);
+    }
+    else
+    {
+        enum_name = Copy(symname);
+    }
 
-        d_enum_public = NewList();
-        Printv(f_params, " enum, bind(c)\n", NULL);
+    // Make sure the enum name isn't a duplicate
+    if (enum_name && (add_fsymbol(enum_name, n) == SWIG_NOWRAP))
+        return SWIG_NOWRAP;
 
-        if (enum_name)
-        {
-            // Print a placeholder enum value so we can use 'kind(ENUM)'
-            Printv(f_params, "  enumerator :: ", enum_name, " = -1\n", NULL);
-            // Add enum name to list of public items
-            Append(d_enum_public, enum_name);
-            Delete(enum_name);
-        }
+    d_enum_public = NewList();
+    Printv(f_params, " enum, bind(c)\n", NULL);
+
+    if (enum_name)
+    {
+        // Print a placeholder enum value so we can use 'kind(ENUM)'
+        Printv(f_params, "  enumerator :: ", enum_name, " = -1\n", NULL);
+        // Add enum name to list of public items
+        Append(d_enum_public, enum_name);
+        Delete(enum_name);
     }
 
     // Emit enum items
     Language::enumDeclaration(n);
 
-    if (symname)
-    {
-        // End enumeration
-        Printv(f_params, " end enum\n", NULL);
+    // End enumeration
+    Printv(f_params, " end enum\n", NULL);
 
-        // Make the enum class *and* its values public
-        Printv(f_public, " public :: ", NULL);
-        print_wrapped_list(f_public, First(d_enum_public), 11);
-        Printv(f_public, "\n", NULL);
-        Delete(d_enum_public);
-        d_enum_public = NULL;
-    }
+    // Make the enum class *and* its values public
+    Printv(f_public, " public :: ", NULL);
+    print_wrapped_list(f_public, First(d_enum_public), 11);
+    Printv(f_public, "\n", NULL);
+    Delete(d_enum_public);
+    d_enum_public = NULL;
 
     return SWIG_OK;
 }
@@ -1845,7 +2012,7 @@ int FORTRAN::classforwardDeclaration(Node *n)
         Node* existing = this->symbolLookup(lower, scope);
         if (!existing)
         {
-            this->addSymbol(lower, n, "fortran_fwd");
+            this->addSymbol(lower, n, scope);
         }
         Delete(lower);
     }

@@ -9,9 +9,23 @@
 program main
     use ISO_FORTRAN_ENV
 
-    call test_class()
+    call test_enum()
+    !call test_class()
 
 contains
+
+subroutine test_enum()
+    use simple_class
+    implicit none
+    call print_color(RED)
+    call print_color(GREEN)
+    call print_color(BLUE)
+    call print_color(BLACK)
+    GREEN = BLUE
+    call print_color(GREEN)
+!    BLACK = BLUE
+!    call print_color(BLACK)
+end subroutine
 
 subroutine test_class()
     use simple_class
@@ -62,8 +76,6 @@ subroutine test_class()
     write(0, *) "Releasing ret-by-val"
     call made%release()
     write(0, *) "Done!"
-
-    call print_color(BLUE)
 
     ! If this is commented out and the '-final' code generation option is used,
     ! no memory leak will occur. Otherwise, the class is never deallocated.

@@ -20,6 +20,14 @@ namespace
 double data[10];
 }
 
+//---------------------------------------------------------------------------//
+namespace foo
+{
+int global_counter = 0;
+}
+
+//---------------------------------------------------------------------------//
+
 void set_something(int x, double y)
 {
     if (!(x < 10))
@@ -78,6 +86,22 @@ void print_array(std::pair<const double*, size_t> view)
         sep = ", ";
     }
     cout << "}\n";
+}
+
+//---------------------------------------------------------------------------//
+
+void print_color(MyEnum c)
+{
+    const char* str = "ERROR";
+
+    switch (c)
+    {
+        case RED:   str = "red"; break;
+        case GREEN: str = "green"; break;
+        case BLUE:  str = "blue"; break;
+        case BLACK: str = "black"; break;
+    }
+    cout << str << endl;
 }
 
 //---------------------------------------------------------------------------//
