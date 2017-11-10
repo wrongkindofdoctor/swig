@@ -1951,7 +1951,7 @@ int FORTRAN::constantWrapper(Node* n)
 
         // Get type of C value
         Swig_typemap_lookup("ctype", n, symname, NULL);
-        SwigType* c_return_type = attach_typemap(
+        SwigType* c_return_type = parse_typemap(
                 "ctype", "out", n, WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
         if (!c_return_type)
             return SWIG_NOWRAP;
