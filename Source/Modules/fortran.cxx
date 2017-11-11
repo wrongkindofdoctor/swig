@@ -1781,22 +1781,6 @@ int FORTRAN::enumDeclaration(Node *n)
         // Create enumerator statement and initialize list of enum values
         d_enum_public = NewList();
         Printv(f_params, " enum, bind(c)\n", NULL);
-        // Change "value" of enum value nodes from the C symbol name to the
-        // actual value. Note that "rawval" overrides value.
-        for (Node* c = firstChild(n); c; c = nextSibling(c))
-        {
-            if (Getattr(c, "error") || GetFlag(c, "feature:ignore"))
-                continue;
-            
-            String* enum_value = Getattr(c, "enumvalue");
-            if (!enum_value)
-            {
-                // Implicit enum value (if no value specified, it's PREVIOUS + 1)
-                enum_value = Getattr(c, "enumvalueex");
-            }
-            assert(enum_value);
-            Setattr(c, "rawval", enum_value);
-        }
     }
 
     if (enum_name)
@@ -1853,10 +1837,31 @@ int FORTRAN::constantWrapper(Node* n)
 {
     String* nodetype = nodeType(n);
     String* symname = Getattr(n, "sym:name");
+    String* value = Getattr(n, "rawval");
+    
     if (Strcmp(nodetype, "enumitem") == 0)
     {
         // Make unique enum values for the user
         symname = this->make_unique_symname(n);
+
+        // Set the value to be used by constantWrapper
+        if (!value)
+        {
+            value = Getattr(n, "enumvalue");
+        }
+        if (!value)
+        {
+            value = Getattr(n, "enumvalueex");
+        }
+            
+        // This is the ONLY place where we can fix the next enum's automatic
+        // value if this one has its name changed.
+        Node* next = nextSibling(n);
+        if (next && !Getattr(next, "enumvalue"))
+        {
+            String* updated_ex = NewStringf("%s + 1", symname);
+            Setattr(next, "enumvalueex", updated_ex);
+        }
     }
     else if (Strcmp(nodetype, "enum") == 0)
     {
@@ -1864,12 +1869,11 @@ int FORTRAN::constantWrapper(Node* n)
     }
     else
     {
-        // Some other kind of global constant
+        // Not an enum or enumitem
         if (add_fsymbol(symname, n) == SWIG_NOWRAP)
             return SWIG_NOWRAP;
     }
 
-    String* value = Getattr(n, "rawval");
     if (!value)
     {
         value = Getattr(n, "value");
@@ -2015,23 +2019,19 @@ int FORTRAN::classforwardDeclaration(Node *n)
 bool FORTRAN::replace_fclassname(SwigType* intype, String *tm)
 {
     bool substitution_performed = false;
-    SwigType* type = Copy(SwigType_typedef_resolve_all(intype));
-    SwigType* strippedtype = SwigType_strip_qualifiers(type);
+    SwigType* basetype = SwigType_base(intype);
 
     if (Strstr(tm, "$fclassname"))
     {
-        replace_fspecial_impl(strippedtype, tm, "$fclassname");
+        replace_fspecial_impl(basetype, tm, "$fclassname");
         substitution_performed = true;
     }
 
-#if 0
     Printf(stdout, "replace_fclassname (%c): %s => '%s'\n",
            substitution_performed ? 'X' : ' ',
-           strippedtype, tm);
-#endif
+           basetype, tm);
 
-    Delete(strippedtype);
-    Delete(type);
+    Delete(basetype);
 
     return substitution_performed;
 }
