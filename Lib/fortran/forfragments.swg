@@ -30,6 +30,13 @@ type :: SwigfUnknownClass
 end type
 %}
 
+// This fragment is inserted by the fortran.cxx code when an unknown enum is
+// encountered.
+%fragment("SwigfUnknownEnum", "fpublic", noblock=1) %{
+enum, bind(c)
+  enumerator :: SwigfUnknownEnum = -1
+end enum
+%}
 //---------------------------------------------------------------------------//
 // ARRAY WRAPPER
 //---------------------------------------------------------------------------//

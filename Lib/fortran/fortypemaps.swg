@@ -246,7 +246,7 @@ FORT_UNSIGNED_TYPEMAP(size_t        ,     ssize_t,   "integer(C_SIZE_T)"   )
 // Most of the opertions are like above, but replace C_INT with the kind of
 // enum
 FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
-                    "integer(kind($fclassname))")
+                    "integer(kind($fenumname))")
 
 // Input values must be statically cast to the enum type
 %typemap(in, noblock=1) enum SWIGTYPE

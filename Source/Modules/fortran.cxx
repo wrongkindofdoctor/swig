@@ -216,6 +216,10 @@ String* get_typemap(
                      Getfile(n), Getline(n),
                      "No '%s' typemap defined for %s\n", tmname,
                      SwigType_str(type, 0));
+
+        String* tmap_match_key = NewStringf("tmap:%s:match_type", tmname);
+        Setattr(n, tmap_match_key, "SWIGTYPE");
+        Delete(tmap_match_key);
     }
 
     if (ext)
@@ -405,7 +409,8 @@ class FORTRAN : public Language
 
     bool replace_fclassname(SwigType* type, String* tm);
     void replace_fspecial_impl(SwigType* classnametype, String* tm,
-                                   const char* classnamespecialvariable);
+                               const char* classnamespecialvariable,
+                               bool is_enum);
 
     List* emit_proxy_parm(Node* n, ParmList *l, Wrapper *f);
 
@@ -744,8 +749,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     // >>> RETURN TYPE
 
-    // Actual return type of the C++ function
-    SwigType* cpp_return_type = Getattr(n, "type");
+    String* cpp_return_type = Getattr(n, "type");
 
     // Get the SWIG type representation of the C return type, but first the
     // ctype typemap has to be attached
@@ -763,7 +767,7 @@ int FORTRAN::functionWrapper(Node *n)
                                       WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
     }
     Chop(f_return_str);
-    replace_fclassname(cpp_return_type, f_return_str);
+    this->replace_fclassname(cpp_return_type, f_return_str);
 
     // Check whether the C routine returns a variable
     const bool is_csubroutine = (Len(im_return_str) == 0);
@@ -1134,7 +1138,7 @@ int FORTRAN::functionWrapper(Node *n)
     Replaceall(fbody, "$result", "swigf_result");
     Replaceall(fbody, "$owner",
                (GetFlag(n, "feature:new") ? "1" : "0"));
-    replace_fclassname(cpp_return_type, fbody);
+    this->replace_fclassname(cpp_return_type, fbody);
     Printv(ffunc->code, fbody, "\n", NULL);
 
     // Optional "append" proxy code
@@ -2020,20 +2024,27 @@ int FORTRAN::classforwardDeclaration(Node *n)
  */
 bool FORTRAN::replace_fclassname(SwigType* intype, String *tm)
 {
+    assert(intype);
     bool substitution_performed = false;
     SwigType* basetype = SwigType_base(intype);
 
     if (Strstr(tm, "$fclassname"))
     {
-        replace_fspecial_impl(basetype, tm, "$fclassname");
+        replace_fspecial_impl(basetype, tm, "$fclassname", false);
+        substitution_performed = true;
+    }
+    if (Strstr(tm, "$fenumname"))
+    {
+        replace_fspecial_impl(basetype, tm, "$fenumname", true);
         substitution_performed = true;
     }
 
-#if 0
-    Printf(stdout, "replace_fclassname (%c): %s => '%s'\n",
+    Printf(stdout, "replace %s (%c): %s => %s => '%s'\n",
+           SwigType_isenum(basetype) ? "ENUM " : "CLASS",
            substitution_performed ? 'X' : ' ',
-           basetype, tm);
-#endif
+           intype,
+           basetype,
+           tm);
 
     Delete(basetype);
 
@@ -2042,21 +2053,13 @@ bool FORTRAN::replace_fclassname(SwigType* intype, String *tm)
 
 //---------------------------------------------------------------------------//
 
-void FORTRAN::replace_fspecial_impl(SwigType *classnametype, String *tm,
-                                    const char *classnamespecialvariable)
+void FORTRAN::replace_fspecial_impl(SwigType* basetype, String* tm,
+                                    const char *classnamespecialvariable,
+                                    bool is_enum)
 {
     String* replacementname = NULL;
     String* alloc_string = NULL;
-    Node* lookup = NULL;
-
-    if (SwigType_isenum(classnametype))
-    {
-        lookup = enumLookup(classnametype);
-    }
-    else
-    {
-        lookup = classLookup(classnametype);
-    }
+    Node* lookup = (is_enum ? enumLookup(basetype) : classLookup(basetype));
 
     if (lookup)
     {
@@ -2076,14 +2079,23 @@ void FORTRAN::replace_fspecial_impl(SwigType *classnametype, String *tm,
         // type.
         Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF,
                      input_file, line_number,
-                     "No '$fclassname' replacement (wrapped type) "
+                     "No '$fclassname' replacement (wrapped %s) "
                      "found for %s\n",
-                     SwigType_str(classnametype, 0));
+                     is_enum ? "enum" : "class",
+                     SwigType_str(basetype, 0));
 
-        // Emit the SwigfUnknownClass type fragment, and set that as the
-        // replacement name type
-        replacementname = alloc_string = NewString("SwigfUnknownClass");
-        Swig_fragment_emit(replacementname);
+        // Emit fragments for the unknown type, and use that type for
+        // replacement
+        if (is_enum)
+        {
+            alloc_string = NewString("SwigfUnknownEnum");
+        }
+        else
+        {
+            alloc_string = NewString("SwigfUnknownClass");
+        }
+        Swig_fragment_emit(alloc_string);
+        replacementname = alloc_string;
     }
     Replaceall(tm, classnamespecialvariable, replacementname);
     Delete(alloc_string);
