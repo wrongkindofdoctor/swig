@@ -251,8 +251,7 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
 %typemap(in, noblock=1) enum SWIGTYPE
     {$1 = %static_cast(*$input, $1_ltype);}
 // Pointers must be reinterpreted as ints
-%typemap(out, noblock=1) enum SWIGTYPE&, enum SWIGTYPE*, const enum SWIGTYPE&,
-        const enum SWIGTYPE*
+%typemap(out, noblock=1) enum SWIGTYPE&, enum SWIGTYPE*, const enum SWIGTYPE*
     {$result = %reinterpret_cast($1, int*);}
 
 #if 0
