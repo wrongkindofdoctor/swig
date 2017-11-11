@@ -441,6 +441,8 @@ FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
          fragment="SwigfOpaqueMemFunPtr")
         SWIGTYPE (CLASS::*)
     "type(SwigfOpaqueMemFunPtr)"
+%typemap(imimport) SWIGTYPE (CLASS::*)
+    "SwigfOpaqueMemFunPtr"
 %typemap(ftype, out="type(SwigfOpaqueMemFunPtr)",
          fragment="SwigfOpaqueMemFunPtr")
         SWIGTYPE (CLASS::*)

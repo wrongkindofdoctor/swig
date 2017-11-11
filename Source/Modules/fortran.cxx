@@ -2046,12 +2046,14 @@ bool FORTRAN::replace_fclassname(SwigType* intype, String *tm)
         substitution_performed = true;
     }
 
+#if 0
     Printf(stdout, "replace %s (%c): %s => %s => '%s'\n",
            SwigType_isenum(basetype) ? "ENUM " : "CLASS",
            substitution_performed ? 'X' : ' ',
            intype,
            basetype,
            tm);
+#endif
 
     Delete(basetype);
 
