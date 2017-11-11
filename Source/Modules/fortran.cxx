@@ -888,7 +888,6 @@ int FORTRAN::functionWrapper(Node *n)
         String* carg = SwigType_str(parsed_tm, imname);
         Printv(cfunc->def, prepend_comma, carg, NULL);
         Delete(carg);
-        Delete(parsed_tm);
 
         // >>> C ARGUMENT CONVERSION
 
@@ -1186,14 +1185,12 @@ int FORTRAN::functionWrapper(Node *n)
     DelWrapper(imfunc);
     DelWrapper(ffunc);
 
-    Delete(fparm);
-    Delete(fbody);
-
     Delete(outarg);
     Delete(fcleanup);
     Delete(cleanup);
     Delete(c_return_str);
     Delete(fcall);
+    Delete(imimport_hash);
     Delete(fargs);
     Delete(imargs);
     Delete(proxparmlist);
@@ -1212,6 +1209,7 @@ int FORTRAN::functionWrapper(Node *n)
  */
 int FORTRAN::write_function_interface(Node* n)
 {
+    assert(n);
     String* fname = Getattr(n, "wrap:fname");
     assert(fname);
 
@@ -1640,7 +1638,9 @@ int FORTRAN::destructorHandler(Node* n)
 int FORTRAN::memberfunctionHandler(Node *n)
 {
     // Preserve original member name
-    Setattr(n, "fortran:alias", Getattr(n, "sym:name"));
+    String* alias = Copy(Getattr(n, "sym:name"));
+    Setattr(n, "fortran:alias", alias);
+    Delete(alias);
 
     Language::memberfunctionHandler(n);
     return SWIG_OK;
@@ -1653,7 +1653,9 @@ int FORTRAN::memberfunctionHandler(Node *n)
 int FORTRAN::membervariableHandler(Node *n)
 {
     // Preserve variable name
-    Setattr(n, "fortran:variable", Getattr(n, "sym:name"));
+    String* alias = Copy(Getattr(n, "sym:name"));
+    Setattr(n, "fortran:variable", alias);
+    Delete(alias);
 
     Language::membervariableHandler(n);
     return SWIG_OK;
@@ -2027,9 +2029,11 @@ bool FORTRAN::replace_fclassname(SwigType* intype, String *tm)
         substitution_performed = true;
     }
 
+#if 0
     Printf(stdout, "replace_fclassname (%c): %s => '%s'\n",
            substitution_performed ? 'X' : ' ',
            basetype, tm);
+#endif
 
     Delete(basetype);
 
