@@ -123,24 +123,23 @@
  */
 %define FORT_SIMPLE_TYPEMAP(CPPTYPE, CTYPE, IMTYPE, FTYPE)
   // Regular values are passed as pointers and returned by value
+  %typemap(ctype, out="CTYPE") CPPTYPE
+    "const CTYPE*"
   %typemap(in) CPPTYPE
     "$1 = *$input;"
   %typemap(out) CPPTYPE
     "$result = $1;"
-  %typemap(ctype, out="CTYPE") CPPTYPE
-    "const CTYPE*"
 
-  // To avoid problems with such atrocities as
-  //    %apply const signed char & {const char &};
-  // we have to add a reinterpret cast to convert from const char* to const
-  // signed char* .
+  // To avoid problems with mapping between signed and unsigned types, we add
+  // reinterpret_cast. Note that outgoing const references are returned by
+  // value.
+  %typemap(ctype, out="CTYPE") const CPPTYPE&
+    "const CTYPE*"
   %typemap(in, noblock=1) const CPPTYPE&
-    {$1 = %reinterpret_cast(%const_cast($input, CPPTYPE*), $1_ltype);}
+    {$1 = %reinterpret_cast(%const_cast($input, CTYPE*), $1_ltype);}
   // Const references are returned by value
   %typemap(out) const CPPTYPE&
     "$result = *$1;"
-  %typemap(ctype, out="CTYPE") const CPPTYPE&
-    "const CTYPE*"
 
   // All other aspects of const reference vs value are the same
   %typemap(imtype, in=IMTYPE ", intent(in)") CPPTYPE, const CPPTYPE&
@@ -161,7 +160,7 @@
   %typemap(in, noblock=1) CPPTYPE&
     {$1 = %reinterpret_cast($input, $1_ltype);}
   %typemap(out, noblock=1) CPPTYPE&
-    {$result = %reinterpret_cast($1, CPPTYPE*);}
+    {$result = %reinterpret_cast($1, CTYPE*);}
   %typemap(imtype, in="type(C_PTR), value") CPPTYPE&
     "type(C_PTR)"
   %typemap(ftype, out=FTYPE ", pointer") CPPTYPE&
@@ -237,7 +236,7 @@ FORT_UNSIGNED_TYPEMAP(unsigned long ,     long ,     "integer(C_LONG)"     )
 FORT_UNSIGNED_TYPEMAP(unsigned long long, long long, "integer(C_LONG_LONG)")
 
 // Note: ssize_t is defined in <sys/types.h> and isn't part of the standard
-FORT_UNSIGNED_TYPEMAP(size_t        ,     ssize_t,   "integer(C_SIZE_T)"   )
+%apply size_t {sssize_t};
 
 //---------------------------------------------------------------------------//
 // ENUMS
@@ -337,6 +336,17 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
   "const void*"
 %typemap(in, noblock=1) const SWIGTYPE*, const SWIGTYPE&
   {$1 = %static_cast(%const_cast($input, void*), $1_ltype);}
+
+// Structs will generate free/malloc usage via the %free typemap, but SWIG
+// doesn't include <stdlib.h> by default. Override the swigtype usage so that
+// downstream code doesn't fail.
+#ifndef __cplusplus
+%typemap(ctype, fragment="<stdlib.h>")
+        SWIGTYPE, SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
+  "void*"
+%typemap(ctype, fragment="<stdlib.h>") const SWIGTYPE*, const SWIGTYPE&
+  "const void*"
+#endif
 
 //---------------------------------------------------------------------------//
 // OPAQUE POINTERS
