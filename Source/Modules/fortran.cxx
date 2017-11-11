@@ -209,7 +209,6 @@ String* get_typemap(
         }
         if (!type)
         {
-            Swig_print_node(n);
             type = NewString("UNKNOWN");
         }
         Swig_warning(warning,
@@ -1761,7 +1760,7 @@ int FORTRAN::enumDeclaration(Node *n)
     String* enum_name = NULL;
     if (Strstr(symname, "$unnamed") != NULL)
     {
-        // No name for this enum
+        // Anonymous enum
     }
     else if (Node* classnode = getCurrentClass())
     {
@@ -1793,6 +1792,14 @@ int FORTRAN::enumDeclaration(Node *n)
     {
         // Print a placeholder enum value so we can use 'kind(ENUM)'
         Swig_save("constantWrapper", n, "sym:name", "value", NULL);
+
+        // Type may not be set if this enum is actually a typedef
+        if (!Getattr(n, "type"))
+        {
+            String* type = NewStringf("enum %s", enum_name);
+            Setattr(n, "type", type);
+            Delete(type);
+        }
 
         // Create placeholder for the enumeration type
         Setattr(n, "sym:name", enum_name);
