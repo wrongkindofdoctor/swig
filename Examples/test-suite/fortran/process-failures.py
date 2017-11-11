@@ -1,3 +1,6 @@
+# Delete contents of failing-tests.mk
+# rm summary.txt; make -k check-cpp
+
 from collections import defaultdict
 import os.path
 

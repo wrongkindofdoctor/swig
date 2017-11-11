@@ -1748,19 +1748,24 @@ int FORTRAN::enumDeclaration(Node *n)
     if (ImportMode)
         return SWIG_OK;
 
-    // Symname is not present if the enum is not being wrapped
-    // (protected/private).
-    String* symname = Getattr(n, "sym:name");
-
-    if (!symname)
+    String* access = Getattr(n, "access");
+    if (access && Strcmp(access, "public") != 0)
     {
-        return SWIG_OK;
+        // Not a public enum
+        return SWIG_NOWRAP;
     }
 
     String* enum_name = NULL;
-    if (Strstr(symname, "$unnamed") != NULL)
+    String* symname = Getattr(n, "sym:name");
+    if (!symname)
     {
-        // Anonymous enum
+        // Anonymous enum TYPE:
+        // enum {FOO=0, BAR=1};
+    }
+    else if (Strstr(symname, "$unnamed") != NULL)
+    {
+        // Anonymous enum VALUE
+        // enum {FOO=0, BAR=1} foo;
     }
     else if (Node* classnode = getCurrentClass())
     {
@@ -1851,29 +1856,35 @@ int FORTRAN::constantWrapper(Node* n)
     String* nodetype = nodeType(n);
     String* symname = Getattr(n, "sym:name");
     String* value = Getattr(n, "rawval");
-    
+
     if (Strcmp(nodetype, "enumitem") == 0)
     {
         // Make unique enum values for the user
         symname = this->make_unique_symname(n);
 
-        // Set the value to be used by constantWrapper
-        if (!value)
+        if (d_enum_public)
         {
-            value = Getattr(n, "enumvalue");
-        }
-        if (!value)
-        {
-            value = Getattr(n, "enumvalueex");
-        }
-            
-        // This is the ONLY place where we can fix the next enum's automatic
-        // value if this one has its name changed.
-        Node* next = nextSibling(n);
-        if (next && !Getattr(next, "enumvalue"))
-        {
-            String* updated_ex = NewStringf("%s + 1", symname);
-            Setattr(next, "enumvalueex", updated_ex);
+            // We are wrapping an enumeration in Fortran. Get the enum value OR 
+            // the automatically generated value (PREV + 1). Since the
+            // name of PREV typically needs updating (since we just created a
+            // unique symname), we update the next enum value if appropriate.
+            if (!value)
+            {
+                value = Getattr(n, "enumvalue");
+            }
+            if (!value)
+            {
+                value = Getattr(n, "enumvalueex");
+            }
+                
+            // This is the ONLY place where we can fix the next enum's automatic
+            // value if this one has its name changed.
+            Node* next = nextSibling(n);
+            if (next && !Getattr(next, "enumvalue"))
+            {
+                String* updated_ex = NewStringf("%s + 1", symname);
+                Setattr(next, "enumvalueex", updated_ex);
+            }
         }
     }
     else if (Strcmp(nodetype, "enum") == 0)
@@ -1889,6 +1900,7 @@ int FORTRAN::constantWrapper(Node* n)
 
     if (!value)
     {
+        // For constants, the given value. For enums etc., the C++ identifier.
         value = Getattr(n, "value");
     }
     assert(value);
@@ -1901,13 +1913,18 @@ int FORTRAN::constantWrapper(Node* n)
 
     if (d_enum_public)
     {
-        // We're wrapping a native enumerator: add to the list of enums being built
+        // We're wrapping a native enumerator: add to the list of enums being
+        // built
         Append(d_enum_public, symname);
         // Print the enum to the list
         Printv(f_params, "  enumerator :: ", symname, " = ", value, "\n", NULL);
     }
     else if (is_native_parameter(n))
     {
+        // Search for the KIND embedded in `integer(C_DOUBLE)` so that we can
+        // append the fortran specifier. This is kind of a hack, but native
+        // parameters should really only be used for the kinds we define in
+        // fortypemaps.swg
         const char* start = Char(im_typestr);
         const char* stop  = start + Len(im_typestr);
         for (; start != stop; ++start)

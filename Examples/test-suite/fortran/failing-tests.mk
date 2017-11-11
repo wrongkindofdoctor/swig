@@ -1,3 +1,4 @@
+
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
   member_funcptr_galore \
@@ -6,7 +7,6 @@ FAILING_CPP_TESTS += \
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
-  allprotected \
   arrays_dimensionless \
   arrays_global \
   arrays_scope \
@@ -15,8 +15,6 @@ FAILING_CPP_TESTS += \
   constructor_copy \
   contract \
   cpp_basic \
-  cpp_enum \
-  default_args \
   default_constructor \
   director_basic \
   director_classes \
@@ -30,19 +28,16 @@ FAILING_CPP_TESTS += \
   director_overload2 \
   director_property \
   director_protected \
-  enum_ignore \
   enum_scope_template \
   enum_thorough \
   evil_diamond_prop \
   extend \
   extend_default \
   fvirtual \
-  global_vars \
   inherit_target_language \
   li_attribute \
   li_attribute_template \
   li_boost_shared_ptr \
-  member_pointer \
   member_pointer_const \
   mixed_types \
   multiple_inheritance_abstract \
@@ -51,9 +46,7 @@ FAILING_CPP_TESTS += \
   multiple_inheritance_shared_ptr \
   name_warnings \
   namespace_class \
-  namespace_enum \
   namespace_nested \
-  namespace_spaces \
   nested_scope \
   nested_workaround \
   operator_overload \
@@ -85,7 +78,6 @@ FAILING_CPP_TESTS += \
   template_ns \
   template_ref_type \
   template_typedef_inherit \
-  typedef_struct_cpp \
   typemap_ns_using \
   typemap_various \
   using1 \
@@ -96,4 +88,3 @@ FAILING_CPP_TESTS += \
   variable_replacement \
   virtual_poly \
   wallkw
-
