@@ -1,9 +1,4 @@
 
-# failed to compile wrapper
-FAILING_CPP_TESTS += \
-  member_funcptr_galore \
-  memberin_extend
-
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
@@ -31,7 +26,6 @@ FAILING_CPP_TESTS += \
   enum_scope_template \
   enum_thorough \
   evil_diamond_prop \
-  extend \
   extend_default \
   fvirtual \
   inherit_target_language \
