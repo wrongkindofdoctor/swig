@@ -2,8 +2,6 @@
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
-  arrays_dimensionless \
-  arrays_global \
   arrays_scope \
   bloody_hell \
   char_strings \

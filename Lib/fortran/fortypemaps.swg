@@ -170,12 +170,13 @@
   %typemap(fout) CPPTYPE&
     "call c_f_pointer($1, $result)"
 
+  // Treat mutable pointers/arrays like mutable references
   %apply CPPTYPE& { CPPTYPE*, CPPTYPE[], CPPTYPE[ANY] };
+  %apply CPPTYPE& { const CPPTYPE*, const CPPTYPE[], const CPPTYPE[ANY] };
 
-  %typemap(ctype, out="CTYPE*") const CPPTYPE*, const CPPTYPE[], const CPPTYPE[ANY]
-    "CTYPE*"
+  // Const pointers have to be const-cast and (if %apply is used) reinterpreted
   %typemap(out, noblock=1) const CPPTYPE*, const CPPTYPE[], const CPPTYPE[ANY]
-    {$result = %const_cast(%reinterpret_cast($1, const CPPTYPE*), CPPTYPE*);}
+    {$result = %const_cast(%reinterpret_cast($1, const CTYPE*), CTYPE*);}
 
   // Arrays of known size are returned as pointers to known-size arrays
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") CPPTYPE[ANY]
