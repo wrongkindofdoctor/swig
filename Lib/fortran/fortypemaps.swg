@@ -254,43 +254,6 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
 %typemap(out, noblock=1) enum SWIGTYPE&, enum SWIGTYPE*, const enum SWIGTYPE*
     {$result = %reinterpret_cast($1, int*);}
 
-#if 0
-%typemap(ctype, out="int*") enum SWIGTYPE&
-    "int*"
-
-%typemap(ctype, out="int*") const CTYPE*, const CTYPE[], const CTYPE[ANY]
-    "int*"
-// Override the default value treatment
-%typemap(ctype, out="int") enum SWIGTYPE
-    %{int*%}
-%typemap(in, noblock=1) enum SWIGTYPE
-    {$1 = %static_cast(*$input, $1_ltype);}
-
-// Override references
-%typemap(ctype, out="int*") enum SWIGTYPE&, const enum SWIGTYPE&
-  "int*"
-%typemap(in, noblock=1) enum SWIGTYPE&, const enum SWIGTYPE&
-    {$1 = %reinterpret_cast($input, $1_ltype);}
-%typemap(out, noblock=1) enum SWIGTYPE&, const enum SWIGTYPE&
-    {$result = %reinterpret_cast($1, int*);}
-
-// Override pointers
-%typemap(ctype, out="int*") enum SWIGTYPE*
-    %{int*%}
-%typemap(in, noblock=1) enum SWIGTYPE*
-    {$1 = %reinterpret_cast($input, $1_ltype);}
-%typemap(out, noblock=1) enum SWIGTYPE*
-    {$result = %reinterpret_cast($1, int*);}
-
-// Override fortran type
-#define FTYPE "integer(kind($fclassname))"
-%typemap(ftype out=FTYPE ", pointer") enum SWIGTYPE, const enum SWIGTYPE&
-    FTYPE ", target, intent(inout)"
-%typemap(ftype out=FTYPE ", pointer")
-        enum SWIGTYPE, enum SWIGTYPE&, enum SWIGTYPE*
-    FTYPE ", target, intent(inout)"
-#endif
-
 //---------------------------------------------------------------------------//
 // CLASSES
 //---------------------------------------------------------------------------//
@@ -429,27 +392,30 @@ FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
 #ifdef __cplusplus
 
 %typemap(ctype, fragment="SwigfOpaqueMemFunPtr_cpp")
-        SWIGTYPE (CLASS::*)
+        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     %{swig::SwigfOpaqueMemFunPtr%}
 %typemap(in, fragment="SwigfBruteCast")
-        SWIGTYPE (CLASS::*)
+        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     %{$1 = brute_cast<$1_ltype>($input);%}
 %typemap(out, fragment="SwigfBruteCast")
-        SWIGTYPE (CLASS::*)
+        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     %{$result = brute_cast<swig::SwigfOpaqueMemFunPtr>($1);%}
 %typemap(imtype, in="type(SwigfOpaqueMemFunPtr), intent(in), value",
          fragment="SwigfOpaqueMemFunPtr")
-        SWIGTYPE (CLASS::*)
+        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     "type(SwigfOpaqueMemFunPtr)"
-%typemap(imimport) SWIGTYPE (CLASS::*)
+%typemap(imimport)
+        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     "SwigfOpaqueMemFunPtr"
 %typemap(ftype, out="type(SwigfOpaqueMemFunPtr)",
          fragment="SwigfOpaqueMemFunPtr")
-        SWIGTYPE (CLASS::*)
+        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     "type(SwigfOpaqueMemFunPtr), intent(in), value"
-%typemap(fin)    SWIGTYPE (CLASS::*)
+%typemap(fin)
+        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     "$1 = $input"
-%typemap(fout)   SWIGTYPE (CLASS::*)
+%typemap(fout)
+        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     "$result = $1"
 
 #endif

@@ -146,7 +146,7 @@ struct SwigfOpaqueMemFunPtr
 {
     enum { MEMPTR_SIZE = 32 };
     char data[MEMPTR_SIZE];
-#if 0
+#if __cplusplus >= 201103L
     static_assert(sizeof(void (detail::UndefinedClass::*)()) <= MEMPTR_SIZE,
                  "Member pointer buffer isn't large enough");
 #endif
