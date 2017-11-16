@@ -56,7 +56,7 @@ struct SwigfArrayWrapper
 // Add array wrapper to Fortran types when used
 %fragment("SwigfArrayWrapper", "fpublic", fragment="SwigfArrayWrapper_cpp",
           noblock="1") %{
-type, public, bind(C) :: SwigfArrayWrapper
+type, bind(C) :: SwigfArrayWrapper
   type(C_PTR), public :: data
   integer(C_SIZE_T), public :: size
 end type
