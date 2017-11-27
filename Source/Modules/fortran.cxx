@@ -1069,12 +1069,16 @@ void FORTRAN::cfuncWrapper(Node *n)
 
     Printf(cfunc->code, "}\n");
 
-    // Apply Standard SWIG substitutions
+    // Get 'null' return type if specified
+    String* null_return_type = Getattr(n, "tmap:ctype:null");
+
+    // Apply standard SWIG substitutions
     Replaceall(cfunc->code, "$cleanup", cleanup);
     Replaceall(cfunc->code, "$symname", symname);
     Replaceall(cfunc->code, "SWIG_contract_assert(",
                "SWIG_contract_assert($null, ");
-    Replaceall(cfunc->code, "$null", (is_csubroutine ? "" : "0"));
+    Replaceall(cfunc->code, "$null",
+               null_return_type ? null_return_type : "0");
 
     // Write the C++ function into the wrapper code file
     Wrapper_print(cfunc, f_wrapper);

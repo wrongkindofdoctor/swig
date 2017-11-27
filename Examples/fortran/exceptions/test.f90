@@ -11,6 +11,7 @@ program main
     use except
     use downstream, only : throw_error
     implicit none
+    integer, dimension(:), pointer :: arrptr
     integer :: val = 123
 
     write(*,*) "Making bad subroutine call"
@@ -47,6 +48,9 @@ program main
         ! Clear error flag
         ierr = 0
     endif
+
+    arrptr => get_view()
+    write(*,*) "pointer:", arrptr
 
 end program
 

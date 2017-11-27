@@ -15,6 +15,8 @@
  *
  * ctype      : type in C wrapper code (input parameter, default return value)
  * ctype:out  : *return* type (overrides ctype)
+ * ctype:null : null value to return for exceptions, etc. (must be convertible
+ *              to type ctype or ctype:out)
  * imtype     : Fortran type returned from "BIND" interface (must be Fortran
  *              equivalent of ctype:out)
  * imtype:in  : Fortran dummy argument type for "BIND" interface (must be
@@ -85,7 +87,7 @@
 // VOID TYPES
 //---------------------------------------------------------------------------//
 
-%typemap(ctype)  void
+%typemap(ctype, null="")  void
   "void"
 %typemap(out)    void
   ""
@@ -260,7 +262,7 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
 //---------------------------------------------------------------------------//
 
 // Classes accepted by value are still passed by reference by fortran
-%typemap(ctype)  SWIGTYPE
+%typemap(ctype, null="NULL")  SWIGTYPE
   %{void*%}
 // They're copy-assigned when they're passed
 %typemap(in, noblock=1)     SWIGTYPE
@@ -280,7 +282,7 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
   "$result%swigptr = $1"
 
 // Mutable pointer, mutable reference, and const pointer to mutable reference
-%typemap(ctype) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
+%typemap(ctype, null="NULL") SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
   "void*"
 %typemap(in, noblock=1) SWIGTYPE*, SWIGTYPE&
   {$1 = %static_cast($input, $1_ltype);}
@@ -295,7 +297,7 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
 %typemap(fout) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
   "$result%swigptr = $1"
 
-%typemap(ctype) const SWIGTYPE*, const SWIGTYPE&
+%typemap(ctype, null="NULL") const SWIGTYPE*, const SWIGTYPE&
   "const void*"
 %typemap(in, noblock=1) const SWIGTYPE*, const SWIGTYPE&
   {$1 = %static_cast(%const_cast($input, void*), $1_ltype);}

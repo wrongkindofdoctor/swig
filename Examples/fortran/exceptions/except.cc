@@ -11,6 +11,7 @@
 #include "except.hh"
 
 #include <stdexcept>
+#include <utility>
 
 namespace
 {
@@ -30,6 +31,11 @@ int bravo()
         throw std::logic_error("Value has not been assigned");
 
     return g_stored;
+}
+
+std::pair<int*, std::size_t> get_view()
+{
+    return std::make_pair(&g_stored, 1);
 }
 
 //---------------------------------------------------------------------------//

@@ -11,8 +11,11 @@
 #ifndef exceptions_except_hh
 #define exceptions_except_hh
 
+#include <utility>
+
 void alpha(int val);
 int  bravo();
+std::pair<int*, std::size_t> get_view();
 
 #endif // exceptions_except_hh
 
