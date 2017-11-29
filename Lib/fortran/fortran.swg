@@ -21,8 +21,11 @@
 #define %fortranprepend       %feature("fortranprepend")
 #define %clearfortranprepend  %feature("fortranprepend","")
 
-#define %fortranappend         %feature("fortranappend")
-#define %clearfortranappend    %feature("fortranappend","")
+#define %fortranappend        %feature("fortranappend")
+#define %clearfortranappend   %feature("fortranappend","")
+
+#define %fortranbegin         %insert("fortranbegin")
+
 
 #define %parameter      %feature("parameter")
 #define %noparameter    %feature("parameter","0")
