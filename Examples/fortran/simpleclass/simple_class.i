@@ -51,6 +51,17 @@ void print_pointer(int msg, void* ptr)
 
 %parameter approx_pi;
 
+
+%feature("docstring") SimpleClass "
+
+Simple test class.
+
+C++ includes: SimpleClass.hh ";
+
+%feature("docstring")  SimpleClass::SimpleClass "SimpleClass::SimpleClass()
+
+Constructor. ";
+
 // %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"
 

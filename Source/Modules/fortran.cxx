@@ -424,9 +424,11 @@ class FORTRAN : public Language
     void cfuncWrapper(Node* n);
     void imfuncWrapper(Node* n);
     void proxyfuncWrapper(Node* n);
+    void write_docstring(Node* n, String* dest);
 
     void write_wrapper();
     void write_module();
+
 
     bool replace_fclassname(SwigType* type, String* tm);
     void replace_fspecial_impl(SwigType* classnametype, String* tm,
@@ -1217,6 +1219,9 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 {
     Wrapper* ffunc = NewFortranWrapper();
 
+    // Write documentation
+    this->write_docstring(n, f_proxy);
+    
     // >>> FUNCTION RETURN VALUES
     
     String* fargs = NewStringEmpty();
@@ -1321,7 +1326,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
         Setattr(p, "lname", Getattr(p, "lname:saved"));
         Delattr(p, "lname:saved");
     }
-    
+
     // >>> BUILD WRAPPER FUNCTION AND INTERFACE CODE
     
     String* prepend = Getattr(n, "feature:fortranprepend");
@@ -1487,6 +1492,27 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
 //---------------------------------------------------------------------------//
 /*!
+ * \brief Write documentation for the given node to the passed string.
+ */
+void FORTRAN::write_docstring(Node* n, String* dest)
+{
+    String* docs = Getattr(n, "feature:docstring");
+
+    if (!docs)
+        return;
+
+    List* lines = SplitLines(docs);
+    for (Iterator it = First(lines); it.item; it = Next(it))
+    {
+        // Chop(it.item);
+        Printv(dest, "! ", it.item, "\n", NULL);
+    }
+
+    Delete(lines);
+}
+
+//---------------------------------------------------------------------------//
+/*!
  * \brief Create a friendly parameter name
  */
 String* FORTRAN::makeParameterName(Node *n, Parm *p,
@@ -1590,6 +1616,10 @@ int FORTRAN::classHandler(Node *n)
     Printv(f_public, " public :: ", symname, "\n",
                     NULL);
 
+
+    // Write documentation
+    this->write_docstring(n, f_types);
+    
     // Declare class
     Printv(f_types, " type", NULL);
     if (basename)
@@ -2022,7 +2052,7 @@ int FORTRAN::enumDeclaration(Node *n)
         // Make the enum class *and* its values public
         Printv(f_public, " public :: ", NULL);
         print_wrapped_list(f_public, First(d_enum_public), 11);
-        Printv(f_public, "\n", NULL);
+        Putc('\n', f_public);
         Delete(d_enum_public);
         d_enum_public = NULL;
     }
