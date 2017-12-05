@@ -405,7 +405,6 @@ class FORTRAN : public Language
     virtual int globalvariableHandler(Node *n);
     virtual int staticmemberfunctionHandler(Node *n);
     virtual int staticmembervariableHandler(Node *n);
-    virtual int importDirective(Node *n);
     virtual int enumDeclaration(Node *n);
     virtual int constantWrapper(Node *n);
     virtual int classforwardDeclaration(Node *n);
@@ -729,11 +728,29 @@ void FORTRAN::write_module(String* filename)
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Process the module beginning.
+ * \brief Process a %module
  */
 int FORTRAN::moduleDirective(Node *n)
 {
     Language::moduleDirective(n);
+
+    // Check for module name uniqueness. If this is the "real" module command
+    // then the symbol should be the first instance; but if the code mistakenly
+    // has multiple %module directives only the first should be considered.
+    String* modname = Getattr(n, "name");
+    bool added_symbol = add_fsymbol(modname, n);
+
+    if (ImportMode)
+    {
+        // This %module directive is inside another module being %imported
+        Printv(f_fmodule, " use ", modname, "\n", NULL);
+        return SWIG_OK;
+    }
+
+    if (!added_symbol)
+    {
+        return SWIG_NOWRAP;
+    }
 
     // Write documentation if given. Note that it's simply labeled "docstring"
     // and in a daughter node; to unify the doc string processing we just set
@@ -749,15 +766,11 @@ int FORTRAN::moduleDirective(Node *n)
         }
     }
 
-    // Module name (from the SWIG %module command)
-    String* modname = Getattr(n, "name");
-
     Printv(f_fmodule, "module ", modname, "\n"
                       " use, intrinsic :: ISO_C_BINDING\n",
                       NULL);
 
     // Prevent other fortran symbols from clashing
-    add_fsymbol(modname, n);
 
     return SWIG_OK;
 }
@@ -1967,35 +1980,6 @@ int FORTRAN::staticmembervariableHandler(Node *n)
     Setattr(n, "fortran:procedure", "nopass");
     Language::staticmembervariableHandler(n);
     return SWIG_OK;
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Process an '%import' directive.
- *
- * Besides importing typedefs, this should add a "use MODULENAME" line inside
- * the "module" block of the proxy code (before the "contains" line).
- */
-int FORTRAN::importDirective(Node *n)
-{
-    String* modname = Getattr(n, "module");
-    if (modname)
-    {
-        // The actual module contents should be the first child
-        // of the provided %import node 'n'.
-        Node* mod = firstChild(n);
-        assert(Strcmp(nodeType(mod), "module") == 0);
-
-        // I don't know if the module name could ever be different from the
-        // 'module' attribute of the import node, but just in case... ?
-        modname = Getattr(mod, "name");
-        Printv(f_fmodule, " use ", modname, "\n", NULL);
-
-        // Mark the module as a fortran symbol that can't be reused
-        add_fsymbol(modname, n);
-    }
-
-    return Language::importDirective(n);
 }
 
 //---------------------------------------------------------------------------//

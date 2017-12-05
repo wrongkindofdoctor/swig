@@ -58,7 +58,6 @@ void print_pointer(int msg, void* ptr)
 
 
 %feature("docstring") SimpleClass %{
-
 Simple test class.
 
 C++ includes: SimpleClass.hh
