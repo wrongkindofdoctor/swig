@@ -500,15 +500,11 @@ int FORTRAN::top(Node *n)
     // Output file name
     d_outpath = Getattr(n, "outfile");
 
-    /* Initialize temporary file-like output strings */
+    // >>> C++ WRAPPER CODE
 
     // run time code (beginning of .cxx file)
     f_begin = NewStringEmpty();
     Swig_register_filebyname("begin", f_begin);
-
-    // run time code (beginning of .f90 file)
-    f_fortranbegin = NewString("");
-    Swig_register_filebyname("fortranbegin", f_fortranbegin);
 
     // run time code (beginning of .cxx file)
     f_runtime = NewStringEmpty();
@@ -525,6 +521,12 @@ int FORTRAN::top(Node *n)
     // initialization code (end of .cxx file)
     f_init = NewStringEmpty();
     Swig_register_filebyname("init", f_init);
+
+    // >>> FORTRAN WRAPPER CODE
+
+    // Code before the `module` statement
+    f_fortranbegin = NewString("");
+    Swig_register_filebyname("fortranbegin", f_fortranbegin);
 
     // Other imported fortran modules
     f_imports = NewStringEmpty();
