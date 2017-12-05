@@ -8,6 +8,9 @@
 //---------------------------------------------------------------------------//
 %module simple_class
 
+
+%include "index.i"
+
 %{
 #include "SimpleClass.hh"
 %}
