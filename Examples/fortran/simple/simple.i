@@ -1,7 +1,7 @@
 /* File : simple.i */
 %module simple
 
-%include "index.i"
+%include "docstring.i"
 
 %inline %{
 extern int    gcd(int x, int y);
