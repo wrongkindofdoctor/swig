@@ -20,6 +20,16 @@ namespace
 double data[10];
 }
 
+const int linked_const_int = -1234;
+
+//---------------------------------------------------------------------------//
+namespace foo
+{
+int global_counter = 0;
+}
+
+//---------------------------------------------------------------------------//
+
 void set_something(int x, double y)
 {
     if (!(x < 10))
@@ -78,6 +88,37 @@ void print_array(std::pair<const double*, size_t> view)
         sep = ", ";
     }
     cout << "}\n";
+}
+
+//---------------------------------------------------------------------------//
+
+void print_rgb(RgbEnum c)
+{
+    const char* str = "BAD RGB";
+
+    switch (c)
+    {
+        case RED:   str = "red"; break;
+        case GREEN: str = "green"; break;
+        case BLUE:  str = "blue"; break;
+    }
+    cout << str << endl;
+}
+
+//---------------------------------------------------------------------------//
+
+void print_cmyk(CmykEnum c)
+{
+    const char* str = "BAD CMYK";
+
+    switch (c)
+    {
+        case CYAN:   str = "CYAN";    break;
+        case MAGENTA:str = "MAGENTA"; break;
+        case YELLOW: str = "YELLOW";  break;
+        case BLACK:  str = "BLACK";   break;
+    }
+    cout << str << endl;
 }
 
 //---------------------------------------------------------------------------//

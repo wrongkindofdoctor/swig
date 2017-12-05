@@ -17,14 +17,6 @@ struct BasicStruct
     int val;
 };
 
-//! A typeless enumeration
-enum MyEnum {
-    RED = 0,
-    GREEN,
-    BLUE,
-    BLACK = -1
-};
-
 //===========================================================================//
 /*!
  * \class SimpleClass

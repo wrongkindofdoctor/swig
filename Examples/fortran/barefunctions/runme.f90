@@ -7,7 +7,42 @@
 !-----------------------------------------------------------------------------!
 
 program main
-    use ISO_FORTRAN_ENV
+    implicit none
+    call test_consts()
+    call test_funcs()
+    call test_enum()
+
+contains
+
+subroutine test_consts()
+    use bare
+    use, intrinsic :: ISO_C_BINDING
+    implicit none
+    write(0, *) "MY_SPECIAL_NUMBERS ", MY_SPECIAL_NUMBERS
+    write(0, *) "octoconst   ", octal_const
+    write(0, *) "wrapped_const ", wrapped_const
+    write(0, *) "pi is approximately ", approx_pi
+    write(0, *) "2pi is approximately ", get_approx_twopi()
+    write(0, *) "extern const int is ", get_linked_const_int()
+    ! Can't assign these
+!     wrapped_const = 2
+!     MY_SPECIAL_NUMBERS = 4
+end subroutine test_consts
+
+subroutine test_enum()
+    use bare
+    implicit none
+    call print_rgb(RED)
+    call print_rgb(GREEN)
+    call print_rgb(BLUE)
+    call print_rgb(BLACK)
+    call print_cmyk(BLACK)
+!    call print_color(GREEN)
+!    BLACK = BLUE
+!    call print_color(BLACK)
+end subroutine
+
+subroutine test_funcs()
     use bare
     implicit none
     real(kind=8) :: temp
@@ -16,7 +51,6 @@ program main
     real(kind=8), dimension(3,3) :: mat
     integer :: i, j
     real(kind=8), pointer :: rptr
-
     call set_something(2, 200.0d0)
     call set_something(1, 10.0d0)
     call set_something(0, 1.0d0)
@@ -77,12 +111,13 @@ program main
     
     ! Instead, do this since allocatable data is contiguous:
     do i = 1,3
-        ! This doesn't work???
         write(0, *) "Printing 2D array row ", i, " slice..."
         alloc(:) = mat(i,:)
         call print_array(alloc)
     enddo
     
+end subroutine test_funcs
+
 end program
 
 !-----------------------------------------------------------------------------!

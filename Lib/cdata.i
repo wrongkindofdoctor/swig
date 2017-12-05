@@ -75,7 +75,7 @@ static jbyteArray SWIG_JavaArrayOutCDATA(JNIEnv *jenv, char *result, jsize sz) {
 
 
 /* -----------------------------------------------------------------------------
- * %cdata(TYPE [, NAME]) 
+ * %cdata(TYPE [, NAME])
  *
  * Convert raw C data to a binary string.
  * ----------------------------------------------------------------------------- */
@@ -113,6 +113,10 @@ SWIGCDATA cdata_##NAME(TYPE *ptr, int nelements);
 %rename(cdata) ::cdata_void(void *ptr, int nelements);
 
 %cdata(void);
+
+%{
+#include "string.h"
+%}
 
 /* Memory move function. Due to multi-argument typemaps this appears to be wrapped as
 void memmove(void *data, const char *s); */

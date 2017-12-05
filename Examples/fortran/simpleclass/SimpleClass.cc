@@ -114,20 +114,6 @@ const SimpleClass& get_class()
     return g_globalclass;
 }
 
-void print_color(MyEnum c)
-{
-    const char* str = "ERROR";
-
-    switch (c)
-    {
-        case RED:   str = "red"; break;
-        case GREEN: str = "green"; break;
-        case BLUE:  str = "blue"; break;
-        case BLACK: str = "black"; break;
-    }
-    cout << str << endl;
-}
-
 //---------------------------------------------------------------------------//
 // end of simple_class/SimpleClass.cc
 //---------------------------------------------------------------------------//

@@ -7,6 +7,17 @@
  */
 //---------------------------------------------------------------------------//
 
+// Define SWIGEXTERN for global variables: 'extern' if C++, nothing if C
+%insert("runtime") %{
+#ifndef SWIGEXTERN
+#ifdef __cplusplus
+#define SWIGEXTERN extern
+#else
+#define SWIGEXTERN
+#endif
+#endif
+%}
+
 //---------------------------------------------------------------------------//
 // UNKNOWN CLASS
 //---------------------------------------------------------------------------//
@@ -19,6 +30,13 @@ type :: SwigfUnknownClass
 end type
 %}
 
+// This fragment is inserted by the fortran.cxx code when an unknown enum is
+// encountered.
+%fragment("SwigfUnknownEnum", "fpublic", noblock=1) %{
+enum, bind(c)
+  enumerator :: SwigfUnknownEnum = -1
+end enum
+%}
 //---------------------------------------------------------------------------//
 // ARRAY WRAPPER
 //---------------------------------------------------------------------------//
@@ -38,7 +56,7 @@ struct SwigfArrayWrapper
 // Add array wrapper to Fortran types when used
 %fragment("SwigfArrayWrapper", "fpublic", fragment="SwigfArrayWrapper_cpp",
           noblock="1") %{
-type, public, bind(C) :: SwigfArrayWrapper
+type, bind(C) :: SwigfArrayWrapper
   type(C_PTR), public :: data
   integer(C_SIZE_T), public :: size
 end type
@@ -52,9 +70,26 @@ end type
 // pointers (which according to the standard CANNOT be converted to a pointer).
 // encountered. Its syntax is exactly like static_cast.
 %fragment("SwigfBruteCast", "runtime",
-          fragment="<cstring>") %{
+          fragment="<cstring>", fragment="<cstdlib>") %{
 namespace swig
 {
+template<typename Dst, typename Src>
+void swigf_opaque_memcpy(Dst* dst, const Src* src)
+{
+    const std::size_t MINSIZE
+        = (sizeof(dst) < sizeof(src) ? sizeof(dst) : sizeof(src));
+    const std::size_t MAXSIZE
+        = (sizeof(dst) > sizeof(src) ? sizeof(dst) : sizeof(src));
+    std::memcpy(dst, src, MINSIZE);
+    if (MAXSIZE > MINSIZE)
+    {
+        std::memset(static_cast<char*>(static_cast<void*>(dst)) + MINSIZE,
+                    MAXSIZE - MINSIZE,
+                    0);
+    }
+    // Otherwise should assert all the other bytes are zero?
+}
+
 template<typename Target>
 class brute_cast_impl
 {
@@ -62,11 +97,7 @@ class brute_cast_impl
     template<typename Source>
     brute_cast_impl(const Source& src_fwd)
     {
-#if __cplusplus >= 201103L
-        static_assert(sizeof(Source) == sizeof(Target),
-                      "Incompatible sizes");
-#endif
-        std::memcpy(&d_result, &src_fwd, sizeof(Source));
+        swigf_opaque_memcpy(&d_result, &src_fwd);
     }
 
     Target operator() () const { return d_result; }
@@ -82,12 +113,8 @@ class brute_cast_impl<Target&>
     template<typename Source>
     brute_cast_impl(Source& src_ref)
     {
-#if __cplusplus >= 201103L
-        static_assert(sizeof(Source) == sizeof(Target),
-                      "Incompatible sizes");
-#endif
         Source* src_ptr = &src_ref;
-        std::memcpy(&d_result, &src_ptr, sizeof(Source*));
+        swigf_opaque_memcpy(&d_result, &src_ptr);
     }
 
     Target& operator() () const { return *d_result; }
@@ -109,23 +136,20 @@ using swig::brute_cast;
 //---------------------------------------------------------------------------//
 // MEMBER FUNCTION POINTERS
 //
-// NOTE: this is HIGHLY experimental. The implementation assumes that all
-// member function pointers are the same size (though according to 
-// https://www.codeproject.com/Articles/7150/Member-Function-Pointers-and-the-Fastest-Possible
-// this is not true for some compilers!)
+// We memcpy the member function pointer
 //---------------------------------------------------------------------------//
 
 // Add array wrapper to C++ code when used by Fortran fragment
 %fragment("SwigfOpaqueMemFunPtr_cpp", "header") %{
 namespace swig {
-namespace detail {
-class UndefinedClass_;
-}
-
 struct SwigfOpaqueMemFunPtr
 {
-    enum { MEMPTR_SIZE = sizeof(void (UndefinedClass_::*)()); }
+    enum { MEMPTR_SIZE = 32 };
     char data[MEMPTR_SIZE];
+#if __cplusplus >= 201103L
+    static_assert(sizeof(void (detail::UndefinedClass::*)()) <= MEMPTR_SIZE,
+                 "Member pointer buffer isn't large enough");
+#endif
 };
 }
 %}
@@ -137,9 +161,8 @@ struct SwigfOpaqueMemFunPtr
 // preprocessor.
 %fragment("SwigfOpaqueMemFunPtr", "fpublic", noblock=1,
           fragment="SwigfOpaqueMemFunPtr_cpp") %{
-#define MEMPTR_SIZE 16
-type :: SwigfOpaqueMemFunPtr
-  integer(C_SIGNED_CHAR), dimension(MEMPTR_SIZE), public :: data
+type, public, bind(C) :: SwigfOpaqueMemFunPtr
+  integer(C_SIGNED_CHAR), dimension(32), public :: data
 end type
 %}
 

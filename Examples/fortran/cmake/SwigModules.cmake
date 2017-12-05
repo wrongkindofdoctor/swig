@@ -35,8 +35,8 @@ IF(PYTHON_VERSION_STRING VERSION_GREATER 3.0)
 ENDIF()
 
 # Define extra output files
-set(SWIG_FORTRAN_EXTRA_FILE_EXTENSION ".f90") # old CMake
-set(SWIG_FORTRAN_EXTRA_FILE_EXTENSIONS ".f90")# new CMake
+set(SWIG_FORTRAN_EXTRA_FILE_EXTENSION "f90") # old CMake UseSWIG
+set(SWIG_FORTRAN_EXTRA_FILE_EXTENSIONS ".f90")# new CMake UseSWIG
 
 ##---------------------------------------------------------------------------##
 # Look through a header/SWIG file and find dependencies

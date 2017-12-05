@@ -22,6 +22,7 @@
 
   // C wrapper type: pointer to templated array wrapper
   %typemap(ctype, noblock=1, out=%str(swig::SwigfArrayWrapper< CONST_CTYPE >),
+           null=%str(swig::SwigfArrayWrapper< CONST_CTYPE >()),
            fragment="SwigfArrayWrapper") PAIR_TYPE
     {AW_TYPE*}
 
