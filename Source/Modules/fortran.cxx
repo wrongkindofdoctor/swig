@@ -11,7 +11,9 @@ namespace
 const char usage[] = "\
 Fotran Options (available with -fortran)\n\
      -cppcast    - Enable C++ casting operators (default) \n\
-     -nocppcast - Disable C++ casting operators\n\
+     -nocppcast  - Disable C++ casting operators\n\
+     -fext       - Change file extension of generated Fortran files to <ext>\n\
+                   (default is f90)\n\
 \n";
 
 //! Maximum line length
@@ -359,28 +361,23 @@ void print_pydict(Node* n)
 class FORTRAN : public Language
 {
   private:
-    // >>> ATTRIBUTES AND OPTIONS
-
-    String* d_module; //!< Module name
-    String* d_outpath; //!< WRAP.cxx output
-
     // >>> OUTPUT FILES
 
     // Injected into .cxx file
     String* f_begin; //!< Very beginning of output file
-    String* f_fbegin; //!< Very beginning of output file
     String* f_runtime; //!< SWIG runtime code
     String* f_header; //!< Declarations and inclusions from .i
     String* f_wrapper; //!< C++ Wrapper code
     String* f_init; //!< C++ initalization functions
 
     // Injected into module file
-    String* f_fimports;     //!< Fortran "use" directives generated from %import
+    String* f_fbegin;       //!< Very beginning of output file
+    String* f_fmodule;      //!< Fortran "module" and "use" directives
     String* f_fpublic;      //!< List of public interface functions and mapping
-    String* f_fparams;       //!< Generated enumeration/param types
+    String* f_fparams;      //!< Generated enumeration/param types
     String* f_ftypes;       //!< Generated class types
     String* f_finterfaces;  //!< Fortran interface declarations to SWIG functions
-    String* f_fwrapper;    //!< Fortran subroutine wrapper functions
+    String* f_fwrapper;     //!< Fortran subroutine wrapper functions
 
     // Temporary mappings
     Hash* d_overloads; //!< Overloaded subroutine -> overload names
@@ -388,11 +385,17 @@ class FORTRAN : public Language
     // Current class parameters
     Hash* d_method_overloads; //!< Overloaded subroutine -> overload names
 
+    // Inside of the 'enum' definitions
     List* d_enum_public; //!< List of enumerator values
+
+    // >>> CONFIGURE OPTIONS
+
+    String* d_fext; //!< Fortran file extension
 
   public:
     virtual void main(int argc, char *argv[]);
     virtual int top(Node *n);
+    virtual int moduleDirective(Node *n);
     virtual int functionWrapper(Node *n);
     virtual int destructorHandler(Node *n);
     virtual int constructorHandler(Node *n);
@@ -412,8 +415,8 @@ class FORTRAN : public Language
     virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm);
 
     FORTRAN()
-        : d_module(NULL)
-        , d_outpath(NULL)
+        : d_overloads(NULL)
+        , d_method_overloads(NULL)
         , d_enum_public(NULL)
     {
         /* * */
@@ -425,8 +428,8 @@ class FORTRAN : public Language
     void proxyfuncWrapper(Node* n);
     void write_docstring(Node* n, String* dest);
 
-    void write_wrapper();
-    void write_module();
+    void write_wrapper(String* filename);
+    void write_module(String* filename);
 
 
     bool replace_fclassname(SwigType* type, String* tm);
@@ -451,6 +454,9 @@ void FORTRAN::main(int argc, char *argv[])
     /* Set language-specific subdirectory in SWIG library */
     SWIG_library_directory("fortran");
 
+    // Default string extension
+    d_fext = NewString("f90");
+
     // Set command-line options
     for (int i = 1; i < argc; ++i)
     {
@@ -463,6 +469,21 @@ void FORTRAN::main(int argc, char *argv[])
         {
             cppcast = 0;
             Swig_mark_arg(i);
+        }
+        else if (strcmp(argv[i], "-fext") == 0)
+        {
+            Swig_mark_arg(i);
+            if (argv[i + 1])
+            {
+                Delete(d_fext);
+                d_fext = NewString(argv[i + 1]);
+                Swig_mark_arg(i + 1);
+                ++i;
+            }
+            else
+            {
+                Swig_arg_error();
+            }
         }
         else if ((strcmp(argv[i], "-help") == 0))
         {
@@ -493,13 +514,12 @@ void FORTRAN::main(int argc, char *argv[])
 /*!
  * \brief Top-level code generation function.
  */
-int FORTRAN::top(Node *n)
+int FORTRAN::top(Node* n)
 {
-    // Module name (from the SWIG %module command)
-    d_module = Getattr(n, "name");
-    add_fsymbol(d_module, n);
-    // Output file name
-    d_outpath = Getattr(n, "outfile");
+    // Configure output filename using the name of the SWIG input file
+    String* foutfilename = NewStringf("%s.%s", Getattr(n, "name"), d_fext);
+    Setattr(n, "fortran:outfile", foutfilename);
+    Delete(foutfilename);
 
     // >>> C++ WRAPPER CODE
 
@@ -529,9 +549,9 @@ int FORTRAN::top(Node *n)
     f_fbegin = NewString("");
     Swig_register_filebyname("fbegin", f_fbegin);
 
-    // Other imported fortran modules
-    f_fimports = NewStringEmpty();
-    Swig_register_filebyname("fimports", f_fimports);
+    // Start of module: 
+    f_fmodule = NewStringEmpty();
+    Swig_register_filebyname("fmodule", f_fmodule);
 
     // Public interface functions
     f_fpublic = NewStringEmpty();
@@ -564,12 +584,14 @@ int FORTRAN::top(Node *n)
     this->symbolAddScope("fortran");
     this->symbolAddScope("fortran_fwd");
 
-    /* Emit all other wrapper code */
+    // Emit all other wrapper code
     Language::top(n);
 
-    /* Write fortran module files */
-    write_wrapper();
-    write_module();
+    // Write C++ wrapper file
+    write_wrapper(Getattr(n, "outfile"));
+
+    // Write fortran module file
+    write_module(Getattr(n, "fortran:outfile"));
 
     // Clean up files and other data
     Delete(d_overloads);
@@ -577,7 +599,7 @@ int FORTRAN::top(Node *n)
     Delete(f_finterfaces);
     Delete(f_ftypes);
     Delete(f_fpublic);
-    Delete(f_fimports);
+    Delete(f_fmodule);
     Delete(f_init);
     Delete(f_wrapper);
     Delete(f_header);
@@ -592,13 +614,13 @@ int FORTRAN::top(Node *n)
 /*!
  * \brief Write C++ wrapper code
  */
-void FORTRAN::write_wrapper()
+void FORTRAN::write_wrapper(String* filename)
 {
     // Open file
-    File* out = NewFile(d_outpath, "w", SWIG_output_files());
+    File* out = NewFile(filename, "w", SWIG_output_files());
     if (!out)
     {
-        FileErrorDisplay(d_outpath);
+        FileErrorDisplay(filename);
         SWIG_exit(EXIT_FAILURE);
     }
 
@@ -630,28 +652,23 @@ void FORTRAN::write_wrapper()
 /*!
  * \brief Write Fortran implementation module
  */
-void FORTRAN::write_module()
+void FORTRAN::write_module(String* filename)
 {
     // Open file
-    String* path = NewStringf(
-            "%s%s.f90", SWIG_output_directory(), Char(d_module));
-    File* out = NewFile(path, "w", SWIG_output_files());
+    File* out = NewFile(filename, "w", SWIG_output_files());
     if (!out)
     {
-        FileErrorDisplay(path);
+        FileErrorDisplay(filename);
         SWIG_exit(EXIT_FAILURE);
     }
-    Delete(path);
 
     // Write SWIG auto-generation banner
     Swig_banner_target_lang(out, "!");
 
     // Write module
     Dump(f_fbegin, out);
-    Printv(out, "module ", d_module, "\n"
-                " use, intrinsic :: ISO_C_BINDING\n",
-                f_fimports,
-                " implicit none\n"
+    Dump(f_fmodule, out);
+    Printv(out, " implicit none\n"
                 " private\n" , NULL);
     if (Len(f_fpublic) > 0 || Len(d_overloads) > 0)
     {
@@ -703,11 +720,46 @@ void FORTRAN::write_module()
                     " ! FORTRAN PROXY CODE\n",
                     f_fwrapper, NULL);
     }
-    Printv(out, "\nend module ", d_module, "\n",
+    Printv(out, "\nend module", "\n",
                 NULL);
 
     // Close file
     Delete(out);
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Process the module beginning.
+ */
+int FORTRAN::moduleDirective(Node *n)
+{
+    Language::moduleDirective(n);
+
+    // Write documentation if given. Note that it's simply labeled "docstring"
+    // and in a daughter node; to unify the doc string processing we just set
+    // it as a feature attribute on the module.
+    Node* options = Getattr(n, "options");
+    if (options)
+    {
+        String* docstring = Getattr(options, "docstring");
+        if (docstring)
+        {
+            Setattr(n, "feature:docstring", docstring);
+            this->write_docstring(n, f_fmodule);
+        }
+    }
+
+    // Module name (from the SWIG %module command)
+    String* modname = Getattr(n, "name");
+
+    Printv(f_fmodule, "module ", modname, "\n"
+                      " use, intrinsic :: ISO_C_BINDING\n",
+                      NULL);
+
+    // Prevent other fortran symbols from clashing
+    add_fsymbol(modname, n);
+
+    return SWIG_OK;
 }
 
 //---------------------------------------------------------------------------//
@@ -1937,12 +1989,14 @@ int FORTRAN::importDirective(Node *n)
         // I don't know if the module name could ever be different from the
         // 'module' attribute of the import node, but just in case... ?
         modname = Getattr(mod, "name");
-        Printv(f_fimports, " use ", modname, "\n", NULL);
+        Printv(f_fmodule, " use ", modname, "\n", NULL);
+
+        // Mark the module as a fortran symbol that can't be reused
+        add_fsymbol(modname, n);
     }
 
     return Language::importDirective(n);
 }
-
 
 //---------------------------------------------------------------------------//
 /*!

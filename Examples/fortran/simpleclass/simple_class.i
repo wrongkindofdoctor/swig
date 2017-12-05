@@ -6,7 +6,7 @@
  * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
  */
 //---------------------------------------------------------------------------//
-%module simple_class
+%module(docstring="A simple example module") simple_class
 
 %{
 #include "SimpleClass.hh"
@@ -57,15 +57,18 @@ void print_pointer(int msg, void* ptr)
 %parameter approx_pi;
 
 
-%feature("docstring") SimpleClass "
+%feature("docstring") SimpleClass %{
 
 Simple test class.
 
-C++ includes: SimpleClass.hh ";
+C++ includes: SimpleClass.hh
+%};
 
-%feature("docstring")  SimpleClass::SimpleClass "SimpleClass::SimpleClass()
+%feature("docstring")  SimpleClass::double_it %{
+void SimpleClass::double_it()
 
-Constructor. ";
+Multiply the value by 2.
+%};
 
 // %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"
