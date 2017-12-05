@@ -375,12 +375,12 @@ class FORTRAN : public Language
     String* f_init; //!< C++ initalization functions
 
     // Injected into module file
-    String* f_imports;     //!< Fortran "use" directives generated from %import
-    String* f_public;      //!< List of public interface functions and mapping
-    String* f_params;       //!< Generated enumeration/param types
-    String* f_types;       //!< Generated class types
-    String* f_interfaces;  //!< Fortran interface declarations to SWIG functions
-    String* f_proxy;    //!< Fortran subroutine wrapper functions
+    String* f_fimports;     //!< Fortran "use" directives generated from %import
+    String* f_fpublic;      //!< List of public interface functions and mapping
+    String* f_fparams;       //!< Generated enumeration/param types
+    String* f_ftypes;       //!< Generated class types
+    String* f_finterfaces;  //!< Fortran interface declarations to SWIG functions
+    String* f_fwrapper;    //!< Fortran subroutine wrapper functions
 
     // Temporary mappings
     Hash* d_overloads; //!< Overloaded subroutine -> overload names
@@ -530,28 +530,28 @@ int FORTRAN::top(Node *n)
     Swig_register_filebyname("fbegin", f_fbegin);
 
     // Other imported fortran modules
-    f_imports = NewStringEmpty();
-    Swig_register_filebyname("fimports", f_imports);
+    f_fimports = NewStringEmpty();
+    Swig_register_filebyname("fimports", f_fimports);
 
     // Public interface functions
-    f_public = NewStringEmpty();
-    Swig_register_filebyname("fpublic", f_public);
+    f_fpublic = NewStringEmpty();
+    Swig_register_filebyname("fpublic", f_fpublic);
 
     // Enums and parameters
-    f_params = NewStringEmpty();
-    Swig_register_filebyname("fparams", f_params);
+    f_fparams = NewStringEmpty();
+    Swig_register_filebyname("fparams", f_fparams);
 
     // Fortran classes
-    f_types = NewStringEmpty();
-    Swig_register_filebyname("ftypes", f_types);
+    f_ftypes = NewStringEmpty();
+    Swig_register_filebyname("ftypes", f_ftypes);
 
     // Fortran class constructors
-    f_interfaces = NewStringEmpty();
-    Swig_register_filebyname("finterfaces", f_interfaces);
+    f_finterfaces = NewStringEmpty();
+    Swig_register_filebyname("finterfaces", f_finterfaces);
 
     // Fortran subroutines (proxy code)
-    f_proxy = NewStringEmpty();
-    Swig_register_filebyname("fproxy", f_proxy);
+    f_fwrapper = NewStringEmpty();
+    Swig_register_filebyname("fwrapper", f_fwrapper);
 
     // Tweak substitution code
     Swig_name_register("wrapper", "swigc_%f");
@@ -573,11 +573,11 @@ int FORTRAN::top(Node *n)
 
     // Clean up files and other data
     Delete(d_overloads);
-    Delete(f_proxy);
-    Delete(f_interfaces);
-    Delete(f_types);
-    Delete(f_public);
-    Delete(f_imports);
+    Delete(f_fwrapper);
+    Delete(f_finterfaces);
+    Delete(f_ftypes);
+    Delete(f_fpublic);
+    Delete(f_fimports);
     Delete(f_init);
     Delete(f_wrapper);
     Delete(f_header);
@@ -650,13 +650,13 @@ void FORTRAN::write_module()
     Dump(f_fbegin, out);
     Printv(out, "module ", d_module, "\n"
                 " use, intrinsic :: ISO_C_BINDING\n",
-                f_imports,
+                f_fimports,
                 " implicit none\n"
                 " private\n" , NULL);
-    if (Len(f_public) > 0 || Len(d_overloads) > 0)
+    if (Len(f_fpublic) > 0 || Len(d_overloads) > 0)
     {
         Printv(out, "\n ! PUBLIC METHODS AND TYPES\n",
-                    f_public, NULL);
+                    f_fpublic, NULL);
     }
 
     // Write overloads
@@ -677,31 +677,31 @@ void FORTRAN::write_module()
                     " end interface\n", NULL);
     }
 
-    if (Len(f_params) > 0)
+    if (Len(f_fparams) > 0)
     {
         Printv(out, "\n ! PARAMETERS\n",
-                    f_params,
+                    f_fparams,
                     NULL);
     }
-    if (Len(f_types) > 0)
+    if (Len(f_ftypes) > 0)
     {
         Printv(out, "\n ! TYPES\n",
-                    f_types,
+                    f_ftypes,
                     "\n", NULL);
     }
-    if (Len(f_interfaces) > 0)
+    if (Len(f_finterfaces) > 0)
     {
         Printv(out, "\n ! WRAPPER DECLARATIONS\n"
                     " interface\n",
-                    f_interfaces,
+                    f_finterfaces,
                     " end interface\n"
                     "\n", NULL);
     }
-    if (Len(f_proxy) > 0)
+    if (Len(f_fwrapper) > 0)
     {
         Printv(out, "\ncontains\n"
                     " ! FORTRAN PROXY CODE\n",
-                    f_proxy, NULL);
+                    f_fwrapper, NULL);
     }
     Printv(out, "\nend module ", d_module, "\n",
                 NULL);
@@ -818,7 +818,7 @@ int FORTRAN::functionWrapper(Node *n)
             Printv(qualifiers, ", ", extra_quals, NULL);
         }
 
-        Printv(f_types,
+        Printv(f_ftypes,
                "  procedure", qualifiers, " :: ", alias, " => ", fname, "\n",
                NULL);
         Delete(qualifiers);
@@ -840,7 +840,7 @@ int FORTRAN::functionWrapper(Node *n)
         }
         else
         {
-            Printv(f_public,
+            Printv(f_fpublic,
                    " public :: ", alias, "\n",
                    NULL);
         }
@@ -1202,7 +1202,7 @@ void FORTRAN::imfuncWrapper(Node *n)
     Printv(imfunc->code, imlocals, "\n  end ", im_func_type, NULL);
 
     // Write the C++ function into the wrapper code file
-    Wrapper_print(imfunc, f_interfaces);
+    Wrapper_print(imfunc, f_finterfaces);
 
     DelWrapper(imfunc);
     Delete(imimport_hash);
@@ -1219,7 +1219,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     Wrapper* ffunc = NewFortranWrapper();
 
     // Write documentation
-    this->write_docstring(n, f_proxy);
+    this->write_docstring(n, f_fwrapper);
     
     // >>> FUNCTION RETURN VALUES
     
@@ -1481,7 +1481,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     Replaceall(ffunc->code, "$symname", Getattr(n, "sym:name"));
 
     // Write the C++ function into the wrapper code file
-    Wrapper_print(ffunc, f_proxy);
+    Wrapper_print(ffunc, f_fwrapper);
 
     DelWrapper(ffunc);
     Delete(fcleanup);
@@ -1592,35 +1592,35 @@ int FORTRAN::classHandler(Node *n)
     }
 
     // Make the class publicly accessible
-    Printv(f_public, " public :: ", symname, "\n",
+    Printv(f_fpublic, " public :: ", symname, "\n",
                     NULL);
 
 
     // Write documentation
-    this->write_docstring(n, f_types);
+    this->write_docstring(n, f_ftypes);
     
     // Declare class
-    Printv(f_types, " type", NULL);
+    Printv(f_ftypes, " type", NULL);
     if (basename)
     {
-        Printv(f_types, ", extends(", basename, ")", NULL);
+        Printv(f_ftypes, ", extends(", basename, ")", NULL);
     }
     if (Abstract)
     {
         // The 'Abstract' global variable is set to 1 if this class is abstract
-        Printv(f_types, ", abstract", NULL);
+        Printv(f_ftypes, ", abstract", NULL);
     }
-    Printv(f_types, " :: ", symname, "\n", NULL);
+    Printv(f_ftypes, " :: ", symname, "\n", NULL);
 
     // Insert the class data. Only do this if the class has no base classes
     if (!basename)
     {
-        Printv(f_types,
+        Printv(f_ftypes,
                "  ! These should be treated as PROTECTED data\n"
                "  type(C_PTR), public :: swigptr = C_NULL_PTR\n",
                NULL);
     }
-    Printv(f_types, " contains\n", NULL);
+    Printv(f_ftypes, " contains\n", NULL);
 
     // Initialize output strings that will be added by 'functionHandler'
     d_method_overloads = NewHash();
@@ -1648,13 +1648,13 @@ int FORTRAN::classHandler(Node *n)
         Append(overloads, fname);
 
         // Define the method
-        Printv(f_types,
+        Printv(f_ftypes,
                "  procedure, private :: ", fname, "\n",
                NULL);
 
         // Add the proxy code implementation of assignment (increments the
         // reference counter)
-        Printv(f_proxy,
+        Printv(f_fwrapper,
            "  subroutine ", fname, "(self, other)\n"
            "   use, intrinsic :: ISO_C_BINDING\n"
            "   class(", symname, "), intent(inout) :: self\n"
@@ -1665,7 +1665,7 @@ int FORTRAN::classHandler(Node *n)
            NULL);
 
         // Add interface code
-        Printv(f_interfaces,
+        Printv(f_finterfaces,
                "  function ", wrapname, "(farg1) &\n"
                "     bind(C, name=\"", wrapname, "\") &\n"
                "     result(fresult)\n"
@@ -1695,18 +1695,18 @@ int FORTRAN::classHandler(Node *n)
     // Write overloads
     for (Iterator kv = First(d_method_overloads); kv.key; kv = Next(kv))
     {
-        Printv(f_types, "  generic :: ", kv.key, " => ", NULL);
+        Printv(f_ftypes, "  generic :: ", kv.key, " => ", NULL);
         // Note: subtract 2 becaues this first line is an exception to
         // prepend_comma, added inside the iterator
         int line_length = 13 + Len(kv.key) + 4 - 2;
 
         // Write overloaded procedure names
-        print_wrapped_list(f_types, First(kv.item), line_length);
-        Printv(f_types, "\n", NULL);
+        print_wrapped_list(f_ftypes, First(kv.item), line_length);
+        Printv(f_ftypes, "\n", NULL);
     }
 
     // Close out the type
-    Printv(f_types, " end type\n", NULL);
+    Printv(f_ftypes, " end type\n", NULL);
 
     Delete(d_method_overloads); d_method_overloads = NULL;
 
@@ -1820,11 +1820,11 @@ int FORTRAN::destructorHandler(Node* n)
         String* fname = NewStringf("swigf_final_%s", classname);
 
         // Add the 'final' subroutine to the methods
-        Printv(f_types, "  final     :: ", fname, "\n",
+        Printv(f_ftypes, "  final     :: ", fname, "\n",
                NULL);
 
         // Add the 'final' implementation
-        Printv(f_proxy,
+        Printv(f_fwrapper,
            "  subroutine ", fname, "(self)\n"
            "   use, intrinsic :: ISO_C_BINDING\n"
            "   type(", classname, ") :: self\n"
@@ -1937,7 +1937,7 @@ int FORTRAN::importDirective(Node *n)
         // I don't know if the module name could ever be different from the
         // 'module' attribute of the import node, but just in case... ?
         modname = Getattr(mod, "name");
-        Printv(f_imports, " use ", modname, "\n", NULL);
+        Printv(f_fimports, " use ", modname, "\n", NULL);
     }
 
     return Language::importDirective(n);
@@ -1995,7 +1995,7 @@ int FORTRAN::enumDeclaration(Node *n)
     {
         // Create enumerator statement and initialize list of enum values
         d_enum_public = NewList();
-        Printv(f_params, " enum, bind(c)\n", NULL);
+        Printv(f_fparams, " enum, bind(c)\n", NULL);
     }
 
     if (enum_name)
@@ -2026,12 +2026,12 @@ int FORTRAN::enumDeclaration(Node *n)
     if (d_enum_public)
     {
         // End enumeration
-        Printv(f_params, " end enum\n", NULL);
+        Printv(f_fparams, " end enum\n", NULL);
 
         // Make the enum class *and* its values public
-        Printv(f_public, " public :: ", NULL);
-        print_wrapped_list(f_public, First(d_enum_public), 11);
-        Putc('\n', f_public);
+        Printv(f_fpublic, " public :: ", NULL);
+        print_wrapped_list(f_fpublic, First(d_enum_public), 11);
+        Putc('\n', f_fpublic);
         Delete(d_enum_public);
         d_enum_public = NULL;
     }
@@ -2122,7 +2122,7 @@ int FORTRAN::constantWrapper(Node* n)
         // built
         Append(d_enum_public, symname);
         // Print the enum to the list
-        Printv(f_params, "  enumerator :: ", symname, " = ", value, "\n", NULL);
+        Printv(f_fparams, "  enumerator :: ", symname, " = ", value, "\n", NULL);
     }
     else if (is_native_parameter(n))
     {
@@ -2157,7 +2157,7 @@ int FORTRAN::constantWrapper(Node* n)
             Delete(suffix);
         }
 
-        Printv(f_params, " ", im_typestr, ", parameter, public :: ",
+        Printv(f_fparams, " ", im_typestr, ", parameter, public :: ",
                symname, " = ", value, "\n", NULL);
     }
     else
@@ -2201,7 +2201,7 @@ int FORTRAN::constantWrapper(Node* n)
         Printv(f_wrapper, "SWIGEXPORT SWIGEXTERN ", cwrap_code, "\n\n", NULL);
 
         // Add bound variable to interfaces
-        Printv(f_params, " ", im_typestr, ", protected, public, &\n",
+        Printv(f_fparams, " ", im_typestr, ", protected, public, &\n",
                "   bind(C, name=\"", wname, "\") :: ", symname, "\n",
                NULL);
 
