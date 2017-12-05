@@ -9,7 +9,7 @@
 %module simple_class
 
 
-%include "index.i"
+%include "docstring.i"
 
 %{
 #include "SimpleClass.hh"
