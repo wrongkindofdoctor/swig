@@ -368,7 +368,7 @@ class FORTRAN : public Language
 
     // Injected into .cxx file
     String* f_begin; //!< Very beginning of output file
-    String* f_fortranbegin; //!< Very beginning of output file
+    String* f_fbegin; //!< Very beginning of output file
     String* f_runtime; //!< SWIG runtime code
     String* f_header; //!< Declarations and inclusions from .i
     String* f_wrapper; //!< C++ Wrapper code
@@ -403,7 +403,6 @@ class FORTRAN : public Language
     virtual int staticmemberfunctionHandler(Node *n);
     virtual int staticmembervariableHandler(Node *n);
     virtual int importDirective(Node *n);
-    virtual int insertDirective(Node *n);
     virtual int enumDeclaration(Node *n);
     virtual int constantWrapper(Node *n);
     virtual int classforwardDeclaration(Node *n);
@@ -527,8 +526,8 @@ int FORTRAN::top(Node *n)
     // >>> FORTRAN WRAPPER CODE
 
     // Code before the `module` statement
-    f_fortranbegin = NewString("");
-    Swig_register_filebyname("fortranbegin", f_fortranbegin);
+    f_fbegin = NewString("");
+    Swig_register_filebyname("fbegin", f_fbegin);
 
     // Other imported fortran modules
     f_imports = NewStringEmpty();
@@ -583,7 +582,7 @@ int FORTRAN::top(Node *n)
     Delete(f_wrapper);
     Delete(f_header);
     Delete(f_runtime);
-    Delete(f_fortranbegin);
+    Delete(f_fbegin);
     Delete(f_begin);
 
     return SWIG_OK;
@@ -648,7 +647,7 @@ void FORTRAN::write_module()
     Swig_banner_target_lang(out, "!");
 
     // Write module
-    Dump(f_fortranbegin, out);
+    Dump(f_fbegin, out);
     Printv(out, "module ", d_module, "\n"
                 " use, intrinsic :: ISO_C_BINDING\n",
                 f_imports,
@@ -1557,26 +1556,6 @@ String* FORTRAN::makeParameterName(Node *n, Parm *p,
         name = NewStringf("%s%d", origname, arg_num++);
     }
     return name;
-}
-
-//---------------------------------------------------------------------------//
-/*!
- * \brief Hook for insert directive
- *
- * \param[in] n Function node
- */
-int FORTRAN::insertDirective(Node *n) {
-    String *code = Getattr(n, "code");
-    String *section = Getattr(n, "section");
-
-    if ((!ImportMode) && (Cmp(section, "fortranbegin") == 0)) {
-        // We are in the %fortranbegin section, inject the code
-        Printv(f_fortranbegin, code, NIL);
-    } else {
-        // Do the default thing
-        Language::insertDirective(n);
-    }
-    return SWIG_OK;
 }
 
 //---------------------------------------------------------------------------//

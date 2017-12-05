@@ -14,10 +14,15 @@
 
 #ifdef SWIGFORTRAN
 
+
 %{
 #include <iostream>
 using std::cout;
 using std::endl;
+%}
+
+%fortranbegin %{
+! This code is injected immediately below the SWIG auto-generated comment
 %}
 
 %inline %{

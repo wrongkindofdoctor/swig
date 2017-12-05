@@ -27,7 +27,7 @@
    %enumerator : Force an enum to be treated as a compile-time Fortran enum
            (enum values MUST be interpretable by Fortran)
  */
-#define %fortranbegin         %insert("fortranbegin")
+#define %fortranbegin         %insert("fbegin")
 
 
 #define %fortranprepend       %feature("fortranprepend")
