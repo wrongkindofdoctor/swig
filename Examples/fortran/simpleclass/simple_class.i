@@ -8,6 +8,9 @@
 //---------------------------------------------------------------------------//
 %module(docstring="A simple example module") simple_class
 
+
+%include "docstring.i"
+
 %{
 #include "SimpleClass.hh"
 %}
