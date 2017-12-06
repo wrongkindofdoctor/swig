@@ -4,6 +4,11 @@
 
 %warnfilter(SWIGWARN_TYPEMAP_THREAD_UNSAFE,SWIGWARN_TYPEMAP_DIRECTOROUT_PTR);
 
+#ifdef SWIGFORTRAN
+%rename("%(regex:/^_(.*)/\\1_/)s") "";
+#endif
+
+
 // change the access to the intermediary class for testing purposes
 %pragma(java) jniclassclassmodifiers="public class";
 %pragma(csharp) imclassclassmodifiers="public class";
@@ -12,7 +17,7 @@
 %feature("director") Derived;
 
 // Test the throws attribute in these typemaps
-%typemap(javadirectorout, throws="InstantiationException/*javadirectorout Base&*/") Base& 
+%typemap(javadirectorout, throws="InstantiationException/*javadirectorout Base&*/") Base&
   "$javaclassname.getCPtr($javacall)/* XYZ& typemap directorout*/"
 %typemap(javadirectorin, throws="ClassNotFoundException/*javadirectorin Base&*/") Base&
   "new $javaclassname($jniinput, false)/*javadirectorin*/"

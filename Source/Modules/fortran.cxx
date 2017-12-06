@@ -1670,11 +1670,6 @@ int FORTRAN::classHandler(Node *n)
     {
         Printv(f_ftypes, ", extends(", basename, ")", NULL);
     }
-    if (Abstract)
-    {
-        // The 'Abstract' global variable is set to 1 if this class is abstract
-        Printv(f_ftypes, ", abstract", NULL);
-    }
     Printv(f_ftypes, " :: ", symname, "\n", NULL);
 
     // Insert the class data. Only do this if the class has no base classes
