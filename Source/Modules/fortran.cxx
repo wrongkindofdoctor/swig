@@ -516,7 +516,8 @@ void FORTRAN::main(int argc, char *argv[])
 int FORTRAN::top(Node* n)
 {
     // Configure output filename using the name of the SWIG input file
-    String* foutfilename = NewStringf("%s.%s", Getattr(n, "name"), d_fext);
+    String* foutfilename = NewStringf(
+            "%s%s.%s", SWIG_output_directory(), Getattr(n, "name"), d_fext);
     Setattr(n, "fortran:outfile", foutfilename);
     Delete(foutfilename);
 
