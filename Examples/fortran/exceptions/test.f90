@@ -18,7 +18,7 @@ program main
     call alpha(-4)
 
     if (ierr /= 0) then
-        write(*,*) "Got error ", ierr, ": ", trim(serr)
+        write(*,*) "Got error ", ierr, ": ", get_serr()
         ! stop 0
         write(*,*) "Recovering..."
         ! Clear error flag
@@ -42,7 +42,7 @@ program main
     call throw_error()
 
     if (ierr /= 0) then
-        write(*,*) "Got error ", ierr, ": ", trim(serr)
+        write(*,*) "Got error ", ierr, ": ", get_serr()
         ! stop 0
         write(*,*) "Recovering..."
         ! Clear error flag

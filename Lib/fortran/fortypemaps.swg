@@ -71,14 +71,12 @@
   *    $1 = $symname(arg...)
   *    /fout/
   *   end function
-  *  /fcreate/
-  *  /frelease/
   * end module
   *
   * FORTRAN INTERFACE PSEUDOCODE
   * ----------------------------
   * type :: ClassName
-  *  /fdata/
+  *  
   * contains
   * end type
   */

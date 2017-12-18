@@ -44,7 +44,7 @@ program class_runme
   ! Example of exception handling
   call c%create(-2.0d0)
   if (ierr /= 0) then
-      write(*,*) "Caught the following error: ", trim(serr)
+      write(*,*) "Caught the following error: ", get_serr()
       ierr = 0
   endif
 

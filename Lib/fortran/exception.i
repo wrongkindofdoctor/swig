@@ -38,8 +38,7 @@
 // Allow the user to change the name of the error flag on the fortran side
 #ifndef SWIG_FORTRAN_ERROR_INT
 #define SWIG_FORTRAN_ERROR_INT ierr
-#define SWIG_FORTRAN_ERROR_STR serr
-#define SWIG_FORTRAN_ERROR_STRLEN 1024
+#define SWIG_FORTRAN_ERROR_STR get_serr
 #endif
 
 //---------------------------------------------------------------------------//
@@ -49,13 +48,11 @@
 // Fortran error variables
 %fragment("SwigfErrorParams", "fparams") {
  integer(C_INT), bind(C) :: SWIG_FORTRAN_ERROR_INT = 0
- character(kind=C_CHAR, len=SWIG_FORTRAN_ERROR_STRLEN), bind(C) :: SWIG_FORTRAN_ERROR_STR = ""
 }
 
 // Declare those variables public
 %fragment("SwigfErrorPub", "fpublic") {
  public :: SWIG_FORTRAN_ERROR_INT
- public :: SWIG_FORTRAN_ERROR_STR
 }
 #endif
 
@@ -68,7 +65,6 @@
           fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
 extern "C" {
 extern int SWIG_FORTRAN_ERROR_INT;
-extern char SWIG_FORTRAN_ERROR_STR[SWIG_FORTRAN_ERROR_STRLEN];
 }
 }
 // Exception handling code
@@ -99,17 +95,6 @@ void fortran_store_exception(int code, const char *msg)
 
     // Save the message to a std::string first
     fortran_last_exception_msg = msg;
-
-    std::size_t msg_size = std::min<std::size_t>(
-            fortran_last_exception_msg.size(),
-            SWIG_FORTRAN_ERROR_STRLEN);
-
-    // Copy to space-padded Fortran string
-    char* dst = SWIG_FORTRAN_ERROR_STR;
-    dst = std::copy(fortran_last_exception_msg.begin(),
-                    fortran_last_exception_msg.begin() + msg_size,
-                    dst);
-    std::fill(dst, SWIG_FORTRAN_ERROR_STR + SWIG_FORTRAN_ERROR_STRLEN, ' ');
 }
 } // end namespace swig
 }
@@ -123,7 +108,6 @@ void fortran_store_exception(int code, const char *msg)
 %fragment("SwigfErrorVars_wrap_c", "header",
           fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
 extern int SWIG_FORTRAN_ERROR_INT;
-extern char SWIG_FORTRAN_ERROR_STR[SWIG_FORTRAN_ERROR_STRLEN];
 }
 // Exception handling code
 %fragment("SwigfExceptionDefinition", "header",
@@ -136,24 +120,10 @@ void fortran_check_unhandled_exception()
 }
 
 // Save an exception to the fortran error code and string
-void fortran_store_exception(int code, const char *src)
+void fortran_store_exception(int code, const char *)
 {
-    const char* dst = SWIG_FORTRAN_ERROR_STR;
-    const char* end = SWIG_FORTRAN_ERROR_STR + SWIG_FORTRAN_ERROR_STRLEN;
-
     // Store exception code
     SWIG_FORTRAN_ERROR_INT = code;
-
-    // Copy up to null terminator
-    while (dst != end && *src != 0)
-    {
-        *dst++ = *src++;
-    }
-    // Space-pad the remainder
-    while (dst != end)
-    {
-        *dst++ = ' ';
-    }
 }
 }
 #endif
@@ -213,6 +183,77 @@ void fortran_store_exception(int code, const char *msg);
 // whether or not this module is being %imported)
 %fragment("SwigfExceptionMacro");
 %fragment("SwigfExceptionDefinition");
+
+//---------------------------------------------------------------------------//
+// Functional interface to swig error string
+//
+// Note: this is taken from some test code I wrote for std::string. Since it
+// only works with returning references, I'm only using it for exception
+// handling in the meantime.
+//---------------------------------------------------------------------------//
+
+#if defined(__cplusplus)
+// Declare typedef for special string conversion typemaps
+%inline %{
+typedef const std::string& Swig_Err_String;
+%}
+
+#define STRING_TYPES Swig_Err_String
+#define AW_TYPE swig::SwigfArrayWrapper< const char >
+
+// C wrapper type: pointer to templated array wrapper
+%typemap(ctype, noblock=1, out="swig::SwigfArrayWrapper< const char >",
+       fragment="SwigfArrayWrapper") STRING_TYPES
+{AW_TYPE*}
+
+// C output initialization
+%typemap(arginit) AW_TYPE
+%{$1.data = NULL;
+  $1.size = 0;%}
+
+// C output translation typemaps: $1 is string*, $input is AW_TYPE
+%typemap(out) const std::string&
+%{$result.data = ($1->empty() ? NULL : &(*$1->begin()));
+  $result.size = $1->size();
+  %}
+
+%typemap(imimport, fragment="SwigfArrayWrapper") STRING_TYPES
+"SwigfArrayWrapper"
+%typemap(imtype, in="type(SwigfArrayWrapper)") STRING_TYPES
+ "type(SwigfArrayWrapper)"
+
+// Fortran proxy code: return allocatable string
+%typemap(ftype, out="character(kind=C_CHAR, len=:), allocatable") STRING_TYPES
+"character(kind=C_CHAR, len=*), target"
+
+// Fortran proxy translation code: temporary variables for output
+%typemap(foutdecl) STRING_TYPES
+%{
+ integer(kind=C_SIZE_T) :: $1_i
+ character(kind=C_CHAR), dimension(:), pointer :: $1_chars
+%}
+
+// Fortran proxy translation code: convert from imtype $1 to ftype $result
+%typemap(fout) STRING_TYPES
+%{
+  call c_f_pointer($1%data, $1_chars, [$1%size])
+  allocate(character(kind=C_CHAR, len=$1%size) :: $result)
+  do $1_i=1,$1%size
+    $result($1_i:$1_i) = $1_chars($1_i)
+  enddo
+%}
+
+#undef STRING_TYPES
+#undef AW_TYPE
+
+// Get a pointer to the error string
+%inline {
+Swig_Err_String SWIG_FORTRAN_ERROR_STR()
+{
+    return swig::fortran_last_exception_msg;
+}
+}
+#endif
 
 //---------------------------------------------------------------------------//
 // end of fortran/exception.i
