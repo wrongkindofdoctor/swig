@@ -61,7 +61,7 @@ class SimpleClass
 
     //! Access the value
     storage_type get() const;
-    
+
     //! templated function
     template<class T>
     void action(T& val) { val *= 2; }
@@ -80,9 +80,6 @@ const SimpleClass& get_class();
 
 //! Pass class as a parameter
 void set_class_by_copy(SimpleClass c);
-
-//! Get a color name
-void print_color(MyEnum color);
 
 //---------------------------------------------------------------------------//
 #endif // simple_class_SimpleClass_hh
