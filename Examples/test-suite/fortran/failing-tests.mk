@@ -17,13 +17,12 @@ FAILING_CPP_TESTS += \
   director_frob \
   director_ignore \
   director_keywords \
-  director_nested \
   director_overload2 \
   director_property \
-  director_protected \
   enum_scope_template \
   enum_thorough \
   evil_diamond_prop \
+  extend \
   extend_default \
   fvirtual \
   inherit_target_language \
@@ -36,7 +35,6 @@ FAILING_CPP_TESTS += \
   multiple_inheritance_interfaces \
   multiple_inheritance_nspace \
   multiple_inheritance_shared_ptr \
-  name_warnings \
   namespace_class \
   namespace_nested \
   nested_scope \
