@@ -114,28 +114,16 @@
   %typemap(ftype, out="character(kind=" CHARTYPE "), dimension(:), pointer") PAIR_TYPE
     "character(kind=" CHARTYPE ", len=*), target"
 
-%typemap(findecl) PAIR_TYPE
-%{
- integer(kind=C_SIZE_T) :: $1_i
- character(kind=C_CHAR), dimension(:), allocatable, target :: $1_chars
-%}
+  %typemap(findecl) PAIR_TYPE
+  %{
+    character(kind=C_CHAR), dimension(:), allocatable, target :: $1_chars
+  %}
 
   // Fortran proxy translation code: copy var-length character type to
   // fixed-length character array
-  %typemap(fin) PAIR_TYPE
+  %typemap(fin, fragment="SwigfStringToCharArray", noblock=1) PAIR_TYPE
   %{
-  allocate(character(kind=C_CHAR) :: $1_chars(len($input)))
-  do $1_i=1,size($1_chars)
-    $1_chars($1_i) = $input($1_i:$1_i)
-  enddo
-  $1%data = c_loc($1_chars)
-  $1%size = size($1_chars)
-  %}
-
-  // Free allocated memory
-  %typemap(ffreearg) PAIR_TYPE
-  %{
-  deallocate($1_chars)
+    call swigf_string_to_chararray($input, $1_chars, $1)
   %}
 
   #undef PAIR_TYPE
