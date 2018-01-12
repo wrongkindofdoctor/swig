@@ -1201,7 +1201,8 @@ void FORTRAN::imfuncWrapper(Node *n)
     Hash* imimport_hash = NewHash();
 
     // If return type is a fortran C-bound type, add import statement
-    String* imimport = Swig_typemap_lookup("imimport", n, im_return_str, NULL);
+    String* imimport = Swig_typemap_lookup("imimport", n, cpp_return_type,
+                                           NULL);
     if (imimport)
     {
         this->replace_fclassname(cpp_return_type, imimport);
