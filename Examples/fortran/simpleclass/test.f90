@@ -48,36 +48,24 @@ subroutine test_class()
     ! ! TODO: this should release 'orig'; maybe transfer ownership??
     write(0, *) "Assigning"
     orig = made
-    ! TODO: this should release 'made'
+    ! TODO: this should release existing 'made'
     write(0, *) "Returning by value"
     made = make_class(3)
 
-    ! Shouldn't do anything since we don't own
-    write(0, *) "Releasing ref"
-    call ref%release()
-    ! Release orig
-    write(0, *) "Releasing orig"
-    call orig%release()
+    ! TODO Should be able to call ref%release (a reference to the global
+    ! variable g_globalclass) without consequence.
+    !! write(0, *) "Releasing ref"
+    !! call ref%release()
+
+    ! TODO: the class pointed to by 'orig' is already deleted because of 
+    ! Release orig 
+    ! write(0, *) "Releasing orig"
+    ! call orig%release()
+    
     ! Release created
     write(0, *) "Releasing ret-by-val"
     call made%release()
     write(0, *) "Done!"
-
-    ! If this is commented out and the '-final' code generation option is used,
-    ! no memory leak will occur. Otherwise, the class is never deallocated.
-    ! HOWEVER, if the class construction is done in 'program main' it actually
-    ! is never deallocated.
-    ! ALSO: you can still call release multiple times and it will be OK.
-    ! call orig%release()
-
-    ! write(0, *) "Copying..."
-    ! copy = orig
-    ! ! write(0, "(a, z16)") "Orig:", orig%swigptr, "Copy:", copy%swigptr
-    ! call print_value(copy)
-    ! write(0, *) "Destroying..."
-    ! call orig%release()
-    ! write(0, *) "Double-deleting..."
-    ! call copy%release()
 
     write(0, *) "Building struct..."
     call s%create()

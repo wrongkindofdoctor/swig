@@ -91,7 +91,10 @@ subroutine assign_simpleclass_impl(self, other)
     type(SimpleClass), intent(in) :: other
     call print_pointer(2, other)
     call print_pointer(3, self)
-    if (c_associated(self%swigptr)) call self%release()
+    if (c_associated(self%swigptr)) then
+      !call self%release()
+      write(*,*) "Leaking", self%id()
+    endif
     self%swigptr = other%swigptr
 end subroutine
 %}
