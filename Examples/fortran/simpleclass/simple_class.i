@@ -29,10 +29,15 @@ using std::endl;
 %}
 
 %inline %{
-void print_pointer(int msg, void* ptr)
+void print_pointer(int msg, SimpleClass* ptr)
 {
-    cout << "F " << (msg == 0 ? "Constructed" : "Releasing")
-        << ' ' << ptr << endl;
+    cout << "F " << (msg == 0 ? "Constructed"
+                   : msg == 1 ? "Releasing"
+                   : msg == 2 ? "Assigning from"
+                   : msg == 3 ? "Assigning to"
+                              : "XXX"
+                     )
+        << ' ' << (ptr ? ptr->id() : -1) << endl;
 }
 %}
 
@@ -46,10 +51,10 @@ void print_pointer(int msg, void* ptr)
  */
 
 %fortranappend SimpleClass::SimpleClass %{
-    call print_pointer(0, self%swigptr)
+    call print_pointer(0, self)
 %}
 %fortranprepend SimpleClass::~SimpleClass %{
-    call print_pointer(1, self%swigptr)
+    call print_pointer(1, self)
 %}
 
 #endif
@@ -71,6 +76,29 @@ void SimpleClass::double_it()
 
 Multiply the value by 2.
 %};
+
+%extend SimpleClass {
+
+%insert("ftypes") %{
+  procedure, private :: assign_simpleclass_impl
+  generic :: assignment(=) => assign_simpleclass_impl
+%}
+
+%insert("fwrapper") %{
+subroutine assign_simpleclass_impl(self, other)
+    use, intrinsic :: ISO_C_BINDING
+    class(SimpleClass), intent(inout) :: self
+    type(SimpleClass), intent(in) :: other
+    call print_pointer(2, other)
+    call print_pointer(3, self)
+    if (c_associated(self%swigptr)) call self%release()
+    self%swigptr = other%swigptr
+end subroutine
+%}
+
+};
+
+%feature("new") emit_class;
 
 // %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"

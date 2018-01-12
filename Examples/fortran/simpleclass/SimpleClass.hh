@@ -62,6 +62,9 @@ class SimpleClass
     //! Access the value
     storage_type get() const;
 
+    //! Access the ID
+    int id() const { return d_id; }
+
     //! templated function
     template<class T>
     void action(T& val) { val *= 2; }
@@ -71,6 +74,9 @@ class SimpleClass
 };
 //! Free function
 void print_value(const SimpleClass& c);
+
+//! Return by new pointer
+SimpleClass* emit_class(SimpleClass::storage_type val);
 
 //! Return by value should be converted to set-by-reference
 SimpleClass make_class(SimpleClass::storage_type val);

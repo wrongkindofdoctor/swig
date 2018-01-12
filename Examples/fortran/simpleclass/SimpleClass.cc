@@ -104,6 +104,13 @@ SimpleClass make_class(SimpleClass::storage_type val)
     return SimpleClass(val);
 }
 
+SimpleClass* emit_class(SimpleClass::storage_type val)
+{
+    SimpleClass* result = new SimpleClass(val);
+    cout << "Emitting new SimpleClass #" << result->id() << endl;
+    return result;
+}
+
 void set_class_by_copy(SimpleClass c)
 {
     g_globalclass = c;
