@@ -1181,6 +1181,7 @@ void FORTRAN::imfuncWrapper(Node *n)
 {
     // Name of the C wrapper function
     String* wname = Getattr(n, "wrap:name");
+    String* cpp_return_type = Getattr(n, "type");
 
     Wrapper* imfunc = NewFortranWrapper();
 
@@ -1203,6 +1204,7 @@ void FORTRAN::imfuncWrapper(Node *n)
     String* imimport = Swig_typemap_lookup("imimport", n, im_return_str, NULL);
     if (imimport)
     {
+        this->replace_fclassname(cpp_return_type, imimport);
         Setattr(imimport_hash, imimport, "1");
     }
 
@@ -1262,6 +1264,7 @@ void FORTRAN::imfuncWrapper(Node *n)
     {
         // Declare dummy return value if it's a function
         Printv(imfunc->def, " &\n     result(fresult)", NULL);
+        this->replace_fclassname(cpp_return_type, im_return_str);
         Printv(imlocals, "\n", im_return_str, " :: fresult", NULL);
     }
 
@@ -1317,6 +1320,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     // Replace any instance of $fclassname in return type
     String* cpp_return_type = Getattr(n, "type");
     this->replace_fclassname(cpp_return_type, f_return_str);
+    this->replace_fclassname(cpp_return_type, im_return_str);
 
     // String for calling the im wrapper on the fortran side (the "action")
     String* fcall  = NewStringEmpty();
@@ -1432,7 +1436,6 @@ void FORTRAN::proxyfuncWrapper(Node *n)
         // >>> F PROXY CONVERSION
 
         String* fin = get_typemap("fin", p, WARN_TYPEMAP_IN_UNDEF);
-        this->replace_fclassname(cpptype, fin);
         Replaceall(fin, "$input", farg);
         Printv(ffunc->code, fin, "\n", NULL);
 

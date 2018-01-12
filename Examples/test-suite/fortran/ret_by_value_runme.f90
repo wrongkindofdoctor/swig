@@ -13,16 +13,17 @@ program ret_by_value_runme
 
   test_val = get_test()
 
-  int = test_val%get_myInt()
-  short = test_val%get_myShort()
+  int = test_val%myInt
+  short = test_val%myShort
 
-  if(test_val%get_myInt() /= 100) then
+  if(test_val%myInt /= 100) then
     write(*,*)"Wrong value for %myInt",100
     okay = .false.
   endif
 
-  if(test_val%get_myShort() /= 200) then
+  if(test_val%myShort /= 200) then
     write(*,*)"Wrong value for "
+    okay = .false.
   endif
 
 
