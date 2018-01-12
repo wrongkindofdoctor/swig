@@ -69,8 +69,12 @@
   // contiguous arrays are passed. Conceivably we could improve this to use
   // strided access by also passing c_loc($input(2)) and doing pointer
   // arithmetic.
+  %typemap(findecl) PAIR_TYPE
+  FTYPE ", pointer :: $1_view"
+
   %typemap(fin) PAIR_TYPE
-    %{$1%data = c_loc($input(1))
+    %{$1_view => $input(1)
+      $1%data = c_loc($1_view)
       $1%size = size($input)%}
 
   // Instantiate type so that SWIG respects %novaluewrapper

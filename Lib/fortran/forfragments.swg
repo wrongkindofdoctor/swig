@@ -65,6 +65,7 @@ end type
 
 // Add function to return allocatable array from assumed-length char
 %fragment("SwigfStringToCharArray", "fwrapper",
+          fragment="SwigfArrayWrapper",
           noblock="1") %{
 subroutine swigf_string_to_chararray(string, chars, wrap)
   use, intrinsic :: ISO_C_BINDING
@@ -84,6 +85,7 @@ end subroutine
 
 // Add function to return allocatable string from char array
 %fragment("SwigfCharArrayToString", "fwrapper",
+          fragment="SwigfArrayWrapper",
           noblock="1") %{
 subroutine swigf_chararray_to_string(wrap, string)
   use, intrinsic :: ISO_C_BINDING
