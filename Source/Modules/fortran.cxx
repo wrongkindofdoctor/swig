@@ -2009,7 +2009,8 @@ int FORTRAN::membervariableHandler(Node *n)
             return SWIG_NOWRAP;
         }
 
-        Printv(f_ftypes, " ", im_typestr, ", public :: ", symname, "\n", NULL);
+        Printv(f_ftypes, "  ", im_typestr, ", public :: ", symname, "\n",
+               NULL);
     }
     else
     {
