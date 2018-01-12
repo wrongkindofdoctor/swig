@@ -226,21 +226,10 @@ typedef const std::string& Swig_Err_String;
 %typemap(ftype, out="character(kind=C_CHAR, len=:), allocatable") STRING_TYPES
 "character(kind=C_CHAR, len=*), target"
 
-// Fortran proxy translation code: temporary variables for output
-%typemap(foutdecl) STRING_TYPES
+// Fortran proxy translation code: convert from char array to Fortran string
+%typemap(fout, fragment="SwigfCharArrayToString") STRING_TYPES
 %{
- integer(kind=C_SIZE_T) :: $1_i
- character(kind=C_CHAR), dimension(:), pointer :: $1_chars
-%}
-
-// Fortran proxy translation code: convert from imtype $1 to ftype $result
-%typemap(fout) STRING_TYPES
-%{
-  call c_f_pointer($1%data, $1_chars, [$1%size])
-  allocate(character(kind=C_CHAR, len=$1%size) :: $result)
-  do $1_i=1,$1%size
-    $result($1_i:$1_i) = $1_chars($1_i)
-  enddo
+  call swigf_chararray_to_string($1, $result)
 %}
 
 #undef STRING_TYPES

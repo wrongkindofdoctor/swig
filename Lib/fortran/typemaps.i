@@ -69,8 +69,12 @@
   // contiguous arrays are passed. Conceivably we could improve this to use
   // strided access by also passing c_loc($input(2)) and doing pointer
   // arithmetic.
+  %typemap(findecl) PAIR_TYPE
+  FTYPE ", pointer :: $1_view"
+
   %typemap(fin) PAIR_TYPE
-    %{$1%data = c_loc($input(1))
+    %{$1_view => $input(1)
+      $1%data = c_loc($1_view)
       $1%size = size($input)%}
 
   // Instantiate type so that SWIG respects %novaluewrapper
@@ -114,10 +118,17 @@
   %typemap(ftype, out="character(kind=" CHARTYPE "), dimension(:), pointer") PAIR_TYPE
     "character(kind=" CHARTYPE ", len=*), target"
 
-  // Fortran proxy translation code: convert from ftype $input to imtype $1
-  %typemap(fin) PAIR_TYPE
-    %{$1%data = c_loc($input)
-      $1%size = len($input)%}
+  %typemap(findecl) PAIR_TYPE
+  %{
+    character(kind=C_CHAR), dimension(:), allocatable, target :: $1_chars
+  %}
+
+  // Fortran proxy translation code: copy var-length character type to
+  // fixed-length character array
+  %typemap(fin, fragment="SwigfStringToCharArray", noblock=1) PAIR_TYPE
+  %{
+    call swigf_string_to_chararray($input, $1_chars, $1)
+  %}
 
   #undef PAIR_TYPE
 %enddef
