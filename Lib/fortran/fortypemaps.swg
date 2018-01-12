@@ -312,6 +312,27 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
 #endif
 
 //---------------------------------------------------------------------------//
+// BIND(C) STRUCT TYPES
+//---------------------------------------------------------------------------//
+/*!
+ * \def FORT_BINDC_STRUCT
+ * \brief Add a typemap for a fundamental built-in type.
+ *
+ * The C++ and C types are the same in this case.
+ */
+%define %fortran_bindc_struct(CTYPE)
+  // Mark the class as being C-bound
+  %feature("fortran:bindc") CTYPE;
+  // Remove constructors and destructors
+  %nodefaultctor CTYPE;
+  %nodefaultdtor CTYPE;
+  // Interface code has to "import' the class type
+  %typemap(imimport) CTYPE, CTYPE*, CTYPE& "$fclassname"
+  // Bound structs act just like simple types
+  FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, "type($fclassname)", "type($fclassname)")
+%enddef
+
+//---------------------------------------------------------------------------//
 // OPAQUE POINTERS
 //---------------------------------------------------------------------------//
 /*!

@@ -68,10 +68,9 @@ subroutine test_class()
     write(0, *) "Done!"
 
     write(0, *) "Building struct..."
-    call s%create()
-    call s%set_val(4)
-    write(0, *) "Values:", s%get_val()
-    call s%release()
+    s%foo = 4
+    s%bar = 9.11d0
+    call print_struct(s)
 end subroutine
 
 end program
