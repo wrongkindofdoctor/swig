@@ -121,6 +121,11 @@ const SimpleClass& get_class()
     return g_globalclass;
 }
 
+void print_struct(const BasicStruct& s)
+{
+    cout << "Struct " << &s << " has foo=" << s.foo
+         << ", bar=" << s.bar << endl;
+}
 //---------------------------------------------------------------------------//
 // end of simple_class/SimpleClass.cc
 //---------------------------------------------------------------------------//

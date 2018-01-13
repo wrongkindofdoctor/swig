@@ -14,7 +14,8 @@
 //! Simple public struct
 struct BasicStruct
 {
-    int val;
+    int    foo;
+    double bar;
 };
 
 //===========================================================================//
@@ -86,6 +87,8 @@ const SimpleClass& get_class();
 
 //! Pass class as a parameter
 void set_class_by_copy(SimpleClass c);
+
+void print_struct(const BasicStruct& s);
 
 //---------------------------------------------------------------------------//
 #endif // simple_class_SimpleClass_hh

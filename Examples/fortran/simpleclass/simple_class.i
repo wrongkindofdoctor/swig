@@ -17,7 +17,6 @@
 
 #ifdef SWIGFORTRAN
 
-
 %{
 #include <iostream>
 using std::cout;
@@ -102,6 +101,9 @@ end subroutine
 };
 
 %feature("new") emit_class;
+
+// Make BasicStruct a fortran-accessible struct.
+%fortran_bindc_struct(BasicStruct);
 
 // %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"

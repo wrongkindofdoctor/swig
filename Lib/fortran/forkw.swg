@@ -7,12 +7,12 @@
  */
 //---------------------------------------------------------------------------//
 
-// By default SWIG gives these underscore prefix/suffix
 #ifdef __cplusplus
+// Give valid names to pointer-like operations
 %rename(deref) *::operator->;
 %rename(ref)   *::operator*();
-%rename(ref)   *::operator*() const;
 
+// By default SWIG gives these underscore prefix/suffix
 %keywordwarn("'create' is reserved for SWIG constructors",
              rename="create_") "*::create";
 %keywordwarn("'release' is reserved for SWIG destructors",
