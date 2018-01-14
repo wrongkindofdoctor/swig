@@ -8,14 +8,14 @@
 //---------------------------------------------------------------------------//
 %module(docstring="A simple example module") simple_class
 
+%rename(assign) SimpleClass::operator=;
+
 
 %include "docstring.i"
 
 %{
 #include "SimpleClass.hh"
 %}
-
-#ifdef SWIGFORTRAN
 
 %{
 #include <iostream>
@@ -56,13 +56,8 @@ void print_pointer(int msg, SimpleClass* ptr)
     call print_pointer(1, self)
 %}
 
-#endif
-
 // %ignore make_class;
 // %ignore get_class;
-
-%parameter approx_pi;
-
 
 %feature("docstring") SimpleClass %{
 Simple test class.
@@ -87,14 +82,14 @@ Multiply the value by 2.
 subroutine assign_simpleclass_impl(self, other)
     use, intrinsic :: ISO_C_BINDING
     class(SimpleClass), intent(inout) :: self
-    type(SimpleClass), intent(in) :: other
+    class(SimpleClass), intent(in) :: other
     call print_pointer(2, other)
     call print_pointer(3, self)
     if (c_associated(self%swigptr)) then
-      !call self%release()
-      write(*,*) "Leaking", self%id()
+      self%swigptr = swigc_SimpleClass_assign(self%swigptr, other%swigptr)
+    else
+      call self%create(other)
     endif
-    self%swigptr = other%swigptr
 end subroutine
 %}
 
@@ -103,9 +98,8 @@ end subroutine
 %feature("new") emit_class;
 
 // Make BasicStruct a fortran-accessible struct.
-%fortran_bindc_struct(BasicStruct);
+//%fortran_bindc_struct(BasicStruct);
 
-// %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"
 
 // Overloaded instantiation

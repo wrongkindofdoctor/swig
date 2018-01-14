@@ -91,6 +91,7 @@ void print_value(const SimpleClass& c)
     cout << "Simpleclass at " << &c << " has value " << c.get() << endl;
 }
 
+#if 0
 //---------------------------------------------------------------------------//
 void dumb_copy(SimpleClass c)
 {
@@ -126,6 +127,7 @@ void print_struct(const BasicStruct& s)
     cout << "Struct " << &s << " has foo=" << s.foo
          << ", bar=" << s.bar << endl;
 }
+#endif
 //---------------------------------------------------------------------------//
 // end of simple_class/SimpleClass.cc
 //---------------------------------------------------------------------------//
