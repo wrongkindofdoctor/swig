@@ -9,8 +9,9 @@
 
 #ifdef __cplusplus
 // Give valid names to pointer-like operations
-%rename(deref) *::operator->;
-%rename(ref)   *::operator*();
+%rename(__ptr__)    *::operator->;
+%rename(__deref__)  *::operator*();
+%rename(__assign__) *::operator=;
 
 // By default SWIG gives these underscore prefix/suffix
 %keywordwarn("'create' is reserved for SWIG constructors",

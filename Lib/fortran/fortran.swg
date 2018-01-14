@@ -69,10 +69,6 @@ using std::ptrdiff_t;
 %include "fortypemaps.swg"
 
 //---------------------------------------------------------------------------//
-// ENUMERATOR OVERRIDES
-%include "fortypemaps.swg"
-
-//---------------------------------------------------------------------------//
 // RESERVED KEYWORDS
 %include "forkw.swg"
 
