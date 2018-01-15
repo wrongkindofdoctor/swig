@@ -259,6 +259,16 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
 // CLASSES
 //---------------------------------------------------------------------------//
 
+// Data owned by the base class instance
+%typemap(fdata) SWIGTYPE
+  "type(C_PTR), public :: swigptr = C_NULL_PTR"
+// Whether the data on class $input is valid
+%typemap(fassociated) SWIGTYPE
+  "c_associated($input%swigptr)"
+// Reset the pointer
+%typemap(fdisassociate) SWIGTYPE
+  "$input%swigptr = C_NULL_PTR"
+
 // Classes accepted by value are still passed by reference by fortran
 %typemap(ctype, null="NULL")  SWIGTYPE
   %{void*%}

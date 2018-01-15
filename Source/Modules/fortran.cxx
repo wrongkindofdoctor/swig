@@ -432,6 +432,8 @@ class FORTRAN : public Language
     void write_module(String* filename);
 
 
+    String* attach_class_typemap(const_String_or_char_ptr tmname, int warning);
+
     bool replace_fclassname(SwigType* type, String* tm);
     void replace_fspecial_impl(SwigType* classnametype, String* tm,
                                const char* classnamespecialvariable,
@@ -1798,11 +1800,20 @@ int FORTRAN::classHandler(Node *n)
     {
         if (!basename)
         {
+            String* fdata = this->attach_class_typemap("fdata", WARN_NONE);
+            if (!fdata)
+            {
+                Swig_error(input_file, line_number, "Class '%s' has no "
+                           "'%s' typemap defined", 
+                           SwigType_namestr(symname), "fdata");
+                return SWIG_NOWRAP;
+            }
+            Chop(fdata);
             // Insert the class data if this doesn't inherit from anything
             Printv(f_ftypes,
                    "  ! These should be treated as PROTECTED data\n"
-                   "  type(C_PTR), public :: swigptr = C_NULL_PTR\n",
-                   NULL);
+                   "  ", fdata, "\n", NULL);
+            Delete(fdata);
         }
         Printv(f_ftypes, " contains\n", NULL);
 
@@ -1876,16 +1887,26 @@ int FORTRAN::constructorHandler(Node* n)
     Setattr(n, "fortran:alias", alias);
 
     // Add statement to deallocate if already allocated
-    const char constructor_prepend[]
-        = "if (c_associated(self%swigptr)) call self%release()\n";
+    String* fassoc = this->attach_class_typemap("fassociated", WARN_NONE);
+    if (!fassoc)
+    {
+        Swig_error(input_file, line_number, "Class '%s' has no "
+                   "'%s' typemap defined", 
+                   SwigType_namestr(classname), "fassociated");
+        return SWIG_NOWRAP;
+    }
+    
+    String* releasestr = NewStringf("if (%s) call self%%release()\n", fassoc);
+    Replaceall(releasestr, "$input", "self");
     if (String* prependstr = Getattr(n, "feature:fortranprepend"))
     {
-        Printv(prependstr, "\n", constructor_prepend, NULL);
+        Printv(prependstr, "\n", releasestr, NULL);
     }
     else
     {
-        Setattr(n, "feature:fortranprepend", constructor_prepend);
+        Setattr(n, "feature:fortranprepend", releasestr);
     }
+    Delete(releasestr);
 
     // NOTE: return type has not yet been assigned at this point
     Language::constructorHandler(n);
@@ -1903,16 +1924,25 @@ int FORTRAN::destructorHandler(Node* n)
 
     Node* classnode = getCurrentClass();
 
-    // Add statement to clear pointer at the end
-    const char destructor_append[]
-        = "self%swigptr = C_NULL_PTR\n";
+    // Add statement to clear pointer after releasing
+    String* fdis = this->attach_class_typemap("fdisassociate", WARN_NONE);
+    if (!fdis)
+    {
+        Swig_error(input_file, line_number, "Class '%s' has no "
+                   "'%s' typemap defined", 
+                   SwigType_namestr(Getattr(classnode, "sym:name")),
+                   "fdisassociate");
+        return SWIG_NOWRAP;
+    }
+    Replaceall(fdis, "$input", "self");
+    
     if (String* appendstr = Getattr(n, "feature:fortranappend"))
     {
-        Printv(appendstr, "\n", destructor_append, NULL);
+        Printv(appendstr, "\n", fdis, NULL);
     }
     else
     {
-        Setattr(n, "feature:fortranappend", destructor_append);
+        Setattr(n, "feature:fortranappend", fdis);
     }
 
     Language::destructorHandler(n);
@@ -2361,6 +2391,34 @@ int FORTRAN::classforwardDeclaration(Node *n)
 
 //---------------------------------------------------------------------------//
 // HELPER FUNCTIONS
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Attach and return a typemap belonging to the current class.
+ *
+ * This is used by things like `fdata`.
+ */
+String* FORTRAN::attach_class_typemap(
+        const_String_or_char_ptr tmname,
+        int warning)
+{
+    assert(this->is_wrapping_class());
+    String* class_type = this->getClassType();
+    Node* class_node = this->getCurrentClass();
+
+    String* temp_name = NewString("temp_class");
+    Parm* temp = NewParm(class_type, temp_name, class_node);
+    String* result = attach_typemap(tmname, temp, warning);
+    Delete(temp_name);
+    Delete(temp);
+
+    if (result)
+    {
+        this->replace_fclassname(class_type, result);
+    }
+
+    return result;
+}
+
 //---------------------------------------------------------------------------//
 /*!
  * \brief Substitute special '$fXXXXX' in typemaps.
