@@ -415,13 +415,13 @@ FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
 
 %typemap(ctype, fragment="SwigfOpaqueMemFunPtr_cpp")
         SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
-    %{swig::SwigfOpaqueMemFunPtr%}
+    %{SwigfOpaqueMemFunPtr%}
 %typemap(in, fragment="SwigfBruteCast")
         SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     %{$1 = brute_cast<$1_ltype>($input);%}
 %typemap(out, fragment="SwigfBruteCast")
         SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
-    %{$result = brute_cast<swig::SwigfOpaqueMemFunPtr>($1);%}
+    %{$result = brute_cast<SwigfOpaqueMemFunPtr>($1);%}
 %typemap(imtype, in="type(SwigfOpaqueMemFunPtr), intent(in), value",
          fragment="SwigfOpaqueMemFunPtr")
         SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)

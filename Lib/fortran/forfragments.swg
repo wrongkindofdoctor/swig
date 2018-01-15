@@ -44,14 +44,12 @@ end enum
 
 // Add array wrapper to C++ code when used by Fortran fragment
 %fragment("SwigfArrayWrapper_cpp", "header") %{
-namespace swig {
 template<class T>
 struct SwigfArrayWrapper
 {
     T* data;
     std::size_t size;
 };
-}
 %}
 
 // Add array wrapper to Fortran types when used
@@ -110,8 +108,6 @@ end subroutine
 // encountered. Its syntax is exactly like static_cast.
 %fragment("SwigfBruteCast", "runtime",
           fragment="<cstring>", fragment="<cstdlib>") %{
-namespace swig
-{
 template<typename Dst, typename Src>
 void swigf_opaque_memcpy(Dst* dst, const Src* src)
 {
@@ -129,6 +125,8 @@ void swigf_opaque_memcpy(Dst* dst, const Src* src)
     // Otherwise should assert all the other bytes are zero?
 }
 
+namespace swig
+{
 template<typename Target>
 class brute_cast_impl
 {
@@ -167,7 +165,7 @@ Target brute_cast(const Source& src)
 {
     return brute_cast_impl<Target>(src)();
 }
-}
+} // end namespace swig
 
 using swig::brute_cast;
 %}
@@ -180,7 +178,6 @@ using swig::brute_cast;
 
 // Add array wrapper to C++ code when used by Fortran fragment
 %fragment("SwigfOpaqueMemFunPtr_cpp", "header") %{
-namespace swig {
 struct SwigfOpaqueMemFunPtr
 {
     enum { MEMPTR_SIZE = 32 };
@@ -190,7 +187,6 @@ struct SwigfOpaqueMemFunPtr
                  "Member pointer buffer isn't large enough");
 #endif
 };
-}
 %}
 
 // This fragment is inserted by the fortran.cxx code when an unknown class is

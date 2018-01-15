@@ -13,7 +13,7 @@
 
 %exception {
     // Make sure no unhandled exceptions exist before performing a new action
-    swig::fortran_check_unhandled_exception();
+    swigf_check_unhandled_exception();
     try
     {
         // Attempt the wrapped function call
@@ -42,6 +42,23 @@
 #endif
 
 //---------------------------------------------------------------------------//
+// DEPRECATED fragments
+//---------------------------------------------------------------------------//
+%fragment("SwigfExceptionDeprecated", "header") {
+// DEPRECATED: use swigf_check_unhandled_exception instead
+namespace swig
+{
+%#ifdef __GNUC__
+__attribute__((deprecated))
+%#endif
+inline void fortran_check_unhandled_exception()
+{
+    swigf_check_unhandled_exception();
+}
+} // end namespace swig
+}
+
+//---------------------------------------------------------------------------//
 // Fortran variable definitions: used only if %included, not %imported
 //---------------------------------------------------------------------------//
 #ifndef SWIGIMPORTED
@@ -67,36 +84,35 @@ extern "C" {
 extern int SWIG_FORTRAN_ERROR_INT;
 }
 }
+
 // Exception handling code
 %fragment("SwigfExceptionDefinition", "header",
           fragment="SwigfErrorVars_wrap", fragment="<string>",
           fragment="<algorithm>", fragment="<stdexcept>")
 {
-namespace swig
-{
 // Stored exception message
-std::string fortran_last_exception_msg;
+std::string swigf_last_exception_msg;
 
 // Call this function before any new action
-void fortran_check_unhandled_exception()
+void swigf_check_unhandled_exception()
 {
     if (::SWIG_FORTRAN_ERROR_INT != 0)
     {
         throw std::runtime_error(
                 "An unhandled exception occurred in $symname: "
-                + fortran_last_exception_msg);
+                + swigf_last_exception_msg);
     }
 }
 
 // Save an exception to the fortran error code and string
-void fortran_store_exception(int code, const char *msg)
+void swigf_store_exception(int code, const char *msg)
 {
     ::SWIG_FORTRAN_ERROR_INT = code;
 
     // Save the message to a std::string first
-    fortran_last_exception_msg = msg;
+    swigf_last_exception_msg = msg;
 }
-} // end namespace swig
+
 }
 #endif
 
@@ -109,21 +125,24 @@ void fortran_store_exception(int code, const char *msg)
           fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
 extern int SWIG_FORTRAN_ERROR_INT;
 }
+
 // Exception handling code
 %fragment("SwigfExceptionDefinition", "header",
           fragment="SwigfErrorVars_wrap_c")
 {
 // Call this function before any new action
-void fortran_check_unhandled_exception()
+void swigf_check_unhandled_exception()
 {
     assert(SWIG_FORTRAN_ERROR_INT == 0);
 }
 
 // Save an exception to the fortran error code and string
-void fortran_store_exception(int code, const char *)
+void swigf_store_exception(int code, const char * msg)
 {
     // Store exception code
     SWIG_FORTRAN_ERROR_INT = code;
+    // Print the message immediately
+    printf(stderr, "An error of type %d occurred: %s\n", code, msg, NULL);
 }
 }
 #endif
@@ -133,12 +152,9 @@ void fortran_store_exception(int code, const char *)
 //---------------------------------------------------------------------------//
 #if defined(__cplusplus) && defined(SWIGIMPORTED)
 %fragment("SwigfExceptionDefinition", "header") {
-namespace swig
-{
 // Functions are defined in an imported module
-void fortran_check_unhandled_exception();
-void fortran_store_exception(int code, const char *msg);
-} // end namespace swig
+void swigf_check_unhandled_exception();
+void swigf_store_exception(int code, const char *msg);
 }
 #endif
 
@@ -148,8 +164,8 @@ void fortran_store_exception(int code, const char *msg);
 #if !defined(__cplusplus) && defined(SWIGIMPORTED)
 %fragment("SwigfExceptionDefinition", "header") {
 // Functions are defined in an imported module
-void fortran_check_unhandled_exception();
-void fortran_store_exception(int code, const char *msg);
+void swigf_check_unhandled_exception();
+void swigf_store_exception(int code, const char *msg);
 }
 #endif
 
@@ -163,13 +179,13 @@ void fortran_store_exception(int code, const char *msg);
 %fragment("SwigfExceptionMacro", "runtime") %{
 #undef SWIG_exception_impl
 #define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
-    swig::fortran_store_exception(CODE, MSG); return NULLRETURN;
+    swigf_store_exception(CODE, MSG); return NULLRETURN;
 %}
 #else
 %fragment("SwigfExceptionMacro", "runtime") %{
 #undef SWIG_exception_impl
 #define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
-    fortran_store_exception(CODE, MSG); return NULLRETURN;
+    swigf_store_exception(CODE, MSG); return NULLRETURN;
 %}
 #endif
 
@@ -183,6 +199,9 @@ void fortran_store_exception(int code, const char *msg);
 // whether or not this module is being %imported)
 %fragment("SwigfExceptionMacro");
 %fragment("SwigfExceptionDefinition");
+#ifdef __cplusplus
+%fragment("SwigfExceptionDeprecated");
+#endif
 
 //---------------------------------------------------------------------------//
 // Functional interface to swig error string
@@ -192,17 +211,17 @@ void fortran_store_exception(int code, const char *msg);
 // handling in the meantime.
 //---------------------------------------------------------------------------//
 
-#if defined(__cplusplus)
+#ifdef __cplusplus
 // Declare typedef for special string conversion typemaps
 %inline %{
 typedef const std::string& Swig_Err_String;
 %}
 
 #define STRING_TYPES Swig_Err_String
-#define AW_TYPE swig::SwigfArrayWrapper< const char >
+#define AW_TYPE SwigfArrayWrapper< const char >
 
 // C wrapper type: pointer to templated array wrapper
-%typemap(ctype, noblock=1, out="swig::SwigfArrayWrapper< const char >",
+%typemap(ctype, noblock=1, out="SwigfArrayWrapper< const char >",
        fragment="SwigfArrayWrapper") STRING_TYPES
 {AW_TYPE*}
 
@@ -239,7 +258,7 @@ typedef const std::string& Swig_Err_String;
 %inline {
 Swig_Err_String SWIG_FORTRAN_ERROR_STR()
 {
-    return swig::fortran_last_exception_msg;
+    return swigf_last_exception_msg;
 }
 }
 #endif

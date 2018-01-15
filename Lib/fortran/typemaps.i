@@ -18,11 +18,11 @@
 //---------------------------------------------------------------------------//
 %define FORT_VIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE...)
   #define PAIR_TYPE ::std::pair< CONST_CTYPE*, std::size_t >
-  #define AW_TYPE swig::SwigfArrayWrapper< CONST_CTYPE >
+  #define AW_TYPE SwigfArrayWrapper< CONST_CTYPE >
 
   // C wrapper type: pointer to templated array wrapper
-  %typemap(ctype, noblock=1, out=%str(swig::SwigfArrayWrapper< CONST_CTYPE >),
-           null=%str(swig::SwigfArrayWrapper< CONST_CTYPE >()),
+  %typemap(ctype, noblock=1, out=%str(SwigfArrayWrapper< CONST_CTYPE >),
+           null=%str(SwigfArrayWrapper< CONST_CTYPE >()),
            fragment="SwigfArrayWrapper") PAIR_TYPE
     {AW_TYPE*}
 
