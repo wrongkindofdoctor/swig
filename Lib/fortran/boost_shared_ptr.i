@@ -125,9 +125,13 @@
 //---------------------------------------------------------------------------//
 // C/Fortran interface (pass as pointers)
 //---------------------------------------------------------------------------//
+#define ALL_TYPE__ CONST TYPE, CONST TYPE &, CONST TYPE *, CONST TYPE *&
 #define ALL_SWIGSP__ SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
+#define CONST_ALL_SWIGSP__ const SWIGSP__ &, const SWIGSP__ *, const SWIGSP__ *&
 
-%typemap(ctype) ALL_SWIGSP__ "void *"
+%typemap(ctype, noblock=1) ALL_TYPE__ { SWIGSP__ * }
+%typemap(ctype, noblock=1) ALL_SWIGSP__ { SWIGSP__ * }
+%typemap(ctype, noblock=1) CONST_ALL_SWIGSP__ { const SWIGSP__ * }
 %typemap(imtype, in="type(C_PTR), value") ALL_SWIGSP__ "type(C_PTR)"
 %typemap(ftype) ALL_SWIGSP__ "$typemap(ftype, " #TYPE ")"
 %typemap(fin) ALL_SWIGSP__ "$1 = $input%swigptr"
@@ -137,7 +141,9 @@
 %template() SWIGSP__;
 
 #undef SWIGSP__
+#undef ALL_TYPE__
 #undef ALL_SWIGSP__
+#undef CONST_ALL_SWIGSP__
 
 %enddef
 

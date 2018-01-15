@@ -270,14 +270,14 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
   "$input%swigptr = C_NULL_PTR"
 
 // Classes accepted by value are still passed by reference by fortran
-%typemap(ctype, null="NULL")  SWIGTYPE
-  %{void*%}
+%typemap(ctype, null="NULL") SWIGTYPE
+  %{const $1_basetype*%}
 // They're copy-assigned when they're passed
-%typemap(in, noblock=1)     SWIGTYPE
-  {$1 = *%static_cast($input, $&1_type);}
+%typemap(in, noblock=1) SWIGTYPE
+  {$1 = *$input;}
 // Returning a class by value is copy-constructed as a new'd pointer
-%typemap(out, noblock=1)    SWIGTYPE
-  {$result = %new_copy($1, $1_ltype); }
+%typemap(out, noblock=1) SWIGTYPE
+  {$result = %new_copy($1, $1_basetype); }
 
 // Wrapper type is void*
 %typemap(imtype, in="type(C_PTR), value") SWIGTYPE
@@ -290,10 +290,10 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
   "$result%swigptr = $1"
 
 // Mutable pointer, mutable reference, and const pointer to mutable reference
-%typemap(ctype, null="NULL") SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
-  "void*"
+%typemap(ctype, null="NULL") SWIGTYPE*, SWIGTYPE&
+  "$1_basetype*"
 %typemap(in, noblock=1) SWIGTYPE*, SWIGTYPE&
-  {$1 = %static_cast($input, $1_ltype);}
+  {$1 = $input;}
 %typemap(out) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
   "$result = $1;"
 %typemap(imtype, in="type(C_PTR), value") SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
@@ -306,9 +306,9 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
   "$result%swigptr = $1"
 
 %typemap(ctype, null="NULL") const SWIGTYPE*, const SWIGTYPE&
-  "const void*"
+  "const $1_basetype*"
 %typemap(in, noblock=1) const SWIGTYPE*, const SWIGTYPE&
-  {$1 = %static_cast(%const_cast($input, void*), $1_ltype);}
+  {$1 = %const_cast($input, $1_basetype*);}
 
 // Structs will generate free/malloc usage via the %free typemap, but SWIG
 // doesn't include <stdlib.h> by default. Override the swigtype usage so that

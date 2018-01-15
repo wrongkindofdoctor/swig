@@ -1586,6 +1586,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
  */
 void FORTRAN::smartptrWrapper(Node* n)
 {
+#if 0
     String* symname = Getattr(n, "sym:name");
     String* spclass = Getattr(n, "feature:smartptr");
 
@@ -1648,6 +1649,7 @@ void FORTRAN::smartptrWrapper(Node* n)
     Delete(fname);
     Delete(wrapname);
     DelWrapper(cfunc);
+#endif
 }
 //---------------------------------------------------------------------------//
 /*!
