@@ -76,7 +76,7 @@
   * FORTRAN INTERFACE PSEUDOCODE
   * ----------------------------
   * type :: ClassName
-  *  
+  *  /fdata/
   * contains
   * end type
   */
@@ -103,7 +103,7 @@
 //---------------------------------------------------------------------------//
 /*!
  * \def FORT_SIMPLE_TYPEMAP
- * \brief Add typemaps where the C++ and C types are convertible, and 
+ * \brief Add typemaps where the C++ and C types are convertible, and
  * the intermediate Fortran typemaps are also directly convertible.
  *
  * - Arguments in Fortran are typically passed by pointer reference, and return
@@ -256,7 +256,7 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
     {$result = %reinterpret_cast($1, int*);}
 
 //---------------------------------------------------------------------------//
-// CLASSES
+// CLASS DEFINITION
 //---------------------------------------------------------------------------//
 
 // Data owned by the base class instance
@@ -269,46 +269,68 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
 %typemap(fdisassociate) SWIGTYPE
   "$input%swigptr = C_NULL_PTR"
 
-// Classes accepted by value are still passed by reference by fortran
-%typemap(ctype, null="NULL") SWIGTYPE
-  %{const $1_basetype*%}
+//---------------------------------------------------------------------------//
+// CLASS TYPEMAPS
+//---------------------------------------------------------------------------//
+// By value:
+//  Fortran -> C -> C++
+//   type   -> const ptr -> value
+//
+//  C++ -> C -> Fortran -> C -> C++
+//   value  -> new ptr -> type
+//
+// By pointer and reference:
+//
+// - Both are pointers on Fortran side and passed as class pointers, with the
+//   correct constness
+// - Const pointers/references must be const_cast to the temporary variable $1
+//   because of how SWIG wraps the argument variables
+//   
+//---------------------------------------------------------------------------//
+
+// Classes accepted by value are passed as const reference.
 // They're copy-assigned when they're passed
+// Returning a class by value is copy-constructed as a new'd pointer
+%typemap(ctype, null="NULL") SWIGTYPE
+  "const $1_basetype*"
 %typemap(in, noblock=1) SWIGTYPE
   {$1 = *$input;}
-// Returning a class by value is copy-constructed as a new'd pointer
 %typemap(out, noblock=1) SWIGTYPE
   {$result = %new_copy($1, $1_basetype); }
 
-// Wrapper type is void*
+// These remaining types apply to ALL generic class pointers.
 %typemap(imtype, in="type(C_PTR), value") SWIGTYPE
   "type(C_PTR)"
-%typemap(ftype)  SWIGTYPE
+%typemap(ftype) SWIGTYPE
   "type($fclassname)"
-%typemap(fin)    SWIGTYPE
+%typemap(fin) SWIGTYPE
   "$1 = $input%swigptr"
-%typemap(fout)   SWIGTYPE
+%typemap(fout) SWIGTYPE
   "$result%swigptr = $1"
 
-// Mutable pointer, mutable reference, and const pointer to mutable reference
-%typemap(ctype, null="NULL") SWIGTYPE*, SWIGTYPE&
+// Treat everything like raw pointers minus the exceptions laid out above.
+%apply SWIGTYPE { SWIGTYPE* };
+
+// Pointers 
+%typemap(ctype, null="NULL") SWIGTYPE*
   "$1_basetype*"
-%typemap(in, noblock=1) SWIGTYPE*, SWIGTYPE&
+%typemap(in, noblock=1) SWIGTYPE*
   {$1 = $input;}
-%typemap(out) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
+%typemap(out) SWIGTYPE*
   "$result = $1;"
-%typemap(imtype, in="type(C_PTR), value") SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
-  "type(C_PTR)"
-%typemap(ftype, out="type($fclassname)") SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
+%typemap(ftype, out="type($fclassname)") SWIGTYPE*
   "class($fclassname)"
-%typemap(fin) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
-  "$1 = $input%swigptr"
-%typemap(fout) SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
-  "$result%swigptr = $1"
 
-%typemap(ctype, null="NULL") const SWIGTYPE*, const SWIGTYPE&
+%apply SWIGTYPE* { const SWIGTYPE* };
+
+// Use const-correct arguments/return values.
+%typemap(ctype, null="NULL") const SWIGTYPE*
   "const $1_basetype*"
-%typemap(in, noblock=1) const SWIGTYPE*, const SWIGTYPE&
+%typemap(in, noblock=1) const SWIGTYPE*
   {$1 = %const_cast($input, $1_basetype*);}
+
+%apply SWIGTYPE* { SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] };
+%apply const SWIGTYPE* { const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] };
 
 // Structs will generate free/malloc usage via the %free typemap, but SWIG
 // doesn't include <stdlib.h> by default. Override the swigtype usage so that
@@ -417,7 +439,7 @@ FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
     "$1 = $input"
 %typemap(fout)   SWIGTYPE (*const)(ANY)
     "$result = $1"
-    
+
 //---------------------------------------------------------------------------//
 // MEMBER FUNCTION POINTERS
 //---------------------------------------------------------------------------//
