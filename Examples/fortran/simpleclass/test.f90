@@ -20,6 +20,9 @@ subroutine test_simple_class_actions()
     type(SimpleClass) :: sc
     integer(C_INT) :: example
 
+    write(0, *) "Null-op to release..."
+    call sc%release()
+
     write(0, *) "Constructing..."
     call sc%create()
     call sc%set(9)
@@ -27,6 +30,9 @@ subroutine test_simple_class_actions()
     example = 7
     call sc%action(example)
     write(0, *) "Should be 63:", example
+    call sc%release()
+
+    write(0, *) "Null-op to release..."
     call sc%release()
 end subroutine
 

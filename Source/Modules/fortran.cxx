@@ -1299,16 +1299,27 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
     // >>> FUNCTION RETURN VALUES
 
+    const char* swigf_result_name = "";
     String* fargs = NewStringEmpty();
 
-    // Allow ftype to be overridden by a feature
-    String* f_return_str = Getattr(n, "feature:ftype");
+    String* f_return_str = NULL;
+    if (node_is_constructor(n))
+    {
+        // ftype is overridden by constructor
+        swigf_result_name = "self";
+        f_return_str = NewStringEmpty();
+    }
+    if (!f_return_str)
+    {
+        f_return_str = Getattr(n, "feature:ftype");
+        Chop(f_return_str);
+    }
     if (!f_return_str)
     {
         f_return_str = attach_typemap("ftype", "out", n,
                                       WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
     }
-    Chop(f_return_str);
+    assert(f_return_str);
 
     // Return type for the C call
     String* im_return_str = get_typemap("imtype", "out", n, WARN_NONE);
@@ -1342,7 +1353,8 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     if (!is_fsubroutine)
     {
         // Add dummy variable for Fortran proxy return
-        Printv(fargs, f_return_str, " :: swigf_result\n", NULL);
+        swigf_result_name = "swigf_result";
+        Printv(fargs, f_return_str, " :: ", swigf_result_name, "\n", NULL);
     }
 
     // >>> FUNCTION NAME
@@ -1463,8 +1475,8 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
     if (!is_fsubroutine)
     {
-        Setattr(n, "fname", "swigf_result");
-        Printv(ffunc->def, " &\n     result(swigf_result)", NULL);
+        Setattr(n, "fname", swigf_result_name);
+        Printv(ffunc->def, " &\n     result(", swigf_result_name, ")", NULL);
     }
 
     // Append dummy variables to the proxy function definition
@@ -1520,7 +1532,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     // conversion code
     if (Len(fbody) > 0)
     {
-        Replaceall(fbody, "$result", "swigf_result");
+        Replaceall(fbody, "$result", swigf_result_name);
         Replaceall(fbody, "$owner", (GetFlag(n, "feature:new") ? "1" : "0"));
         this->replace_fclassname(cpp_return_type, fbody);
         Printv(ffunc->code, fbody, "\n", NULL);
@@ -1863,10 +1875,6 @@ int FORTRAN::constructorHandler(Node* n)
     }
     Setattr(n, "fortran:alias", alias);
 
-    // Override proxy return type and output code using the "feature": returns
-    // nothing (create is a subroutine)
-    Setattr(n, "feature:ftype", "");
-
     // Add statement to deallocate if already allocated
     const char constructor_prepend[]
         = "if (c_associated(self%swigptr)) call self%release()\n";
@@ -1877,18 +1885,6 @@ int FORTRAN::constructorHandler(Node* n)
     else
     {
         Setattr(n, "feature:fortranprepend", constructor_prepend);
-    }
-
-    // Add statement to assign pointer at the end
-    const char constructor_fout[]
-        = "self%swigptr = $1\n";
-    if (String* foutstr = Getattr(n, "feature:fout"))
-    {
-        Printv(foutstr, "\n", constructor_fout, NULL);
-    }
-    else
-    {
-        Setattr(n, "feature:fout", constructor_fout);
     }
 
     // NOTE: return type has not yet been assigned at this point
@@ -1905,17 +1901,7 @@ int FORTRAN::destructorHandler(Node* n)
 {
     Setattr(n, "fortran:alias", "release");
 
-    // Add statement to skip if not allocated
-    const char destructor_prepend[]
-        = "if (.not. c_associated(self%swigptr)) return\n";
-    if (String* prependstr = Getattr(n, "feature:fortranprepend"))
-    {
-        Printv(prependstr, "\n", destructor_prepend, NULL);
-    }
-    else
-    {
-        Setattr(n, "feature:fortranprepend", destructor_prepend);
-    }
+    Node* classnode = getCurrentClass();
 
     // Add statement to clear pointer at the end
     const char destructor_append[]
@@ -1931,17 +1917,14 @@ int FORTRAN::destructorHandler(Node* n)
 
     Language::destructorHandler(n);
 
-    Node* classnode = getCurrentClass();
     if (Getattr(classnode, "feature:final"))
     {
-        // TODO: use actual function wrapper mechanics to generate this
-        //this->functionWrapper(final_node);
         // Create 'final' name wrapper
         String* classname = Getattr(classnode, "sym:name");
         String* fname = NewStringf("swigf_final_%s", classname);
 
         // Add the 'final' subroutine to the methods
-        Printv(f_ftypes, "  final     :: ", fname, "\n",
+        Printv(f_ftypes, "  final :: ", fname, "\n",
                NULL);
 
         // Add the 'final' implementation
@@ -1949,7 +1932,7 @@ int FORTRAN::destructorHandler(Node* n)
            "  subroutine ", fname, "(self)\n"
            "   use, intrinsic :: ISO_C_BINDING\n"
            "   type(", classname, ") :: self\n"
-           "   call self%", Getattr(n, "fortran:alias"), "()\n"
+           "   call ", Getattr(n, "sym:name"), "(self%swigptr)\n"
            "  end subroutine\n",
            NULL);
 
