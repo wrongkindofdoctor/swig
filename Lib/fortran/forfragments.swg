@@ -43,7 +43,7 @@ end enum
 //---------------------------------------------------------------------------//
 
 // Add array wrapper to C++ code when used by Fortran fragment
-%fragment("SwigfArrayWrapper_cpp", "header") %{
+%fragment("SwigfArrayWrapper_wrap", "header") %{
 template<class T>
 struct SwigfArrayWrapper
 {
@@ -53,7 +53,7 @@ struct SwigfArrayWrapper
 %}
 
 // Add array wrapper to Fortran types when used
-%fragment("SwigfArrayWrapper", "fpublic", fragment="SwigfArrayWrapper_cpp",
+%fragment("SwigfArrayWrapper", "fpublic", fragment="SwigfArrayWrapper_wrap",
           noblock="1") %{
 type, bind(C) :: SwigfArrayWrapper
   type(C_PTR), public :: data
@@ -177,7 +177,7 @@ using swig::brute_cast;
 //---------------------------------------------------------------------------//
 
 // Add array wrapper to C++ code when used by Fortran fragment
-%fragment("SwigfOpaqueMemFunPtr_cpp", "header") %{
+%fragment("SwigfOpaqueMemFunPtr_wrap", "header") %{
 struct SwigfOpaqueMemFunPtr
 {
     enum { MEMPTR_SIZE = 32 };
@@ -195,7 +195,7 @@ struct SwigfOpaqueMemFunPtr
 // generating a config.h file and including it in Fortran using the C
 // preprocessor.
 %fragment("SwigfOpaqueMemFunPtr", "fpublic", noblock=1,
-          fragment="SwigfOpaqueMemFunPtr_cpp") %{
+          fragment="SwigfOpaqueMemFunPtr_wrap") %{
 type, public, bind(C) :: SwigfOpaqueMemFunPtr
   integer(C_SIGNED_CHAR), dimension(32), public :: data
 end type

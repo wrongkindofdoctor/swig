@@ -549,7 +549,7 @@ int FORTRAN::top(Node* n)
     // >>> FORTRAN WRAPPER CODE
 
     // Code before the `module` statement
-    f_fbegin = NewString("");
+    f_fbegin = NewStringEmpty();
     Swig_register_filebyname("fbegin", f_fbegin);
 
     // Start of module:

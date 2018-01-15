@@ -413,7 +413,7 @@ FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
 //---------------------------------------------------------------------------//
 #ifdef __cplusplus
 
-%typemap(ctype, fragment="SwigfOpaqueMemFunPtr_cpp")
+%typemap(ctype, fragment="SwigfOpaqueMemFunPtr_wrap")
         SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     %{SwigfOpaqueMemFunPtr%}
 %typemap(in, fragment="SwigfBruteCast")
