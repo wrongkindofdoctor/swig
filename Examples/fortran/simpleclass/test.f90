@@ -7,14 +7,32 @@
 !-----------------------------------------------------------------------------!
 
 program main
-    use ISO_FORTRAN_ENV
-
-    call test_class()
-
+    implicit none
+    call test_simple_class_memory()
+    call test_simple_class_actions()
+    call test_basic_struct()
 contains
 
-subroutine test_class()
+subroutine test_simple_class_actions()
     use simple_class
+    use ISO_C_BINDING
+    implicit none
+    type(SimpleClass) :: sc
+    integer(C_INT) :: example
+
+    write(0, *) "Constructing..."
+    call sc%create()
+    call sc%set(9)
+
+    example = 7
+    call sc%action(example)
+    write(0, *) "Should be 63:", example
+    call sc%release()
+end subroutine
+
+subroutine test_simple_class_memory()
+    use simple_class
+    use ISO_C_BINDING
     implicit none
     type(SimpleClass) :: orig
     type(SimpleClass) :: copied
@@ -49,6 +67,15 @@ subroutine test_class()
     ! Release assigned
     write(0, *) "Releasing assigned"
     call assigned%release()
+end subroutine
+
+subroutine test_basic_struct()
+    use simple_class
+    implicit none
+    type(BasicStruct) :: bs
+    bs%foo = 4321
+    bs%bar = 1.234d0
+    call print_struct(bs)
 end subroutine
 
 end program

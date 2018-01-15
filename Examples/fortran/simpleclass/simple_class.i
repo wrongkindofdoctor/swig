@@ -98,13 +98,13 @@ end subroutine
 %feature("new") emit_class;
 
 // Make BasicStruct a fortran-accessible struct.
-//%fortran_bindc_struct(BasicStruct);
+%fortran_bindc_struct(BasicStruct);
 
 %include "SimpleClass.hh"
 
 // Overloaded instantiation
-// %template(action) SimpleClass::action<double>;
-// %template(action) SimpleClass::action<int>;
+%template(action) SimpleClass::action<double>;
+%template(action) SimpleClass::action<int>;
 
 //---------------------------------------------------------------------------//
 // end of simple_class/simple.i

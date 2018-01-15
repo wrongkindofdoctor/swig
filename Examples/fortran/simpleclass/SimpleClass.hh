@@ -11,14 +11,12 @@
 #ifndef simple_class_SimpleClass_hh
 #define simple_class_SimpleClass_hh
 
-#if 0
 //! Simple public struct
 struct BasicStruct
 {
     int    foo;
     double bar;
 };
-#endif
 
 //===========================================================================//
 /*!
@@ -70,7 +68,7 @@ class SimpleClass
 
     //! templated function
     template<class T>
-    void action(T& val) { val *= 2; }
+    void action(T& val) { val *= d_storage; }
 
     //! Access the value, multiplied by some parameter
     storage_type get_multiplied(multiple_type multiple) const;
@@ -78,7 +76,6 @@ class SimpleClass
 //! Free function
 void print_value(const SimpleClass& c);
 
-#if 0
 //! Return by new pointer
 SimpleClass* emit_class(SimpleClass::storage_type val);
 
@@ -92,7 +89,6 @@ const SimpleClass& get_class();
 void set_class_by_copy(SimpleClass c);
 
 void print_struct(const BasicStruct& s);
-#endif
 
 //---------------------------------------------------------------------------//
 #endif // simple_class_SimpleClass_hh
