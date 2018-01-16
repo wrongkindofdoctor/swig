@@ -8,9 +8,6 @@
 //---------------------------------------------------------------------------//
 %module(docstring="A simple example module") simple_class
 
-%rename(assign) SimpleClass::operator=;
-
-
 %include "docstring.i"
 
 %{
@@ -71,7 +68,14 @@ void SimpleClass::double_it()
 Multiply the value by 2.
 %};
 
+//%rename(assign) SimpleClass::operator=;
+
 %extend SimpleClass {
+
+void assign(const SimpleClass& other)
+{
+    *$self = other;
+}
 
 %insert("ftypes") %{
   procedure, private :: assign_simpleclass_impl
@@ -85,8 +89,8 @@ subroutine assign_simpleclass_impl(self, other)
     class(SimpleClass), intent(in) :: other
     call print_pointer(2, other)
     call print_pointer(3, self)
-    if (c_associated(self%swigptr)) then
-      self%swigptr = swigc_SimpleClass_assign(self%swigptr, other%swigptr)
+    if (self%swigdata%flag == SWIGF_OWNER) then
+      call swigc_SimpleClass_assign(self%swigdata, other%swigdata)
     else
       call self%create(other)
     endif

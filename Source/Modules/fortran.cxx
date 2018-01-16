@@ -1586,7 +1586,6 @@ void FORTRAN::proxyfuncWrapper(Node *n)
  */
 void FORTRAN::smartptrWrapper(Node* n)
 {
-#if 0
     String* symname = Getattr(n, "sym:name");
     String* spclass = Getattr(n, "feature:smartptr");
 
@@ -1649,7 +1648,6 @@ void FORTRAN::smartptrWrapper(Node* n)
     Delete(fname);
     Delete(wrapname);
     DelWrapper(cfunc);
-#endif
 }
 //---------------------------------------------------------------------------//
 /*!
@@ -1925,6 +1923,19 @@ int FORTRAN::destructorHandler(Node* n)
     Setattr(n, "fortran:alias", "release");
 
     Node* classnode = getCurrentClass();
+
+    // Add statement to return early if we're not associated
+    String* fassoc = this->attach_class_typemap("fassociated", WARN_NONE);
+    String* returnstr = NewStringf("if (.not. (%s)) return\n", fassoc);
+    Replaceall(returnstr, "$input", "self");
+    if (String* prependstr = Getattr(n, "feature:fortranprepend"))
+    {
+        Printv(prependstr, "\n", returnstr, NULL);
+    }
+    else
+    {
+        Setattr(n, "feature:fortranprepend", returnstr);
+    }
 
     // Add statement to clear pointer after releasing
     String* fdis = this->attach_class_typemap("fdisassociate", WARN_NONE);

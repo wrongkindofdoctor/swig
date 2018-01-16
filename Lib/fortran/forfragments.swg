@@ -19,6 +19,65 @@
 %}
 
 //---------------------------------------------------------------------------//
+// CLASS WRAPPER
+// TODO: add const char* for class type??
+//---------------------------------------------------------------------------//
+%fragment("SwigfProxyFlag_wrap", "header") %{
+
+enum SwigfProxyFlag {
+    SWIGF_UNINIT = -1,
+    SWIGF_OWNER = 0,
+    SWIGF_MOVING = 1,
+    SWIGF_REFERENCE = 2,
+    SWIGF_CONST_REFERENCE = 3
+};
+
+%}
+
+%fragment("SwigfProxyFlag", "fpublic") %{
+ enum, bind(c)
+  enumerator :: SwigfProxyFlag = -1
+  enumerator :: SWIGF_UNINIT = -1
+  enumerator :: SWIGF_OWNER = 0
+  enumerator :: SWIGF_MOVING = 1
+  enumerator :: SWIGF_REFERENCE = 2
+  enumerator :: SWIGF_CONST_REFERENCE = 3
+ end enum
+%}
+
+#ifdef __cplusplus
+%fragment("SwigfClassWrapper_wrap", "header",
+          fragment="SwigfProxyFlag_wrap") %{
+template<class T>
+struct SwigfClassWrapper
+{
+    T*             ptr;
+    SwigfProxyFlag flag;
+};
+%}
+#else
+// Plain C: use a void* instead of a struct
+%fragment("SwigfClassWrapper_wrap", "header") %{
+struct SwigfClassWrapper
+{
+    void*          ptr;
+    SwigfProxyFlag flag;
+};
+%}
+#endif
+
+// This fragment is inserted by the fortran.cxx code when an unknown class is
+// encountered.
+%fragment("SwigfClassWrapper", "fpublic",
+          fragment="SwigfProxyFlag", fragment="SwigfClassWrapper_wrap",
+          noblock=1) %{
+type, bind(C) :: SwigfClassWrapper
+  type(C_PTR), public :: ptr = C_NULL_PTR
+  integer(kind(SwigfProxyFlag)), public :: flag = SWIGF_UNINIT
+end type
+%}
+
+//---------------------------------------------------------------------------//
 // UNKNOWN CLASS
 //---------------------------------------------------------------------------//
 
@@ -26,7 +85,7 @@
 // encountered.
 %fragment("SwigfUnknownClass", "fpublic", noblock=1) %{
 type :: SwigfUnknownClass
-  type(C_PTR), public :: swigptr
+  type(C_PTR), public :: ptr
 end type
 %}
 
