@@ -1,4 +1,5 @@
 # Delete contents of failing-tests.mk
+# cd ~/_code/_build/swig-debug/Examples/test-suite/fortran
 # rm summary.txt; make -k check-cpp
 
 from collections import defaultdict

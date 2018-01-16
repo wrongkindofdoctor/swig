@@ -66,11 +66,19 @@ struct SwigfClassWrapper
 #else
 // Plain C: use a void* instead of a struct
 %fragment("SwigfClassWrapper_wrap", "header") %{
-struct SwigfClassWrapper
+typedef struct 
 {
     void*          ptr;
     SwigfProxyFlag flag;
-};
+} SwigfClassWrapper;
+
+SwigfClassWrapper SwigfClassWrapper_uninitialized()
+{
+    SwigfClassWrapper result;
+    result.ptr  = NULL;
+    result.flag = SWIGF_UNINIT;
+    return result;
+}
 %}
 #endif
 
