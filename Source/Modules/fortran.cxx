@@ -197,11 +197,9 @@ String* get_typemap(
         const_String_or_char_ptr  ext,
         Node*                     n,
         int                       warning,
-        void* (*convert)(String*), // Optional conversion function
         bool                      attach)
 {
     String* result = NULL;
-    String* newresult = NULL;
     String* key = NewStringf("tmap:%s", tmname);
 
     if (attach)
@@ -257,21 +255,6 @@ String* get_typemap(
         Delete(tempkey);
     }
 
-    if (result && convert)
-    {
-        String* tempresult(newresult);
-        // Call the conversion function
-        newresult = convert(result);
-        Delete(tempresult);
-    }
-    if (newresult && attach)
-    {
-        // Set the result in the typemap
-        Setattr(n, key, newresult);
-        result = newresult;
-        Delete(newresult); // Since we're returning a "reference"
-    }
-
     Delete(key);
     return result;
 }
@@ -279,21 +262,21 @@ String* get_typemap(
 //---------------------------------------------------------------------------//
 //! Attach and return a typemap to the given node.
 String* attach_typemap(const_String_or_char_ptr tmname, Node* n, int warning)
-{ return get_typemap(tmname, NULL, n, warning, NULL, true); }
+{ return get_typemap(tmname, NULL, n, warning, true); }
 
 //! Attach and return a typemap (with extension) to the given node.
 String* attach_typemap(const_String_or_char_ptr tmname,
                        const_String_or_char_ptr ext, Node* n, int warning)
-{ return get_typemap(tmname, ext, n, warning, NULL, true); }
+{ return get_typemap(tmname, ext, n, warning, true); }
 
 //! Get and return a typemap to the given node.
 String* get_typemap(const_String_or_char_ptr tmname, Node* n, int warning)
-{ return get_typemap(tmname, NULL, n, warning, NULL, false); }
+{ return get_typemap(tmname, NULL, n, warning, false); }
 
 //! Get and return a typemap (with extension) to the given node.
 String* get_typemap(const_String_or_char_ptr tmname,
                     const_String_or_char_ptr ext, Node* n, int warning)
-{ return get_typemap(tmname, ext, n, warning, NULL, false); }
+{ return get_typemap(tmname, ext, n, warning, false); }
 
 //---------------------------------------------------------------------------//
 /*!
@@ -311,8 +294,21 @@ String* get_typemap(const_String_or_char_ptr tmname,
 SwigType* parse_typemap(const_String_or_char_ptr tmname,
                         const_String_or_char_ptr ext, Node* n, int warning)
 {
-    SwigType* tm = get_typemap(tmname, ext, n, warning, Swig_cparse_type, true);
-    return tm;
+    // Get the typemap, which has the *unparsed and unsimplified* type
+    String* raw_tm = get_typemap(tmname, ext, n, warning, true);
+    // Convert the plain-text string to a SWIG type
+    SwigType* parsed_type = Swig_cparse_type(raw_tm);
+    // Resolve typedefs in the parsed type
+    SwigType* resolved_type = SwigType_typedef_resolve_all(parsed_type);
+
+    // Replace the contents of the original typemap string with the parsed
+    // result -- this is a sort of hack for avoiding the 'Setattr(tmname,
+    // resolved_type)' where we'd have to recalculate the tmname key again
+    Clear(raw_tm);
+    Printv(raw_tm, resolved_type, NULL);
+    Delete(parsed_type);
+    Delete(resolved_type);
+    return raw_tm;
 }
 
 //---------------------------------------------------------------------------//
