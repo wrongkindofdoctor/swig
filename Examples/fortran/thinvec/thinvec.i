@@ -42,7 +42,7 @@
 %typemap(in, noblock=1) THINVEC_T (ThinVec<int> tempvec)
 {
     // Original typemap: convert const ThinVec<int>* to thinvec reference
-    $1 = %const_cast($input, $1_basetype*);
+    $1 = %const_cast($input->ptr, $1_basetype*);
     // Resize temporary vec
     tempvec.resize($1->size());
     // Copy input vector incremented by one

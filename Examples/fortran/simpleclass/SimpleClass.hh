@@ -73,17 +73,23 @@ class SimpleClass
     //! Access the value, multiplied by some parameter
     storage_type get_multiplied(multiple_type multiple) const;
 };
+
+// Typemaps to make it a little more complicated
+typedef SimpleClass* SC_Ptr;
+typedef SimpleClass& SC_Ref;
+typedef const SimpleClass& const_SC_Ref;
+
 //! Free function
-void print_value(const SimpleClass& c);
+void print_value(const_SC_Ref c);
 
 //! Return by new pointer
-SimpleClass* emit_class(SimpleClass::storage_type val);
+SC_Ptr emit_class(SimpleClass::storage_type val);
 
 //! Return by value should be converted to set-by-reference
 SimpleClass make_class(SimpleClass::storage_type val);
 
 //! Return by reference
-const SimpleClass& get_class();
+const_SC_Ref get_class();
 
 //! Pass class as a parameter
 void set_class_by_copy(SimpleClass c);
