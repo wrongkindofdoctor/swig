@@ -46,15 +46,10 @@
       $result.size = $1.second;%}
 
   // Interface type: fortran equivalent of "ctype"
-  // Optional "in" is for when it's an argument of the wrapper declaration; the
-  // main typemap `type(SwigfArrayWrapper)` is used as a temporary variable
-  // in the fortran proxy code
-  %typemap(imtype, in="type(SwigfArrayWrapper)") PAIR_TYPE
+  // Since the type is declared in the module, it's necessary to use the
+  // fortran "import" statement to bring it into scope.
+  %typemap(imtype, import="SwigfArrayWrapper") PAIR_TYPE
      "type(SwigfArrayWrapper)"
-  // Since the SwigfArrayWrapper type is declared in the module, it's necessary
-  // to "import" the variable in the interface declaration.
-  %typemap(imimport, fragment="SwigfArrayWrapper") PAIR_TYPE
-    "SwigfArrayWrapper"
 
   // Fortran proxy code: "out" is when it's a return value;
   // the main type is when it's an input value

@@ -21,7 +21,7 @@
  *              equivalent of ctype:out)
  * imtype:in  : Fortran dummy argument type for "BIND" interface (must be
  *              Fortran equivalent of ctype)
- * imimport   : Import this fortran type into the interface declaration
+ * imtype:import : Import this fortran type into the interface declaration
  * ftype      : Fortran proxy type
  * fin        : Fortran proxy code used to translate a Fortran argument to a
  *              wrapper argument
@@ -129,58 +129,62 @@
     "$1 = *$input;"
   %typemap(out) CPPTYPE
     "$result = $1;"
+  %typemap(imtype, in=IMTYPE ", intent(in)") CPPTYPE
+    IMTYPE
+  %typemap(ftype, out=FTYPE) CPPTYPE
+    FTYPE ", intent(in)"
+  %typemap(ftype, out=FTYPE) CPPTYPE
+    FTYPE ", intent(in)"
+  %typemap(fin)  CPPTYPE
+    "$1 = $input"
+  %typemap(fout) CPPTYPE
+    "$result = $1"
 
-  // To avoid problems with mapping between signed and unsigned types, we add
-  // reinterpret_cast. Note that outgoing const references are returned by
-  // value.
-  %typemap(ctype, out="CTYPE") const CPPTYPE&
-    "const CTYPE*"
-  %typemap(in, noblock=1) const CPPTYPE&
-    {$1 = %reinterpret_cast(%const_cast($input, CTYPE*), $1_ltype);}
-  // Const references are returned by value
+  // We treat const references like value types for fundamental types.
+  %apply CPPTYPE { const CPPTYPE& };
+  // ...except that inputs are copied to a temporary in case of type conversin
+  %typemap(in, noblock=1) const CPPTYPE& ($1_ltype temp)
+    {temp = *$input;
+     $1   = &temp;}
+  // ...and output values have to be dereferenced to turn into values
   %typemap(out) const CPPTYPE&
     "$result = *$1;"
 
-  // All other aspects of const reference vs value are the same
-  %typemap(imtype, in=IMTYPE ", intent(in)") CPPTYPE, const CPPTYPE&
-    IMTYPE
-  %typemap(ftype, out=FTYPE) CPPTYPE, const CPPTYPE&
-    FTYPE ", intent(in)"
-  %typemap(ftype, out=FTYPE) CPPTYPE, const CPPTYPE&
-    FTYPE ", intent(in)"
-  %typemap(fin)  CPPTYPE, const CPPTYPE&
-    "$1 = $input"
-  %typemap(fout) CPPTYPE, const CPPTYPE&
-    "$result = $1"
-
   // Mutable references are passed by pointers as arguments, but they're
   // *returned* as actual pointers (becoming Fortran pointers)
-  %typemap(ctype, out="CTYPE*") CPPTYPE&
+  %typemap(ctype, out="CTYPE*") CPPTYPE*
     "CTYPE*"
-  %typemap(in, noblock=1) CPPTYPE&
-    {$1 = %reinterpret_cast($input, $1_ltype);}
-  %typemap(out, noblock=1) CPPTYPE&
-    {$result = %reinterpret_cast($1, CTYPE*);}
-  %typemap(imtype, in="type(C_PTR), value") CPPTYPE&
+  %typemap(in, noblock=1) CPPTYPE*
+    {$1 = %static_cast($input, $1_basetype*);}
+  %typemap(out, noblock=1) CPPTYPE*
+    {$result = %static_cast($1, CTYPE*);}
+  %typemap(imtype, in="type(C_PTR), value") CPPTYPE*
     "type(C_PTR)"
-  %typemap(ftype, out=FTYPE ", pointer") CPPTYPE&
+  %typemap(ftype, out=FTYPE ", pointer") CPPTYPE*
     FTYPE ", target, intent(inout)"
-  %typemap(fin)  CPPTYPE&
+  %typemap(fin)  CPPTYPE*
     "$1 = c_loc($input)"
-  %typemap(fout) CPPTYPE&
+  %typemap(fout) CPPTYPE*
     "call c_f_pointer($1, $result)"
 
-  // Treat mutable pointers/arrays like mutable references
-  %apply CPPTYPE& { CPPTYPE*, CPPTYPE[], CPPTYPE[ANY] };
-  %apply CPPTYPE& { const CPPTYPE*, const CPPTYPE[], const CPPTYPE[ANY] };
-
-  // Const pointers have to be const-cast and (if %apply is used) reinterpreted
-  %typemap(out, noblock=1) const CPPTYPE*, const CPPTYPE[], const CPPTYPE[ANY]
-    {$result = %const_cast(%reinterpret_cast($1, const CTYPE*), CTYPE*);}
-
-  // Arrays of known size are returned as pointers to known-size arrays
+  // Mutable references and arrays are treated just like pointers
+  %apply CPPTYPE* { CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] };
+  // ...except that fixed-sized arrays can be treated natively
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(inout)"
+
+  // Const pointers also are treated like raw pointers for the most part
+  %apply CPPTYPE* { const CPPTYPE* };
+
+  // ... except for some constness issues
+  %typemap(ctype, out="const CTYPE*") const CPPTYPE*
+    "const CTYPE*"
+  %typemap(out, noblock=1) const CPPTYPE*
+    {$result = $1;}
+
+  %apply const CPPTYPE* { const CPPTYPE&, const CPPTYPE[], const CPPTYPE[ANY] };
+    
+  // Arrays of known size are returned as pointers to known-size arrays
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") const CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(in)"
   %typemap(fout) CPPTYPE[ANY], const CPPTYPE[ANY]
@@ -266,8 +270,9 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
 %typemap(fassociated) SWIGTYPE
   "$input%swigdata%flag == SWIGF_UNINIT"
 // Reset the pointer
-%typemap(fdisassociate) SWIGTYPE
-  "$input%swigdata%flag = SWIGF_UNINIT"
+%typemap(fdisassociate, noblock=1) SWIGTYPE
+ %{$input%swigdata%flag = SWIGF_UNINIT
+   $input%swigdata%ptr  = C_NULL_PTR%}
 
 //---------------------------------------------------------------------------//
 // CLASS TYPEMAPS
@@ -288,24 +293,25 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
 //   
 //---------------------------------------------------------------------------//
 
-// Templated class wrapper for 
-#define SWIGF_WRAPPER %ifcplusplus( \
-        SwigfClassWrapper<$1_basetype>, \
-        SwigfClassWrapper)
-#ifdef __cplusplus
+// Templated class wrapper for class pointer and flags
 %ignore SWIGF_WRAPPER_STR;
 %ignore CONST_SWIGF_WRAPPER_STR;
-#define CONST_SWIGF_WRAPPER SwigfClassWrapper<const $1_basetype>
-#define SWIGF_WRAPPER_STR "SwigfClassWrapper<$1_basetype>"
+#ifdef __cplusplus
+#define SWIGF_WRAPPER            SwigfClassWrapper<$1_basetype>
+#define SWIGF_WRAPPER_STR       "SwigfClassWrapper<$1_basetype>"
+#define CONST_SWIGF_WRAPPER      SwigfClassWrapper<const $1_basetype>
 #define CONST_SWIGF_WRAPPER_STR "SwigfClassWrapper<const $1_basetype>"
 #else
-#define CONST_SWIGF_WRAPPER SwigfClassWrapper
+#define SWIGF_WRAPPER            const SwigfClassWrapper
+#define SWIGF_WRAPPER_STR       "const SwigfClassWrapper"
+#define CONST_SWIGF_WRAPPER      const SwigfClassWrapper
+#define CONST_SWIGF_WRAPPER_STR "const SwigfClassWrapper"
 #endif
 
 // Classes accepted by value are passed as const reference.
 // They're copy-assigned when they're passed
 // Returning a class by value is copy-constructed as a new'd pointer
-%typemap(ctype, out=SWIGF_WRAPPER_STR, null="{NULL, SWIGF_UNINIT}", noblock=1)
+%typemap(ctype, out=SWIGF_WRAPPER_STR, null="({NULL, SWIGF_UNINIT})", noblock=1)
 SWIGTYPE
   {const CONST_SWIGF_WRAPPER *}
 %typemap(in, noblock=1) SWIGTYPE
@@ -315,10 +321,8 @@ SWIGTYPE
    $result.flag = SWIGF_MOVING;}
 
 // These remaining types apply to ALL generic class pointers.
-%typemap(imtype) SWIGTYPE
+%typemap(imtype, import="SwigfClassWrapper") SWIGTYPE
   "type(SwigfClassWrapper)"
-%typemap(imimport) SWIGTYPE
-  "SwigfClassWrapper"
 %typemap(ftype) SWIGTYPE
   "type($fclassname)"
 %typemap(fin) SWIGTYPE
@@ -326,12 +330,11 @@ SWIGTYPE
 %typemap(fout) SWIGTYPE
   "$result%swigdata = $1"
 
-// Treat everything like raw pointers minus the exceptions laid out above.
+// Raw pointers act mostly like value types (with overrides below)
 %apply SWIGTYPE { SWIGTYPE* };
 
-// Pointers 
 %typemap(ctype, out=SWIGF_WRAPPER_STR, noblock=1,
-         null="{NULL, SWIGF_UNINIT}") SWIGTYPE*
+         null="({NULL, SWIGF_UNINIT})") SWIGTYPE*
   {SWIGF_WRAPPER*}
 %typemap(in, noblock=1) SWIGTYPE*
   {$1 = $input->ptr;}
@@ -345,7 +348,7 @@ SWIGTYPE
 
 // Use const-correct arguments/return values.
 %typemap(ctype, out=CONST_SWIGF_WRAPPER_STR, noblock=1,
-         null="{NULL, SWIGF_UNINIT}") const SWIGTYPE*
+         null="({NULL, SWIGF_UNINIT})") const SWIGTYPE*
   {const CONST_SWIGF_WRAPPER*}
 %typemap(in, noblock=1) const SWIGTYPE*
   {$1 = %const_cast($input->ptr, $1_basetype*);}
@@ -366,6 +369,8 @@ SWIGTYPE
 
 #undef SWIGF_WRAPPER
 #undef CONST_SWIGF_WRAPPER
+#undef SWIGF_WRAPPER_STR
+#undef CONST_SWIGF_WRAPPER_STR
 
 //---------------------------------------------------------------------------//
 // BIND(C) STRUCT TYPES
@@ -383,7 +388,8 @@ SWIGTYPE
   %nodefaultctor CTYPE;
   %nodefaultdtor CTYPE;
   // Interface code has to "import' the class type
-  %typemap(imimport) CTYPE, CTYPE*, CTYPE& "$fclassname"
+  %typemap(imtype, import="$fclassname") CTYPE
+  "type($fclassname)"
   // Bound structs act just like simple types
   FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, "type($fclassname)", "type($fclassname)")
 %enddef
@@ -479,12 +485,10 @@ FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
         SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     %{$result = brute_cast<SwigfOpaqueMemFunPtr>($1);%}
 %typemap(imtype, in="type(SwigfOpaqueMemFunPtr), intent(in), value",
+         import="SwigfOpaqueMemFunPtr",
          fragment="SwigfOpaqueMemFunPtr")
         SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     "type(SwigfOpaqueMemFunPtr)"
-%typemap(imimport)
-        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
-    "SwigfOpaqueMemFunPtr"
 %typemap(ftype, out="type(SwigfOpaqueMemFunPtr)",
          fragment="SwigfOpaqueMemFunPtr")
         SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)

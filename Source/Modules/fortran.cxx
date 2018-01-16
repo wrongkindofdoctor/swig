@@ -1203,8 +1203,7 @@ void FORTRAN::imfuncWrapper(Node *n)
     Hash* imimport_hash = NewHash();
 
     // If return type is a fortran C-bound type, add import statement
-    String* imimport = Swig_typemap_lookup("imimport", n, cpp_return_type,
-                                           NULL);
+    String* imimport = Getattr(n, "tmap:imtype:import");
     if (imimport)
     {
         this->replace_fclassname(cpp_return_type, imimport);
@@ -1215,7 +1214,6 @@ void FORTRAN::imfuncWrapper(Node *n)
 
     ParmList* parmlist = Getattr(n, "parms");
     Swig_typemap_attach_parms("imtype",   parmlist, NULL);
-    Swig_typemap_attach_parms("imimport", parmlist, NULL);
 
     // Get the list of actual parameters used by the C function
     // (these are pointers to values in parmlist, with some elements possibly
@@ -1247,7 +1245,7 @@ void FORTRAN::imfuncWrapper(Node *n)
 
         // Include import statements if present; needed for actual structs
         // passed into interface code
-        String* imimport = Getattr(p, "tmap:imimport");
+        String* imimport = Getattr(p, "tmap:imtype:import");
         if (imimport)
         {
             this->replace_fclassname(Getattr(p, "type"), imimport);
@@ -1590,6 +1588,7 @@ void FORTRAN::smartptrWrapper(Node* n)
     String* spclass = Getattr(n, "feature:smartptr");
 
     // TODO: use function_wrapper for this instead
+#if 0
 
     // Create overloaded aliased name
     String* alias = NewString("assignment(=)");
@@ -1648,6 +1647,7 @@ void FORTRAN::smartptrWrapper(Node* n)
     Delete(fname);
     Delete(wrapname);
     DelWrapper(cfunc);
+#endif
 }
 //---------------------------------------------------------------------------//
 /*!

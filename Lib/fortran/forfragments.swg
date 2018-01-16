@@ -53,6 +53,14 @@ struct SwigfClassWrapper
 {
     T*             ptr;
     SwigfProxyFlag flag;
+    // Static function to return an empty 
+    static SwigfClassWrapper<T> uninitialized()
+    {
+        SwigfClassWrapper<T> result;
+        result.ptr = NULL;
+        result.flag = SWIGF_UNINIT;
+        return result;
+    }
 };
 %}
 #else
@@ -67,13 +75,15 @@ struct SwigfClassWrapper
 #endif
 
 // This fragment is inserted by the fortran.cxx code when an unknown class is
-// encountered.
+// encountered. Note that we declare the enum as a C_INT instead of
+// `integer(kind(SwigfProxyFlag))` to avoid a warning in GCC. The types will
+// still be interoperable.
 %fragment("SwigfClassWrapper", "fpublic",
           fragment="SwigfProxyFlag", fragment="SwigfClassWrapper_wrap",
           noblock=1) %{
 type, bind(C) :: SwigfClassWrapper
   type(C_PTR), public :: ptr = C_NULL_PTR
-  integer(kind(SwigfProxyFlag)), public :: flag = SWIGF_UNINIT
+  integer(C_INT), public :: flag = SWIGF_UNINIT
 end type
 %}
 

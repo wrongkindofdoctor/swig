@@ -236,9 +236,7 @@ typedef const std::string& Swig_Err_String;
   $result.size = $1->size();
   %}
 
-%typemap(imimport, fragment="SwigfArrayWrapper") STRING_TYPES
-"SwigfArrayWrapper"
-%typemap(imtype, in="type(SwigfArrayWrapper)") STRING_TYPES
+%typemap(imtype, import="SwigfArrayWrapper") STRING_TYPES
  "type(SwigfArrayWrapper)"
 
 // Fortran proxy code: return allocatable string
