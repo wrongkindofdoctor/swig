@@ -1,13 +1,10 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  apply_signed_char \
   apply_strings \
   array_member \
-  arrays_dimensionless \
   arrays_global \
   arrays_global_twodim \
-  bloody_hell \
   char_binary \
   char_strings \
   constant_directive \
@@ -15,24 +12,16 @@ FAILING_CPP_TESTS += \
   cpp_enum \
   default_constructor \
   director_enum \
-  enum_ignore \
   enum_thorough \
   exception_order \
-  global_namespace \
   global_vars \
   li_std_vector \
   li_std_vector_enum \
-  li_typemaps \
-  li_typemaps_apply \
-  li_windows \
-  long_long_apply \
   member_funcptr_galore \
   mixed_types \
-  primitive_ref \
   reference_global_vars \
   sizet \
   template_basic \
-  template_default_arg \
   template_explicit \
   threads_exception \
   typedef_array_member \
@@ -42,7 +31,9 @@ FAILING_CPP_TESTS += \
 FAILING_CPP_TESTS += \
   abstract_signature \
   abstract_typedef2 \
+  arrays_dimensionless \
   arrays_scope \
+  bloody_hell \
   class_ignore \
   class_scope_weird \
   constructor_copy \
@@ -59,12 +50,14 @@ FAILING_CPP_TESTS += \
   director_keywords \
   director_overload2 \
   director_property \
+  enum_ignore \
   enum_scope_template \
   evil_diamond_prop \
   extend \
   extend_default \
   friends_template \
   fvirtual \
+  global_namespace \
   global_scope_types \
   inherit_missing \
   inherit_target_language \
@@ -75,6 +68,10 @@ FAILING_CPP_TESTS += \
   li_boost_shared_ptr_bits \
   li_cdata_cpp \
   li_std_vector_ptr \
+  li_typemaps \
+  li_typemaps_apply \
+  li_windows \
+  long_long_apply \
   member_pointer_const \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
@@ -100,6 +97,7 @@ FAILING_CPP_TESTS += \
   overload_template \
   overload_template_fast \
   pod_struct \
+  primitive_ref \
   pure_virtual \
   refcount \
   register_par \
@@ -114,6 +112,7 @@ FAILING_CPP_TESTS += \
   template_arg_scope \
   template_arg_typename \
   template_default \
+  template_default_arg \
   template_default_vw \
   template_enum \
   template_extend_overload \
@@ -136,6 +135,7 @@ FAILING_CPP_TESTS += \
   template_typemaps_typedef2 \
   template_using_directive_and_declaration_forward \
   template_whitespace \
+  typemap_global_scope \
   typemap_ns_using \
   typemap_template_parm_typedef \
   typemap_various \

@@ -106,22 +106,18 @@
  * \brief Add typemaps where the C++ and C types are convertible, and
  * the intermediate Fortran typemaps are also directly convertible.
  *
- * - Arguments in Fortran are typically passed by pointer reference, and return
- * types are typically passed by value.
+ * - Arguments in Fortran are passed by pointer reference, and return
+ * types are passed by value.
  * - Returning by const reference is automatically turned into return-by-value
- * (this is the 'out=CTYPE' argument).
+ *  (this is the 'out=CTYPE' argument).
  * - Mutable references that are arguments get the 'inout' qualifier in Fortran,
- * whereas values and const references are simply 'in'.
+ *  whereas values and const references are simply 'in'.
  * - Mutable references that are *return* values are passed as pointers, and on
  * the Fortan side these become 'pointer' types.
  * - Fixed-size arrays are passed as known-size array pointers, but otherwise
  *   they are treated as pointers to scalar data.
- *
- * Note that it's important to use CTYPE instead of $1_ltype for the "ctype"
- * typemap in order to keep the pointer types consistent with the given fortran
- * FTYPE.
  */
-%define FORT_SIMPLE_TYPEMAP(CPPTYPE, CTYPE, IMTYPE, FTYPE)
+%define FORT_SIMPLE_TYPEMAP(CPPTYPE, CTYPE, FTYPE)
   // Regular values are passed as pointers and returned by value
   %typemap(ctype, out="CTYPE") CPPTYPE
     "const CTYPE*"
@@ -129,10 +125,8 @@
     "$1 = *$input;"
   %typemap(out) CPPTYPE
     "$result = $1;"
-  %typemap(imtype, in=IMTYPE ", intent(in)") CPPTYPE
-    IMTYPE
-  %typemap(ftype, out=FTYPE) CPPTYPE
-    FTYPE ", intent(in)"
+  %typemap(imtype, in=FTYPE ", intent(in)") CPPTYPE
+    FTYPE
   %typemap(ftype, out=FTYPE) CPPTYPE
     FTYPE ", intent(in)"
   %typemap(fin)  CPPTYPE
@@ -152,8 +146,8 @@
 
   // Mutable references are passed by pointers as arguments, but they're
   // *returned* as actual pointers (becoming Fortran pointers)
-  %typemap(ctype, out="CTYPE*") CPPTYPE*
-    "CTYPE*"
+  %typemap(ctype, out="$1_ltype") CPPTYPE*
+    "$1_ltype"
   %typemap(in, noblock=1) CPPTYPE*
     {$1 = $input;}
     //{$1 = %static_cast($input, $1_ltype);}
@@ -178,14 +172,20 @@
   %apply CPPTYPE* { const CPPTYPE* };
 
   // ... except for some constness issues
-  %typemap(ctype, out="const CTYPE*") const CPPTYPE*
-    "const CTYPE*"
-  %typemap(in, noblock=1) const CPPTYPE*
-    {$1 = %const_cast($input, $1_ltype);}
+  %typemap(ctype, out="const $1_ltype") const CPPTYPE*
+    "const $1_ltype"
+  %typemap(in, noblock=1) const CPPTYPE* ($*1_ltype temp_val)
+    {temp_val = *%const_cast($input, CTYPE*);
+     $1 = &temp_val;}
   %typemap(out, noblock=1) const CPPTYPE*
     {$result = $1;}
 
-  %apply const CPPTYPE* { const CPPTYPE&, const CPPTYPE[], const CPPTYPE[ANY] };
+  %apply const CPPTYPE* { const CPPTYPE[], const CPPTYPE[ANY] };
+
+  // Apply input for const CPPTYPE* to const CPPTYPE&; otherwise const
+  // references for simple types are treated as values. This allows temporaries
+  // to be passed into functions on the Fortran side (e.g. vec%set(3, i + 2))
+  %typemap(in) const CPPTYPE& = const CPPTYPE*;
     
   // Arrays of known size are returned as pointers to known-size arrays
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") const CPPTYPE[ANY]
@@ -206,7 +206,7 @@
  * The C++ and C types are the same in this case.
  */
 %define FORT_FUND_TYPEMAP(CTYPE, FTYPE)
-  FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, FTYPE, FTYPE)
+  FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, FTYPE)
 %enddef
 
 FORT_FUND_TYPEMAP(bool          , "logical(C_BOOL)"     )
@@ -234,26 +234,29 @@ FORT_FUND_TYPEMAP(char          , "integer(C_SIGNED_CHAR)")
  * \code static_cast<unsigned int> foo(-1); \endcode we don't want to do this
  * by default.
  */
-%define FORT_UNSIGNED_TYPEMAP(CPPTYPE, CTYPE, FTYPE)
-  FORT_SIMPLE_TYPEMAP(CPPTYPE, CTYPE, FTYPE, FTYPE)
-%enddef
-FORT_UNSIGNED_TYPEMAP(unsigned char ,     char ,     "integer(C_SIGNED_CHAR)")
-FORT_UNSIGNED_TYPEMAP(unsigned short,     short,     "integer(C_SHORT)"    )
-FORT_UNSIGNED_TYPEMAP(unsigned int  ,     int  ,     "integer(C_INT)"      )
-FORT_UNSIGNED_TYPEMAP(unsigned long ,     long ,     "integer(C_LONG)"     )
-FORT_UNSIGNED_TYPEMAP(unsigned long long, long long, "integer(C_LONG_LONG)")
+%apply char       { unsigned char      };
+%apply short      { unsigned short     };
+%apply int        { unsigned int       };
+%apply long       { unsigned long      };
+%apply long long  { unsigned long long };
 
 // Note: ssize_t is defined in <sys/types.h> and isn't part of the standard
-%apply size_t {sssize_t};
+%apply size_t     { sssize_t };
 
 //---------------------------------------------------------------------------//
 // ENUMS
 //---------------------------------------------------------------------------//
 
-// Most of the opertions are like above, but replace C_INT with the kind of
-// enum
-FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
-                    "integer(kind($fenumname))")
+// Most of the opertions are like integers, but replace the fortran wrapper
+// with the kind of enum. Don't worry about pointer types (leave those as
+// integer pointers)
+%apply int { enum SWIGTYPE };
+%typemap(ctype, out="int") enum SWIGTYPE
+   "const int*"
+%typemap(in) enum SWIGTYPE
+    "$1 = static_cast<$ltype>(*$input);"
+%typemap(ftype, out="integer(kind($fenumname))") enum SWIGTYPE
+   "integer(kind($fenumname)), intent(in)"
 
 // Input values must be statically cast to the enum type
 %typemap(in, noblock=1) enum SWIGTYPE
@@ -389,11 +392,21 @@ SWIGTYPE
   // Remove constructors and destructors
   %nodefaultctor CTYPE;
   %nodefaultdtor CTYPE;
-  // Interface code has to "import' the class type
+
   %typemap(imtype, import="$fclassname") CTYPE
-  "type($fclassname)"
+    "type($fclassname)"
+
   // Bound structs act just like simple types
-  FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, "type($fclassname)", "type($fclassname)")
+  FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, "type($fclassname)")
+
+  // Interface code has to "import' the class type.
+  // NOTE: ideally we could just apply this to CTYPE since the typemap
+  // resolution uses  %apply CTYPE { CTYPE const & }, but it looks like the
+  // apply aliases to the old typemap, not the updated one here. So we manually
+  // apply the typemap to all the derived types
+  %typemap(imtype, import="$fclassname") CTYPE, CTYPE*, CTYPE&, 
+          const CTYPE, const CTYPE*, const CTYPE& 
+    "type($fclassname)"
 %enddef
 
 //---------------------------------------------------------------------------//
