@@ -298,6 +298,7 @@ SwigType* parse_typemap(const_String_or_char_ptr tmname,
     String* raw_tm = get_typemap(tmname, ext, n, warning, true);
     // Convert the plain-text string to a SWIG type
     SwigType* parsed_type = Swig_cparse_type(raw_tm);
+    assert(parsed_type);
     // Resolve typedefs in the parsed type
     SwigType* resolved_type = SwigType_typedef_resolve_all(parsed_type);
 
@@ -1971,7 +1972,7 @@ int FORTRAN::destructorHandler(Node* n)
            "  subroutine ", fname, "(self)\n"
            "   use, intrinsic :: ISO_C_BINDING\n"
            "   type(", classname, ") :: self\n"
-           "   call ", Getattr(n, "sym:name"), "(self%swigptr)\n"
+           "   call ", Getattr(n, "sym:name"), "(self%swigdata%ptr)\n"
            "  end subroutine\n",
            NULL);
 

@@ -13,108 +13,129 @@
 #endif
 
 %define SWIG_SHARED_PTR_TYPEMAPS(CONST, TYPE...)
-
+//---------------------------------------------------------------------------//
+// Macro shortcuts
 #define SWIGSP__ SWIG_SHARED_PTR_QNAMESPACE::shared_ptr<CONST TYPE >
+#define ALL_TYPE__ CONST TYPE, CONST TYPE &, CONST TYPE *, CONST TYPE *&
+#define ALL_SWIGSP__ SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
+#define CONST_ALL_SWIGSP__ const SWIGSP__ &, const SWIGSP__ *, const SWIGSP__ *&
 
-// %naturalvar is as documented for member variables
-%naturalvar TYPE;
-%naturalvar SWIGSP__;
-
-// Replace call to "delete (Foo*) arg1;" with call to delete the *shared
-// pointer* (so decrement the reference count instead of forcing the object to
-// be destroyed and causing a double-delete)
-%feature("unref") TYPE
-%{ (void)$self; delete smart$self; %}
+// Optional: restore std::logic_error("Attempt to dereference null $1_type")
+#define SWIGF_ASSERT_NONNULL(argp)
 
 //---------------------------------------------------------------------------//
-// In/out typemaps
-//---------------------------------------------------------------------------//
+// %naturalvar causes these types to be wrapped as const references rather than
+// pointers when they're member variables. Not sure what this does in practice.
+//%naturalvar TYPE;
+//%naturalvar SWIGSP__;
 
-// Plain value
-%typemap(in, noblock=1) CONST TYPE ($&1_type argp = 0) {
-    argp = ((SWIGSP__ *)$input) ? ((SWIGSP__ *)$input)->get() : 0;
-    if (!argp)
-    {
-        throw std::logic_error("Attempt to dereference null $1_type");
-        return $null;
-    }
+//---------------------------------------------------------------------------//
+// Copy basic settings from non-SP type (i.e. Fortran will see it the same; we
+// override the in/out/ctype below)
+
+%typemap(ftype) ALL_SWIGSP__ "$typemap(ftype, " #TYPE ")"
+
+//---------------------------------------------------------------------------//
+// C types: we wrap the *shared pointer* as the value type. The 'in' type is
+// always passed to us as a pointer to a SwigfClassWrapper, and the 'out' is
+// returned by value.
+%typemap(ctype, out={SwigfClassWrapper<SWIGSP__>},
+         null={ SwigfClassWrapper<SWIGSP__>::uninitialized() },
+         fragment="SwigfClassWrapper_wrap",
+         noblock=1)
+    ALL_TYPE__, ALL_SWIGSP__, CONST_ALL_SWIGSP__
+{ SwigfClassWrapper<SWIGSP__ > *}
+
+//---------------------------------------------------------------------------//
+// Original class by value: access the 'ptr' member of the input, return a
+// SP-owned copy of the obtained value.
+//---------------------------------------------------------------------------//
+%typemap(in, noblock=1) CONST TYPE ($&1_type argp = 0)
+{
+    argp = $input->ptr ? $input->ptr->get() : NULL;
+    SWIGF_ASSERT_NONNULL(argp);
     $1 = *argp;
 }
-%typemap(out, noblock=1) CONST TYPE {
-    $result = new SWIGSP__(new $1_ltype(($1_ltype &)$1));
+%typemap(out, noblock=1) CONST TYPE
+{
+   $result.ptr  = new SWIGSP__(%new_copy($1, $1_basetype));
+   $result.flag = SWIGF_MOVING;
 }
 
-// Plain pointer
-%typemap(in, noblock=1) CONST TYPE * (SWIGSP__ *smartarg = 0) {
-    smartarg = (SWIGSP__ *)$input;
-    $1 = (TYPE *)(smartarg ? smartarg->get() : 0);
+//---------------------------------------------------------------------------//
+// Original class by pointer. Note that the deleter is determined by the owner
+// flag, but the shared pointer instance itself is in a "moving" state
+// regardless.
+//---------------------------------------------------------------------------//
+%typemap(in, noblock=1) CONST TYPE *
+{
+    $1 = $input->ptr ? $input->ptr->get() : NULL;
 }
-%typemap(out, noblock=1, fragment="SWIG_null_deleter") CONST TYPE * {
-    $result = $1 ? new SWIGSP__($1 SWIG_NO_NULL_DELETER_$owner) : 0;
-}
-
-// Plain reference
-%typemap(in, noblock=1) CONST TYPE & {
-    $1 = ($1_ltype)(((SWIGSP__ *)$input)
-                    ? ((SWIGSP__ *)$input)->get()
-                    : 0);
-    if (!$1)
-    {
-        throw std::logic_error("Attempt to dereference null $1_type");
-        return $null;
-    }
-}
-%typemap(out, noblock=1, fragment="SWIG_null_deleter") CONST TYPE & {
-    $result = new SWIGSP__($1 SWIG_NO_NULL_DELETER_$owner);
+%typemap(out, noblock=1, fragment="SWIG_null_deleter") CONST TYPE *
+{
+    $result.ptr = $1 ? new SWIGSP__($1 SWIG_NO_NULL_DELETER_$owner) : NULL;
+    $result.flag = SWIGF_MOVING;
 }
 
-// Plain pointer by reference
-%typemap(in, noblock=1) TYPE *CONST& ($*1_ltype temp = 0) {
-    temp = (TYPE *)(((SWIGSP__ *)$input)
-                    ? ((SWIGSP__ *)$input)->get()
-                    : 0);
-    $1 = &temp;
+//---------------------------------------------------------------------------//
+// Original class by reference. Same as by pointer, but with null checks.
+//---------------------------------------------------------------------------//
+%typemap(in, noblock=1) CONST TYPE&
+{
+    SWIGF_ASSERT_NONNULL(argp);
+    $1 = $input->ptr ? $input->ptr->get() : NULL;
 }
-%typemap(out, noblock=1, fragment="SWIG_null_deleter") TYPE *CONST& {
-    $result = new SWIGSP__(*$1 SWIG_NO_NULL_DELETER_$owner);
+%typemap(out) CONST TYPE& = CONST TYPE *;
+
+//---------------------------------------------------------------------------//
+// SP by value
+//---------------------------------------------------------------------------//
+%typemap(in, noblock=1) SWIGSP__
+{
+    $1 = $input->ptr;
 }
 
-// shared_ptr by value
-%typemap(in, noblock=1) SWIGSP__ {
-    if ($input) $1 = *($&1_ltype)$input;
-}
-%typemap(out, noblock=1) SWIGSP__ {
-    $result = SWIG_SHARED_PTR_NOT_NULL($1) ? new $1_ltype($1) : 0;
+%typemap(out, noblock=1) SWIGSP__
+{
+    $result.ptr  = %new_copy($1, SWIGSP__);
+    $result.flag = SWIGF_MOVING;
 }
 
-// shared_ptr by reference
-%typemap(in, noblock=1) SWIGSP__ & ($*1_ltype tempnull) {
-    $1 = $input ? ($1_ltype)$input : &tempnull;
-}
-%typemap(out, noblock=1) SWIGSP__ & {
-    $result = SWIG_SHARED_PTR_NOT_NULL(*$1) ? new $*1_ltype(*$1) : 0;
+//---------------------------------------------------------------------------//
+// SP by reference
+//---------------------------------------------------------------------------//
+%typemap(in, noblock=1) SWIGSP__& ($*1_ltype tempnull)
+{
+    $1 = $input->ptr ? ($1_ltype)$input->ptr : &tempnull;
 }
 
-// shared_ptr by pointer
-%typemap(in, noblock=1) SWIGSP__ * ($*1_ltype tempnull) {
-    $1 = $input ? ($1_ltype)$input : &tempnull;
+%typemap(out, noblock=1) SWIGSP__&
+{
+    $result.ptr  = SWIG_SHARED_PTR_NOT_NULL(*$1) ? new $*1_ltype(*$1) : 0;
+    $result.flag = SWIGF_MOVING;
 }
-%typemap(out, noblock=1, fragment="SWIG_null_deleter") SWIGSP__ * {
+
+//---------------------------------------------------------------------------//
+// SP by pointer
+//
+// Make sure that the SP* is allocated.
+//---------------------------------------------------------------------------//
+%typemap(in, noblock=1) SWIGSP__ * ($*1_ltype tempnull)
+{
+    $1 = $input->ptr ? $input->ptr : &tempnull;
+}
+
+%typemap(out, noblock=1, fragment="SWIG_null_deleter") SWIGSP__ *
+{
     $result = ($1 && SWIG_SHARED_PTR_NOT_NULL(*$1)) ? new $*1_ltype(*($1_ltype)$1) : 0;
     if ($owner) delete $1;
 }
 
-// shared_ptr by pointer reference
-%typemap(in, noblock=1) SWIGSP__ *&
-            (SWIGSP__ tempnull, $*1_ltype temp = 0) {
-    temp = $input ? *($1_ltype)&$input : &tempnull;
-    $1 = &temp;
-}
-%typemap(out, noblock=1) SWIGSP__ *& {
-    *($1_ltype)&$result = (*$1 && **$1) ? new SWIGSP__(**$1) : 0;
-}
-
-// Various missing typemaps - If ever used (unlikely) ensure compilation error rather than runtime bug
+//---------------------------------------------------------------------------//
+// Miscellaneous
+//---------------------------------------------------------------------------//
+// Various missing typemaps - If ever used (unlikely) ensure compilation error
+// inside the wrapper
 %typemap(in) CONST TYPE[], CONST TYPE[ANY], CONST TYPE (CLASS::*) %{
 #error "typemaps for $1_type not available"
 %}
@@ -123,23 +144,18 @@
 %}
 
 //---------------------------------------------------------------------------//
-// C/Fortran interface (pass as pointers)
+// Replace call to "delete (Foo*) arg1;" with call to delete the *shared
+// pointer* (so decrement the reference count instead of forcing the object to
+// be destroyed and causing a double-delete)
+%feature("unref") TYPE
+%{ (void)$self; delete smart$self; %}
+
 //---------------------------------------------------------------------------//
-#define ALL_TYPE__ CONST TYPE, CONST TYPE &, CONST TYPE *, CONST TYPE *&
-#define ALL_SWIGSP__ SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
-#define CONST_ALL_SWIGSP__ const SWIGSP__ &, const SWIGSP__ *, const SWIGSP__ *&
-
-%typemap(ctype, noblock=1) ALL_TYPE__ { SWIGSP__ * }
-%typemap(ctype, noblock=1) ALL_SWIGSP__ { SWIGSP__ * }
-%typemap(ctype, noblock=1) CONST_ALL_SWIGSP__ { const SWIGSP__ * }
-%typemap(imtype, in="type(C_PTR), value") ALL_SWIGSP__ "type(C_PTR)"
-%typemap(ftype) ALL_SWIGSP__ "$typemap(ftype, " #TYPE ")"
-%typemap(fin) ALL_SWIGSP__ "$1 = $input%swigptr"
-%typemap(fout) ALL_SWIGSP__ "$result%swigptr = $1"
-
 // Instantiate shared pointer
 %template() SWIGSP__;
 
+//---------------------------------------------------------------------------//
+// Clean up macros
 #undef SWIGSP__
 #undef ALL_TYPE__
 #undef ALL_SWIGSP__

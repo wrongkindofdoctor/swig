@@ -296,12 +296,14 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)",
 //   
 //---------------------------------------------------------------------------//
 
-%define swigf_wrapper_instantiate(SWIGF_WRAPPER, CONST_SWIGF_WRAPPER, SWIGF_NULL)
+%define %swigf_wrapper_instantiate(SWIGF_WRAPPER, CONST_SWIGF_WRAPPER,
+                                   SWIGF_NULL)
 
 // Classes accepted by value are passed as const reference.
 // They're copy-assigned when they're passed
 // Returning a class by value is copy-constructed as a new'd pointer
-%typemap(ctype, out=%str(SWIGF_WRAPPER), null=%str(SWIGF_NULL), noblock=1)
+%typemap(ctype, out=%str(SWIGF_WRAPPER), null=%str(SWIGF_NULL), noblock=1,
+         fragment="SwigfClassWrapper_wrap")
 SWIGTYPE
   {const CONST_SWIGF_WRAPPER *}
 %typemap(in, noblock=1) SWIGTYPE
@@ -311,7 +313,8 @@ SWIGTYPE
    $result.flag = SWIGF_MOVING;}
 
 // These remaining types apply to ALL generic class pointers.
-%typemap(imtype, import="SwigfClassWrapper") SWIGTYPE
+%typemap(imtype, import="SwigfClassWrapper", fragment="SwigfClassWrapper")
+    SWIGTYPE
   "type(SwigfClassWrapper)"
 %typemap(ftype) SWIGTYPE
   "type($fclassname)"
@@ -323,7 +326,8 @@ SWIGTYPE
 // Raw pointers act mostly like value types (with overrides below)
 %apply SWIGTYPE { SWIGTYPE* };
 
-%typemap(ctype, out=%str(SWIGF_WRAPPER), noblock=1, null=%str(SWIGF_NULL))
+%typemap(ctype, out=%str(SWIGF_WRAPPER), noblock=1, null=%str(SWIGF_NULL),
+         fragment="SwigfClassWrapper_wrap")
     SWIGTYPE*
   {SWIGF_WRAPPER*}
 %typemap(in, noblock=1) SWIGTYPE*
@@ -359,18 +363,16 @@ SWIGTYPE
 %enddef
 
 #ifdef __cplusplus
-swigf_wrapper_instantiate(
+%swigf_wrapper_instantiate(
         SwigfClassWrapper<$1_basetype>,
         SwigfClassWrapper<const $1_basetype>,
         SwigfClassWrapper<$1_basetype>::uninitialized())
 #else
-swigf_wrapper_instantiate(
+%swigf_wrapper_instantiate(
         SwigfClassWrapper,
         const SwigfClassWrapper,
         SwigfClassWrapper_uninitialized())
 #endif
-
-#undef swigf_wrapper_instantiate
 
 //---------------------------------------------------------------------------//
 // BIND(C) STRUCT TYPES

@@ -87,8 +87,7 @@ SwigfClassWrapper SwigfClassWrapper_uninitialized()
 // `integer(kind(SwigfProxyFlag))` to avoid a warning in GCC. The types will
 // still be interoperable.
 %fragment("SwigfClassWrapper", "fpublic",
-          fragment="SwigfProxyFlag", fragment="SwigfClassWrapper_wrap",
-          noblock=1) %{
+          fragment="SwigfProxyFlag", noblock=1) %{
 type, bind(C) :: SwigfClassWrapper
   type(C_PTR), public :: ptr = C_NULL_PTR
   integer(C_INT), public :: flag = SWIGF_UNINIT
