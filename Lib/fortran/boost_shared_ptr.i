@@ -40,7 +40,7 @@
 // always passed to us as a pointer to a SwigfClassWrapper, and the 'out' is
 // returned by value.
 %typemap(ctype, out={SwigfClassWrapper<SWIGSP__>},
-         null={ SwigfClassWrapper<SWIGSP__>::uninitialized() },
+         null={SwigfClassWrapper<SWIGSP__>::uninitialized()},
          fragment="SwigfClassWrapper_wrap",
          noblock=1)
     ALL_TYPE__, ALL_SWIGSP__, CONST_ALL_SWIGSP__
@@ -52,7 +52,7 @@
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) CONST TYPE ($&1_type argp = 0)
 {
-    argp = $input->ptr ? $input->ptr->get() : NULL;
+    argp = $input->ptr ? %as_mutable($input->ptr->get()) : NULL;
     SWIGF_ASSERT_NONNULL(argp);
     $1 = *argp;
 }
@@ -67,10 +67,12 @@
 // flag, but the shared pointer instance itself is in a "moving" state
 // regardless.
 //---------------------------------------------------------------------------//
-%typemap(in, noblock=1) CONST TYPE *
+%typemap(in, noblock=1) CONST TYPE * (SWIGSP__* smartarg)
 {
-    $1 = $input->ptr ? $input->ptr->get() : NULL;
+    smartarg = $input->ptr;
+    $1 = smartarg ? %as_mutable(smartarg->get()) : NULL;
 }
+
 %typemap(out, noblock=1, fragment="SWIG_null_deleter") CONST TYPE *
 {
     $result.ptr = $1 ? new SWIGSP__($1 SWIG_NO_NULL_DELETER_$owner) : NULL;
@@ -83,7 +85,7 @@
 %typemap(in, noblock=1) CONST TYPE&
 {
     SWIGF_ASSERT_NONNULL(argp);
-    $1 = $input->ptr ? $input->ptr->get() : NULL;
+    $1 = $input->ptr ? %as_mutable($input->ptr->get()) : NULL;
 }
 %typemap(out) CONST TYPE& = CONST TYPE *;
 
@@ -92,7 +94,7 @@
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) SWIGSP__
 {
-    $1 = $input->ptr;
+    if ($input->ptr) $1 = *$input->ptr;
 }
 
 %typemap(out, noblock=1) SWIGSP__
@@ -106,7 +108,7 @@
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) SWIGSP__& ($*1_ltype tempnull)
 {
-    $1 = $input->ptr ? ($1_ltype)$input->ptr : &tempnull;
+    $1 = $input->ptr ? $input->ptr : &tempnull;
 }
 
 %typemap(out, noblock=1) SWIGSP__&

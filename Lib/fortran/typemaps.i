@@ -21,8 +21,9 @@
   #define AW_TYPE SwigfArrayWrapper< CONST_CTYPE >
 
   // C wrapper type: pointer to templated array wrapper
-  %typemap(ctype, noblock=1, out=%str(SwigfArrayWrapper< CONST_CTYPE >),
-           null=%str(SwigfArrayWrapper< CONST_CTYPE >()),
+  %typemap(ctype, noblock=1,
+           out={SwigfArrayWrapper< CONST_CTYPE >},
+           null={SwigfArrayWrapper< CONST_CTYPE >()},
            fragment="SwigfArrayWrapper") PAIR_TYPE
     {AW_TYPE*}
 
