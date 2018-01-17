@@ -102,6 +102,26 @@
 // FUNDAMENTAL TYPES
 //---------------------------------------------------------------------------//
 /*!
+ * \def FORT_COPY_TYPEMAPS
+ * \brief Assign our special typemaps to one or more types from an original.
+ *
+ * This is basically like %apply but doesn't touch anything else SWIG has
+ * set up, i.e. globalin
+ */
+%define FORT_COPY_TYPEMAPS(SRC_TYPE, DST_TYPE...)
+  %typemap(ctype)  DST_TYPE = SRC_TYPE;
+  %typemap(in)     DST_TYPE = SRC_TYPE;
+  %typemap(out)    DST_TYPE = SRC_TYPE;
+  %typemap(imtype) DST_TYPE = SRC_TYPE;
+  %typemap(ftype)  DST_TYPE = SRC_TYPE;
+  %typemap(fin)    DST_TYPE = SRC_TYPE;
+  %typemap(fout)   DST_TYPE = SRC_TYPE;
+%enddef
+  
+//---------------------------------------------------------------------------//
+// FUNDAMENTAL TYPES
+//---------------------------------------------------------------------------//
+/*!
  * \def FORT_SIMPLE_TYPEMAP
  * \brief Add typemaps where the C++ and C types are convertible, and
  * the intermediate Fortran typemaps are also directly convertible.
@@ -154,13 +174,8 @@
     "call c_f_pointer($1, $result)"
 
   // Mutable references and arrays are treated just like pointers
-  %typemap(ctype)  CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
-  %typemap(in)     CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
-  %typemap(out)    CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
-  %typemap(imtype) CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
-  %typemap(ftype)  CPPTYPE&, CPPTYPE[]               = CPPTYPE*;
-  %typemap(fin)    CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
-  %typemap(fout)   CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
+  FORT_COPY_TYPEMAPS(CPPTYPE*,
+                     CPPTYPE&, CPPTYPE[], CPPTYPE[ANY]);
   // ...except that fixed-sized arrays can be treated natively
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(inout)"
@@ -196,13 +211,8 @@
 
   
   // Const arrays are basically like const pointers
-  %typemap(ctype)  const CPPTYPE[], CPPTYPE[ANY] = const CPPTYPE*;
-  %typemap(in)     const CPPTYPE[], CPPTYPE[ANY] = const CPPTYPE*;
-  %typemap(out)    const CPPTYPE[], CPPTYPE[ANY] = const CPPTYPE*;
-  %typemap(imtype) const CPPTYPE[], CPPTYPE[ANY] = const CPPTYPE*;
-  %typemap(ftype)  const CPPTYPE[]               = const CPPTYPE*;
-  %typemap(fin)    const CPPTYPE[], CPPTYPE[ANY] = const CPPTYPE*;
-  %typemap(fout)   const CPPTYPE[]               = const CPPTYPE*;
+  FORT_COPY_TYPEMAPS(const CPPTYPE*,
+                     const CPPTYPE[], const CPPTYPE[ANY]);
   // ...except that fixed-sized arrays can be treated natively
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") const CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(in)"
@@ -222,16 +232,16 @@
   FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, FTYPE)
 %enddef
 
-FORT_FUND_TYPEMAP(bool          , "logical(C_BOOL)"     )
-FORT_FUND_TYPEMAP(signed char   , "integer(C_SIGNED_CHAR)")
-FORT_FUND_TYPEMAP(short         , "integer(C_SHORT)"    )
-FORT_FUND_TYPEMAP(int           , "integer(C_INT)"      )
-FORT_FUND_TYPEMAP(long          , "integer(C_LONG)"     )
-FORT_FUND_TYPEMAP(long long     , "integer(C_LONG_LONG)")
-FORT_FUND_TYPEMAP(size_t        , "integer(C_SIZE_T)"   )
-FORT_FUND_TYPEMAP(float         , "real(C_FLOAT)"       )
-FORT_FUND_TYPEMAP(double        , "real(C_DOUBLE)"      )
-FORT_FUND_TYPEMAP(char          , "integer(C_SIGNED_CHAR)")
+FORT_FUND_TYPEMAP(bool       , "logical(C_BOOL)"     )
+FORT_FUND_TYPEMAP(signed char, "integer(C_SIGNED_CHAR)")
+FORT_FUND_TYPEMAP(short      , "integer(C_SHORT)"    )
+FORT_FUND_TYPEMAP(int        , "integer(C_INT)"      )
+FORT_FUND_TYPEMAP(long       , "integer(C_LONG)"     )
+FORT_FUND_TYPEMAP(long long  , "integer(C_LONG_LONG)")
+FORT_FUND_TYPEMAP(size_t     , "integer(C_SIZE_T)"   )
+FORT_FUND_TYPEMAP(float      , "real(C_FLOAT)"       )
+FORT_FUND_TYPEMAP(double     , "real(C_DOUBLE)"      )
+FORT_FUND_TYPEMAP(char       , "integer(C_SIGNED_CHAR)")
 
 //---------------------------------------------------------------------------//
 // UNSIGNED INTEGER TYPES
@@ -247,14 +257,13 @@ FORT_FUND_TYPEMAP(char          , "integer(C_SIGNED_CHAR)")
  * \code static_cast<unsigned int> foo(-1); \endcode we don't want to do this
  * by default.
  */
-%apply char       { unsigned char      };
-%apply short      { unsigned short     };
-%apply int        { unsigned int       };
-%apply long       { unsigned long      };
-%apply long long  { unsigned long long };
-
 // Note: ssize_t is defined in <sys/types.h> and isn't part of the standard
-%apply size_t     { sssize_t };
+FORT_FUND_TYPEMAP(unsigned char     , "integer(C_SIGNED_CHAR)"); // Copied from char     
+FORT_FUND_TYPEMAP(unsigned short    , "integer(C_SHORT)"); // Copied from short    
+FORT_FUND_TYPEMAP(unsigned int      , "integer(C_INT)"); // Copied from int      
+FORT_FUND_TYPEMAP(unsigned long     , "integer(C_LONG)"); // Copied from long     
+FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)"); // Copied from long long
+FORT_FUND_TYPEMAP(sssize_t          , "integer(C_SIZE_T)"); // Copied from size_t   
 
 //---------------------------------------------------------------------------//
 // ENUMS
@@ -263,20 +272,15 @@ FORT_FUND_TYPEMAP(char          , "integer(C_SIGNED_CHAR)")
 // Most of the opertions are like integers, but replace the fortran wrapper
 // with the kind of enum. Don't worry about pointer types (leave those as
 // integer pointers)
-%typemap(ctype, out="int") enum SWIGTYPE
-   "const int*"
-%typemap(in, noblock=1) enum SWIGTYPE
+FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)"); // Copied from int      
+// Fortran input types look like enums
+%typemap(in, noblock=1) enum SWIGTYPE, const enum SWIGTYPE&
     {$1 = %static_cast(*$input, $1_ltype);}
-%typemap(out)    enum SWIGTYPE = int;
-%typemap(imtype) enum SWIGTYPE = int;
-%typemap(ftype, out="integer(kind($fenumname))") enum SWIGTYPE
+%typemap(out, noblock=1) enum SWIGTYPE, const enum SWIGTYPE&
+    {$result = %static_cast($1, int);}
+%typemap(ftype, out="integer(kind($fenumname))")
+    enum SWIGTYPE, const enum SWIGTYPE&
    "integer(kind($fenumname)), intent(in)"
-%typemap(fin)    enum SWIGTYPE = int;
-%typemap(fout)   enum SWIGTYPE = int;
-
-// Pointers must be reinterpreted as ints
-%typemap(out, noblock=1) enum SWIGTYPE&, enum SWIGTYPE*, const enum SWIGTYPE*
-    {$result = %reinterpret_cast($1, int*);}
 
 //---------------------------------------------------------------------------//
 // CLASS DEFINITION
@@ -338,29 +342,48 @@ SWIGTYPE
   "$result%swigdata = $1"
 
 // Raw pointers act mostly like value types (with overrides below)
-%apply SWIGTYPE { SWIGTYPE* };
-
-// TODO: add check on input SWIGTYPE* values that the input flag isn't
-// SWIGF_CONST_REFERENCE
+%typemap(ctype)  SWIGTYPE* = SWIGTYPE;
 %typemap(in, noblock=1) SWIGTYPE*
   {$1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(out, noblock=1) SWIGTYPE*
   {$result.ptr  = $1;
    $result.flag = ($owner ? SWIGF_MOVING : SWIGF_REFERENCE);}
+%typemap(imtype) SWIGTYPE* = SWIGTYPE;
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*
   "class($fclassname)"
-
-%apply SWIGTYPE* { const SWIGTYPE* };
-
-// Use const-correct arguments/return values.
+%typemap(fin)    SWIGTYPE* = SWIGTYPE;
+%typemap(fout)   SWIGTYPE* = SWIGTYPE;
+  
+// Raw pointers act mostly like value types (with overrides below)
+%typemap(ctype)  const SWIGTYPE* = SWIGTYPE*;
 %typemap(in, noblock=1) const SWIGTYPE*
   {$1 = %static_cast($input->ptr, $1_basetype*);}
 %typemap(out, noblock=1) const SWIGTYPE*
   {$result.ptr  = %const_cast($1, $1_basetype*);
    $result.flag = SWIGF_CONST_REFERENCE;}
+%typemap(imtype) const SWIGTYPE* = SWIGTYPE*;
+%typemap(ftype, out="type($fclassname)") const SWIGTYPE*
+  "class($fclassname)"
+%typemap(fin)    const SWIGTYPE* = SWIGTYPE*;
+%typemap(fout)   const SWIGTYPE* = SWIGTYPE*;
 
-%apply SWIGTYPE* { SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] };
-%apply const SWIGTYPE* { const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] };
+// Use const-correct arguments/return values.
+%typemap(ctype)  SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
+%typemap(in)     SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
+%typemap(out)    SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
+%typemap(imtype) SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
+%typemap(ftype)  SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
+%typemap(fin)    SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
+%typemap(fout)   SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
+
+// Use const-correct arguments/return values.
+%typemap(ctype)  const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
+%typemap(in)     const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
+%typemap(out)    const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
+%typemap(imtype) const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
+%typemap(ftype)  const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
+%typemap(fin)    const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
+%typemap(fout)   const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
 
 // Structs will generate free/malloc usage via the %free typemap, but SWIG
 // doesn't include <stdlib.h> by default. Override the swigtype usage so that
@@ -396,10 +419,6 @@ SWIGTYPE
   FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, "type($fclassname)")
 
   // Interface code has to "import' the class type.
-  // NOTE: ideally we could just apply this to CTYPE since the typemap
-  // resolution uses  %apply CTYPE { CTYPE const & }, but it looks like the
-  // apply aliases to the old typemap, not the updated one here. So we manually
-  // apply the typemap to all the derived types
   %typemap(imtype, import="$fclassname") CTYPE, CTYPE*, CTYPE&, 
           const CTYPE, const CTYPE*, const CTYPE& 
     "type($fclassname)"

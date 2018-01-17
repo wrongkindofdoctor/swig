@@ -5,11 +5,11 @@ FAILING_CPP_TESTS += \
   arrays_global_twodim \
   constant_directive \
   constant_pointers \
-  cpp_enum \
   default_constructor \
   director_enum \
+  enum_ignore \
   enum_thorough \
-  global_vars \
+  global_namespace \
   li_std_vector_enum \
   member_funcptr_galore \
   mixed_types \
@@ -19,6 +19,7 @@ FAILING_CPP_TESTS += \
 FAILING_CPP_TESTS += \
   abstract_signature \
   arrays_scope \
+  bloody_hell \
   char_strings \
   constructor_copy \
   contract \
