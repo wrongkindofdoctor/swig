@@ -80,9 +80,10 @@ end type
 
 // This fragment is inserted by the fortran.cxx code when an unknown class is
 // encountered.
-%fragment("SwigfUnknownClass", "fpublic", noblock=1) %{
+%fragment("SwigfUnknownClass", "fpublic", noblock=1,
+          fragment="SwigfClassWrapper") %{
 type :: SwigfUnknownClass
-  type(C_PTR), public :: ptr
+   type(SwigfClassWrapper), public :: swigdata
 end type
 %}
 

@@ -136,7 +136,7 @@
 
   // We treat const references like value types for fundamental types.
   %apply CPPTYPE { const CPPTYPE& };
-  // ...except that inputs are copied to a temporary in case of type conversin
+  // ...except that inputs are copied to a temporary in case of type conversion
   %typemap(in, noblock=1) const CPPTYPE& ($1_ltype temp)
     {temp = *$input;
      $1   = &temp;}
@@ -145,14 +145,15 @@
     "$result = *$1;"
 
   // Mutable references are passed by pointers as arguments, but they're
-  // *returned* as actual pointers (becoming Fortran pointers)
-  %typemap(ctype, out="$1_ltype") CPPTYPE*
-    "$1_ltype"
+  // *returned* as actual pointers (becoming Fortran pointers). Again we face
+  // problems when these typemaps are "applied" to a different type. Ideally we
+  // could check *at least* that the types are the same size...
+  %typemap(ctype, out="CTYPE*") CPPTYPE*
+    "CTYPE*"
   %typemap(in, noblock=1) CPPTYPE*
-    {$1 = $input;}
-    //{$1 = %static_cast($input, $1_ltype);}
+    {$1 = %reinterpret_cast($input, $1_ltype);}
   %typemap(out, noblock=1) CPPTYPE*
-    {$result = %static_cast($1, $1_ltype);}
+    {$result = %reinterpret_cast($1, CTYPE*);}
   %typemap(imtype, in="type(C_PTR), value") CPPTYPE*
     "type(C_PTR)"
   %typemap(ftype, out=FTYPE ", pointer") CPPTYPE*
@@ -172,13 +173,12 @@
   %apply CPPTYPE* { const CPPTYPE* };
 
   // ... except for some constness issues
-  %typemap(ctype, out="const $1_ltype") const CPPTYPE*
-    "const $1_ltype"
-  %typemap(in, noblock=1) const CPPTYPE* ($*1_ltype temp_val)
-    {temp_val = *%const_cast($input, CTYPE*);
-     $1 = &temp_val;}
+  %typemap(ctype, out="const CTYPE*") const CPPTYPE*
+    "const CTYPE*"
+  %typemap(in, noblock=1) const CPPTYPE*
+    {$1 = %reinterpret_cast(%const_cast($input, CTYPE*), $1_ltype);}
   %typemap(out, noblock=1) const CPPTYPE*
-    {$result = $1;}
+    {$result = %const_cast(%reinterpret_cast($1, const CTYPE*), CTYPE*);}
 
   %apply const CPPTYPE* { const CPPTYPE[], const CPPTYPE[ANY] };
 
@@ -327,6 +327,8 @@ SWIGTYPE
 // Raw pointers act mostly like value types (with overrides below)
 %apply SWIGTYPE { SWIGTYPE* };
 
+// TODO: add check on input SWIGTYPE* values that the input flag isn't
+// SWIGF_CONST_REFERENCE
 %typemap(in, noblock=1) SWIGTYPE*
   {$1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(out, noblock=1) SWIGTYPE*
@@ -341,7 +343,7 @@ SWIGTYPE
 %typemap(in, noblock=1) const SWIGTYPE*
   {$1 = %static_cast($input->ptr, $1_basetype*);}
 %typemap(out, noblock=1) const SWIGTYPE*
-  {$result.ptr  = $1;
+  {$result.ptr  = %const_cast($1, $1_basetype*);
    $result.flag = SWIGF_CONST_REFERENCE;}
 
 %apply SWIGTYPE* { SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] };
