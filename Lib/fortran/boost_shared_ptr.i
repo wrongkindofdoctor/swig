@@ -24,6 +24,9 @@
 #define SWIGF_ASSERT_NONNULL(argp)
 
 //---------------------------------------------------------------------------//
+// Shared pointers *always* return either NULL or a newly allocated shared
+// pointer.
+//---------------------------------------------------------------------------//
 // %naturalvar causes these types to be wrapped as const references rather than
 // pointers when they're member variables. Not sure what this does in practice.
 //%naturalvar TYPE;
@@ -39,12 +42,11 @@
 // C types: we wrap the *shared pointer* as the value type. The 'in' type is
 // always passed to us as a pointer to a SwigfClassWrapper, and the 'out' is
 // returned by value.
-%typemap(ctype, out={SwigfClassWrapper<SWIGSP__>},
-         null={SwigfClassWrapper<SWIGSP__>::uninitialized()},
-         fragment="SwigfClassWrapper_wrap",
-         noblock=1)
-    ALL_TYPE__, ALL_SWIGSP__, CONST_ALL_SWIGSP__
-{ SwigfClassWrapper<SWIGSP__ > *}
+%typemap(ctype, out="SwigfClassWrapper",
+         null="SwigfClassWrapper_uninitialized()", noblock=1,
+         fragment="SwigfClassWrapper_wrap")
+ALL_SWIGSP__, CONST_ALL_SWIGSP__
+  {const SwigfClassWrapper *}
 
 //---------------------------------------------------------------------------//
 // Original class by value: access the 'ptr' member of the input, return a
@@ -52,7 +54,7 @@
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) CONST TYPE ($&1_type argp = 0)
 {
-    argp = $input->ptr ? %as_mutable($input->ptr->get()) : NULL;
+    argp = $input->ptr ? %static_cast($input->ptr, SWIGSP__*)->get() : NULL;
     SWIGF_ASSERT_NONNULL(argp);
     $1 = *argp;
 }
@@ -69,7 +71,7 @@
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) CONST TYPE * (SWIGSP__* smartarg)
 {
-    smartarg = $input->ptr;
+    smartarg = %static_cast($input->ptr, SWIGSP__*);
     $1 = smartarg ? %as_mutable(smartarg->get()) : NULL;
 }
 
@@ -82,19 +84,26 @@
 //---------------------------------------------------------------------------//
 // Original class by reference. Same as by pointer, but with null checks.
 //---------------------------------------------------------------------------//
-%typemap(in, noblock=1) CONST TYPE&
+%typemap(in, noblock=1) CONST TYPE& (SWIGSP__* smartarg)
 {
-    SWIGF_ASSERT_NONNULL(argp);
-    $1 = $input->ptr ? %as_mutable($input->ptr->get()) : NULL;
+    smartarg = %static_cast($input->ptr, SWIGSP__*);
+    SWIGF_ASSERT_NONNULL(smartarg);
+    SWIGF_ASSERT_NONNULL(smartarg->get());
+    $1 = %as_mutable(smartarg->get());
 }
-%typemap(out) CONST TYPE& = CONST TYPE *;
+
+%typemap(out) CONST TYPE&
+{
+    $result.ptr = new SWIGSP__($1 SWIG_NO_NULL_DELETER_$owner);
+    $result.flag = SWIGF_MOVING;
+}
 
 //---------------------------------------------------------------------------//
 // SP by value
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) SWIGSP__
 {
-    if ($input->ptr) $1 = *$input->ptr;
+    if ($input->ptr) $1 = *%static_cast($input->ptr, SWIGSP__*);
 }
 
 %typemap(out, noblock=1) SWIGSP__
@@ -108,7 +117,7 @@
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) SWIGSP__& ($*1_ltype tempnull)
 {
-    $1 = $input->ptr ? $input->ptr : &tempnull;
+    $1 = $input->ptr ? %static_cast($input->ptr, SWIGSP__*) : &tempnull;
 }
 
 %typemap(out, noblock=1) SWIGSP__&
@@ -124,7 +133,7 @@
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) SWIGSP__ * ($*1_ltype tempnull)
 {
-    $1 = $input->ptr ? $input->ptr : &tempnull;
+    $1 = $input->ptr ? %static_cast($input->ptr, SWIGSP__*) : &tempnull;
 }
 
 %typemap(out, noblock=1, fragment="SWIG_null_deleter") SWIGSP__ *

@@ -13,16 +13,12 @@ FAILING_CPP_TESTS += \
   default_constructor \
   director_enum \
   enum_thorough \
-  exception_order \
   global_vars \
   li_std_vector \
   li_std_vector_enum \
   member_funcptr_galore \
   mixed_types \
   reference_global_vars \
-  sizet \
-  template_basic \
-  template_explicit \
   threads_exception \
   typedef_array_member \
   typemap_directorout
@@ -102,6 +98,7 @@ FAILING_CPP_TESTS += \
   refcount \
   register_par \
   return_const_value \
+  sizet \
   smart_pointer_const_overload \
   smart_pointer_ignore \
   smart_pointer_inherit \
@@ -111,10 +108,12 @@ FAILING_CPP_TESTS += \
   special_variables \
   template_arg_scope \
   template_arg_typename \
+  template_basic \
   template_default \
   template_default_arg \
   template_default_vw \
   template_enum \
+  template_explicit \
   template_extend_overload \
   template_forward \
   template_inherit_abstract \

@@ -299,20 +299,18 @@ FORT_FUND_TYPEMAP(char          , "integer(C_SIGNED_CHAR)")
 //   
 //---------------------------------------------------------------------------//
 
-%define %swigf_wrapper_instantiate(SWIGF_WRAPPER, CONST_SWIGF_WRAPPER,
-                                   SWIGF_NULL)
-
 // Classes accepted by value are passed as const reference.
 // They're copy-assigned when they're passed
 // Returning a class by value is copy-constructed as a new'd pointer
-%typemap(ctype, out=%str(SWIGF_WRAPPER), null=%str(SWIGF_NULL), noblock=1,
+%typemap(ctype, out="SwigfClassWrapper",
+         null="SwigfClassWrapper_uninitialized()", noblock=1,
          fragment="SwigfClassWrapper_wrap")
 SWIGTYPE
-  {const CONST_SWIGF_WRAPPER *}
+  {const SwigfClassWrapper *}
 %typemap(in, noblock=1) SWIGTYPE
-  {$1 = *$input->ptr;}
+  {$1 = *%static_cast($input->ptr, $&1_ltype);}
 %typemap(out, noblock=1) SWIGTYPE
-  {$result.ptr  = %new_copy($1, $1_basetype);
+  {$result.ptr  = %new_copy($1, $1_ltype);
    $result.flag = SWIGF_MOVING;}
 
 // These remaining types apply to ALL generic class pointers.
@@ -329,14 +327,10 @@ SWIGTYPE
 // Raw pointers act mostly like value types (with overrides below)
 %apply SWIGTYPE { SWIGTYPE* };
 
-%typemap(ctype, out=%str(SWIGF_WRAPPER), noblock=1, null=%str(SWIGF_NULL),
-         fragment="SwigfClassWrapper_wrap")
-    SWIGTYPE*
-  {SWIGF_WRAPPER*}
 %typemap(in, noblock=1) SWIGTYPE*
-  {$1 = $input->ptr;}
+  {$1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(out, noblock=1) SWIGTYPE*
-  {$result.ptr = $1;
+  {$result.ptr  = $1;
    $result.flag = ($owner ? SWIGF_MOVING : SWIGF_REFERENCE);}
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*
   "class($fclassname)"
@@ -344,11 +338,11 @@ SWIGTYPE
 %apply SWIGTYPE* { const SWIGTYPE* };
 
 // Use const-correct arguments/return values.
-%typemap(ctype, out=%str(CONST_SWIGF_WRAPPER), noblock=1,
-         null=%str(SWIGF_NULL)) const SWIGTYPE*
-  {const CONST_SWIGF_WRAPPER*}
 %typemap(in, noblock=1) const SWIGTYPE*
-  {$1 = %const_cast($input->ptr, $1_basetype*);}
+  {$1 = %static_cast($input->ptr, $1_basetype*);}
+%typemap(out, noblock=1) const SWIGTYPE*
+  {$result.ptr  = $1;
+   $result.flag = SWIGF_CONST_REFERENCE;}
 
 %apply SWIGTYPE* { SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] };
 %apply const SWIGTYPE* { const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] };
@@ -362,19 +356,6 @@ SWIGTYPE
   "void*"
 %typemap(ctype, fragment="<stdlib.h>") const SWIGTYPE*, const SWIGTYPE&
   "const void*"
-#endif
-%enddef
-
-#ifdef __cplusplus
-%swigf_wrapper_instantiate(
-        SwigfClassWrapper<$1_basetype>,
-        SwigfClassWrapper<const $1_basetype>,
-        SwigfClassWrapper<$1_basetype>::uninitialized())
-#else
-%swigf_wrapper_instantiate(
-        SwigfClassWrapper,
-        const SwigfClassWrapper,
-        SwigfClassWrapper_uninitialized())
 #endif
 
 //---------------------------------------------------------------------------//

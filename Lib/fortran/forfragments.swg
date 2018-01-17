@@ -45,32 +45,13 @@ enum SwigfProxyFlag {
  end enum
 %}
 
-#ifdef __cplusplus
 %fragment("SwigfClassWrapper_wrap", "header",
           fragment="SwigfProxyFlag_wrap") %{
-template<class T>
 struct SwigfClassWrapper
-{
-    T*             ptr;
-    SwigfProxyFlag flag;
-    // Static function to return an empty 
-    static SwigfClassWrapper<T> uninitialized()
-    {
-        SwigfClassWrapper<T> result;
-        result.ptr = NULL;
-        result.flag = SWIGF_UNINIT;
-        return result;
-    }
-};
-%}
-#else
-// Plain C: use a void* instead of a struct
-%fragment("SwigfClassWrapper_wrap", "header") %{
-typedef struct 
 {
     void*          ptr;
     SwigfProxyFlag flag;
-} SwigfClassWrapper;
+};
 
 SwigfClassWrapper SwigfClassWrapper_uninitialized()
 {
@@ -80,7 +61,6 @@ SwigfClassWrapper SwigfClassWrapper_uninitialized()
     return result;
 }
 %}
-#endif
 
 // This fragment is inserted by the fortran.cxx code when an unknown class is
 // encountered. Note that we declare the enum as a C_INT instead of
