@@ -1,11 +1,8 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  array_member \
   arrays_global \
   arrays_global_twodim \
-  char_binary \
-  char_strings \
   constant_directive \
   constant_pointers \
   cpp_enum \
@@ -16,15 +13,13 @@ FAILING_CPP_TESTS += \
   li_std_vector_enum \
   member_funcptr_galore \
   mixed_types \
-  reference_global_vars \
-  threads_exception \
-  typedef_array_member \
   typemap_directorout
 
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
   arrays_scope \
+  char_strings \
   constructor_copy \
   contract \
   cpp_basic \

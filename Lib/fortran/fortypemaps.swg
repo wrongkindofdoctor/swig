@@ -134,16 +134,6 @@
   %typemap(fout) CPPTYPE
     "$result = $1"
 
-  // We treat const references like value types for fundamental types.
-  %apply CPPTYPE { const CPPTYPE& };
-  // ...except that inputs are copied to a temporary in case of type conversion
-  %typemap(in, noblock=1) const CPPTYPE& ($1_ltype temp)
-    {temp = *$input;
-     $1   = &temp;}
-  // ...and output values have to be dereferenced to turn into values
-  %typemap(out) const CPPTYPE&
-    "$result = *$1;"
-
   // Mutable references are passed by pointers as arguments, but they're
   // *returned* as actual pointers (becoming Fortran pointers). Again we face
   // problems when these typemaps are "applied" to a different type. Ideally we
@@ -164,36 +154,59 @@
     "call c_f_pointer($1, $result)"
 
   // Mutable references and arrays are treated just like pointers
-  %apply CPPTYPE* { CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] };
+  %typemap(ctype)  CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
+  %typemap(in)     CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
+  %typemap(out)    CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
+  %typemap(imtype) CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
+  %typemap(ftype)  CPPTYPE&, CPPTYPE[]               = CPPTYPE*;
+  %typemap(fin)    CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
+  %typemap(fout)   CPPTYPE&, CPPTYPE[], CPPTYPE[ANY] = CPPTYPE*;
   // ...except that fixed-sized arrays can be treated natively
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(inout)"
+  %typemap(fout) CPPTYPE[ANY]
+  %{
+      call c_f_pointer($1, $result, [$1_dim0])
+  %}
 
-  // Const pointers also are treated like raw pointers for the most part
-  %apply CPPTYPE* { const CPPTYPE* };
-
-  // ... except for some constness issues
+  // Const pointers also are treated like raw pointers for the most part,
+  // except for some constness issues
   %typemap(ctype, out="const CTYPE*") const CPPTYPE*
     "const CTYPE*"
   %typemap(in, noblock=1) const CPPTYPE*
     {$1 = %reinterpret_cast(%const_cast($input, CTYPE*), $1_ltype);}
   %typemap(out, noblock=1) const CPPTYPE*
     {$result = %const_cast(%reinterpret_cast($1, const CTYPE*), CTYPE*);}
+  %typemap(imtype) const CPPTYPE*    = CPPTYPE*;
+  %typemap(ftype)  const CPPTYPE*    = CPPTYPE*;
+  %typemap(fin)    const CPPTYPE*    = CPPTYPE*;
+  %typemap(fout)   const CPPTYPE*    = CPPTYPE*;
 
-  %apply const CPPTYPE* { const CPPTYPE[], const CPPTYPE[ANY] };
+  // We treat const references like value types for fundamental types.
+  %typemap(ctype) const CPPTYPE& = CPPTYPE;
+  // ...although we need to process input values as pointer
+  %typemap(in, noblock=1) const CPPTYPE& = const CPPTYPE*;
+  // ...and output values have to be dereferenced to turn into values
+  %typemap(out) const CPPTYPE&
+    "$result = *$1;"
+  %typemap(imtype) const CPPTYPE& = CPPTYPE;
+  %typemap(ftype)  const CPPTYPE& = CPPTYPE;
+  %typemap(fin)    const CPPTYPE& = CPPTYPE;
+  %typemap(fout)   const CPPTYPE& = CPPTYPE;
 
-  // Apply input for const CPPTYPE* to const CPPTYPE&; otherwise const
-  // references for simple types are treated as values. This allows temporaries
-  // to be passed into functions on the Fortran side (e.g. vec%set(3, i + 2))
-  %typemap(in) const CPPTYPE& = const CPPTYPE*;
-    
-  // Arrays of known size are returned as pointers to known-size arrays
+  
+  // Const arrays are basically like const pointers
+  %typemap(ctype)  const CPPTYPE[], CPPTYPE[ANY] = const CPPTYPE*;
+  %typemap(in)     const CPPTYPE[], CPPTYPE[ANY] = const CPPTYPE*;
+  %typemap(out)    const CPPTYPE[], CPPTYPE[ANY] = const CPPTYPE*;
+  %typemap(imtype) const CPPTYPE[], CPPTYPE[ANY] = const CPPTYPE*;
+  %typemap(ftype)  const CPPTYPE[]               = const CPPTYPE*;
+  %typemap(fin)    const CPPTYPE[], CPPTYPE[ANY] = const CPPTYPE*;
+  %typemap(fout)   const CPPTYPE[]               = const CPPTYPE*;
+  // ...except that fixed-sized arrays can be treated natively
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") const CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(in)"
-  %typemap(fout) CPPTYPE[ANY], const CPPTYPE[ANY]
-  %{
-      call c_f_pointer($1, $result, [$1_dim0])
-  %}
+  %typemap(fout) const CPPTYPE[ANY] = CPPTYPE[ANY];
 %enddef
 
 //---------------------------------------------------------------------------//
@@ -250,17 +263,17 @@ FORT_FUND_TYPEMAP(char          , "integer(C_SIGNED_CHAR)")
 // Most of the opertions are like integers, but replace the fortran wrapper
 // with the kind of enum. Don't worry about pointer types (leave those as
 // integer pointers)
-%apply int { enum SWIGTYPE };
 %typemap(ctype, out="int") enum SWIGTYPE
    "const int*"
-%typemap(in) enum SWIGTYPE
-    "$1 = static_cast<$ltype>(*$input);"
-%typemap(ftype, out="integer(kind($fenumname))") enum SWIGTYPE
-   "integer(kind($fenumname)), intent(in)"
-
-// Input values must be statically cast to the enum type
 %typemap(in, noblock=1) enum SWIGTYPE
     {$1 = %static_cast(*$input, $1_ltype);}
+%typemap(out)    enum SWIGTYPE = int;
+%typemap(imtype) enum SWIGTYPE = int;
+%typemap(ftype, out="integer(kind($fenumname))") enum SWIGTYPE
+   "integer(kind($fenumname)), intent(in)"
+%typemap(fin)    enum SWIGTYPE = int;
+%typemap(fout)   enum SWIGTYPE = int;
+
 // Pointers must be reinterpreted as ints
 %typemap(out, noblock=1) enum SWIGTYPE&, enum SWIGTYPE*, const enum SWIGTYPE*
     {$result = %reinterpret_cast($1, int*);}
