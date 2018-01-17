@@ -1,66 +1,47 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  abstract_typedef2 \
   apply_signed_char \
   apply_strings \
   array_member \
   arrays_dimensionless \
   arrays_global \
+  arrays_global_twodim \
   bloody_hell \
   char_binary \
   char_strings \
   constant_directive \
   constant_pointers \
   cpp_enum \
-  cpp_namespace \
+  default_constructor \
   director_enum \
-  director_string \
   enum_ignore \
   enum_thorough \
   exception_order \
   global_namespace \
   global_vars \
-  ignore_template_constructor \
-  li_boost_shared_ptr_bits \
-  li_cdata_cpp \
-  li_std_combinations \
   li_std_vector \
   li_std_vector_enum \
-  li_std_vector_ptr \
   li_typemaps \
   li_typemaps_apply \
   li_windows \
   long_long_apply \
   member_funcptr_galore \
   mixed_types \
-  namespace_typemap \
-  naturalvar_more \
   primitive_ref \
   reference_global_vars \
-  register_par \
   sizet \
-  smart_pointer_inherit \
-  smart_pointer_multi_typedef \
-  smart_pointer_typedef \
   template_basic \
   template_default_arg \
   template_explicit \
-  template_ns2 \
-  template_ns_enum \
-  template_opaque \
-  template_type_namespace \
-  template_whitespace \
   threads_exception \
   typedef_array_member \
-  typedef_struct_cpp \
-  typemap_directorout \
-  typemap_template_parm_typedef \
-  virtual_poly
+  typemap_directorout
 
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
+  abstract_typedef2 \
   arrays_scope \
   class_ignore \
   class_scope_weird \
@@ -68,7 +49,6 @@ FAILING_CPP_TESTS += \
   contract \
   cpp_basic \
   cpp_typedef \
-  default_constructor \
   derived_nested \
   director_basic \
   director_classes \
@@ -92,6 +72,9 @@ FAILING_CPP_TESTS += \
   li_attribute \
   li_attribute_template \
   li_boost_shared_ptr \
+  li_boost_shared_ptr_bits \
+  li_cdata_cpp \
+  li_std_vector_ptr \
   member_pointer_const \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
@@ -99,7 +82,9 @@ FAILING_CPP_TESTS += \
   multiple_inheritance_shared_ptr \
   namespace_class \
   namespace_nested \
+  namespace_typemap \
   namespace_virtual_method \
+  naturalvar_more \
   nested_class \
   nested_ignore \
   nested_scope \
@@ -117,9 +102,11 @@ FAILING_CPP_TESTS += \
   pod_struct \
   pure_virtual \
   refcount \
+  register_par \
   return_const_value \
   smart_pointer_const_overload \
   smart_pointer_ignore \
+  smart_pointer_inherit \
   smart_pointer_rename \
   smart_pointer_template_const_overload \
   smart_pointer_template_defaults_overload \
@@ -135,7 +122,10 @@ FAILING_CPP_TESTS += \
   template_methods \
   template_nested \
   template_ns \
+  template_ns2 \
+  template_ns_enum \
   template_ns_enum2 \
+  template_opaque \
   template_ref_type \
   template_retvalue \
   template_typedef_class_template \
@@ -145,7 +135,9 @@ FAILING_CPP_TESTS += \
   template_typemaps_typedef \
   template_typemaps_typedef2 \
   template_using_directive_and_declaration_forward \
+  template_whitespace \
   typemap_ns_using \
+  typemap_template_parm_typedef \
   typemap_various \
   using1 \
   using2 \
@@ -154,4 +146,5 @@ FAILING_CPP_TESTS += \
   valuewrapper_base \
   valuewrapper_opaque \
   variable_replacement \
+  virtual_poly \
   wallkw
