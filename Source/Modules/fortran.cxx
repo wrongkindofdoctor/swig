@@ -2153,7 +2153,7 @@ int FORTRAN::enumDeclaration(Node *n)
     if (enum_name)
     {
         // Print a placeholder enum value so we can use 'kind(ENUM)'
-        Swig_save("constantWrapper", n, "sym:name", "value", NULL);
+        Swig_save("enumDeclaration", n, "sym:name", "value", "type", NULL);
 
         // Type may not be set if this enum is actually a typedef
         if (!Getattr(n, "type"))
@@ -2218,6 +2218,10 @@ int FORTRAN::constantWrapper(Node* n)
     {
         // Make unique enum values for the user
         symname = this->make_unique_symname(n);
+
+        // Set type from the parent enumeration
+        String* t = Getattr(parentNode(n), "enumtype");
+        Setattr(n, "type", t);
 
         if (d_enum_public)
         {

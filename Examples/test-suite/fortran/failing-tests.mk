@@ -1,8 +1,6 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  arrays_global \
-  arrays_global_twodim \
   constant_directive \
   constant_pointers \
   default_constructor \

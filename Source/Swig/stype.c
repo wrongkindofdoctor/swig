@@ -264,7 +264,37 @@ int SwigType_isenum(const SwigType *t) {
   char *c = Char(t);
   if (!t)
     return 0;
+  /* Check enum prefix */
+  if (strncmp(c, "enum", 4) != 0)
+      return 0;
+  c += 4;
+
+  if (*c == ' ') {
+    /* Regular 'enum ' */
+    return 1;
+  }
+  if (strncmp(c, "_anon ", 6) == 0) {
+    /* Anonymous 'enum_anon ' */
+    return 1;
+  }
+  return 0;
+}
+
+int SwigType_isnamedenum(const SwigType *t) {
+  char *c = Char(t);
+  if (!t)
+    return 0;
   if (strncmp(c, "enum ", 5) == 0) {
+    return 1;
+  }
+  return 0;
+}
+
+int SwigType_isanonenum(const SwigType *t) {
+  char *c = Char(t);
+  if (!t)
+    return 0;
+  if (strncmp(c, "enum_anon ", 10) == 0) {
     return 1;
   }
   return 0;
@@ -639,15 +669,16 @@ String *SwigType_str(const SwigType *s, const_String_or_char_ptr id) {
 	member_const_function_element = 0;
       }
       Delete(parms);
-    } else {
-      if (strcmp(Char(element), "v(...)") == 0) {
+    } else if (strcmp(Char(element), "v(...)") == 0) {
 	Insert(result, 0, "...");
-      } else {
-	String *bs = SwigType_namestr(element);
-	Insert(result, 0, " ");
-	Insert(result, 0, bs);
-	Delete(bs);
-      }
+    } else if (SwigType_isanonenum(element)) {
+        /* Strip the leading `enum_anon` prefix */
+        Insert(result, 0, Char(element) + 9);
+    } else {
+        String *bs = SwigType_namestr(element);
+        Insert(result, 0, " ");
+        Insert(result, 0, bs);
+        Delete(bs);
     }
     element = nextelement;
   }
@@ -736,7 +767,7 @@ SwigType *SwigType_ltype(const SwigType *s) {
       }
       firstarray = 0;
     } else if (SwigType_isenum(element)) {
-      int anonymous_enum = (Cmp(element, "enum ") == 0);
+      int anonymous_enum = SwigType_isanonenum(element);
       if (notypeconv || !anonymous_enum) {
 	Append(result, element);
       } else {
@@ -1122,6 +1153,7 @@ static String *manglestr_default(const SwigType *s) {
   Replace(lt, "struct ", "", DOH_REPLACE_ANY);
   Replace(lt, "class ", "", DOH_REPLACE_ANY);
   Replace(lt, "union ", "", DOH_REPLACE_ANY);
+  Replace(lt, "enum_anon ", "", DOH_REPLACE_ANY);
   Replace(lt, "enum ", "", DOH_REPLACE_ANY);
 
   mangle_subtype(mangled, lt);
@@ -1171,6 +1203,7 @@ static String *manglestr_default(const SwigType *s) {
   Replace(base, "struct ", "", DOH_REPLACE_ANY);	/* This might be problematic */
   Replace(base, "class ", "", DOH_REPLACE_ANY);
   Replace(base, "union ", "", DOH_REPLACE_ANY);
+  Replace(base, "enum_anon ", "", DOH_REPLACE_ANY);
   Replace(base, "enum ", "", DOH_REPLACE_ANY);
 
   c = Char(base);
