@@ -1,9 +1,7 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  constant_pointers \
   default_constructor \
-  member_funcptr_galore \
   typemap_directorout
 
 # failed to compile fortran

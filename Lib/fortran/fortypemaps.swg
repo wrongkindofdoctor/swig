@@ -375,22 +375,8 @@ SWIGTYPE
 %typemap(fout)   const SWIGTYPE* = SWIGTYPE*;
 
 // Use const-correct arguments/return values.
-%typemap(ctype)  SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
-%typemap(in)     SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
-%typemap(out)    SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
-%typemap(imtype) SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
-%typemap(ftype)  SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
-%typemap(fin)    SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
-%typemap(fout)   SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY] = SWIGTYPE*;
-
-// Use const-correct arguments/return values.
-%typemap(ctype)  const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
-%typemap(in)     const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
-%typemap(out)    const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
-%typemap(imtype) const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
-%typemap(ftype)  const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
-%typemap(fin)    const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
-%typemap(fout)   const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY] = const SWIGTYPE*;
+FORT_COPY_TYPEMAPS(SWIGTYPE*, SWIGTYPE* const, SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY]);
+FORT_COPY_TYPEMAPS(const SWIGTYPE*, const SWIGTYPE* const, const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY]);
 
 // Structs will generate free/malloc usage via the %free typemap, but SWIG
 // doesn't include <stdlib.h> by default. Override the swigtype usage so that
