@@ -282,7 +282,7 @@ FORT_FUND_TYPEMAP(sssize_t          , "integer(C_SIZE_T)"); // Copied from size_
 // Most of the opertions are like integers, but replace the fortran wrapper
 // with the kind of enum. Don't worry about pointer types (leave those as
 // integer pointers)
-FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)"); // Copied from int      
+FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
 
 // Fortran input types look like enums
 %typemap(in, noblock=1) enum SWIGTYPE
@@ -423,9 +423,9 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
   FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, "type($fclassname)")
 
   // Interface code has to "import' the class type.
-  %typemap(imtype, import="$fclassname") CTYPE, CTYPE*, CTYPE&, 
-          const CTYPE, const CTYPE*, const CTYPE& 
+  %typemap(imtype, import="$fclassname") CTYPE
     "type($fclassname)"
+  %typemap(imtype) const CTYPE, const CTYPE& = CTYPE;
 %enddef
 
 //---------------------------------------------------------------------------//

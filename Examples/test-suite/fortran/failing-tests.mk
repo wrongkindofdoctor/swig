@@ -47,7 +47,6 @@ FAILING_CPP_TESTS += \
   overload_subtype \
   overload_template \
   overload_template_fast \
-  pod_struct \
   pure_virtual \
   refcount \
   return_const_value \

@@ -33,4 +33,6 @@ SimpleStruct& get_ref();
 
 const SimpleStruct* get_cptr();
 const SimpleStruct& get_cref();
+
+SimpleStruct** get_handle();
 %}
