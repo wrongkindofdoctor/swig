@@ -3,13 +3,7 @@
 FAILING_CPP_TESTS += \
   constant_pointers \
   default_constructor \
-  director_enum \
-  enum_ignore \
-  enum_thorough \
-  global_namespace \
-  li_std_vector_enum \
   member_funcptr_galore \
-  mixed_types \
   typemap_directorout
 
 # failed to compile fortran
@@ -25,12 +19,14 @@ FAILING_CPP_TESTS += \
   director_classes \
   director_default \
   director_detect \
+  director_enum \
   director_frob \
   director_ignore \
   director_keywords \
   director_overload2 \
   director_property \
   enum_scope_template \
+  enum_thorough \
   evil_diamond_prop \
   extend \
   extend_default \
@@ -40,6 +36,7 @@ FAILING_CPP_TESTS += \
   li_attribute_template \
   li_boost_shared_ptr \
   member_pointer_const \
+  mixed_types \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
   multiple_inheritance_nspace \

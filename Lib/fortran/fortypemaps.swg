@@ -273,15 +273,22 @@ FORT_FUND_TYPEMAP(sssize_t          , "integer(C_SIZE_T)"); // Copied from size_
 // with the kind of enum. Don't worry about pointer types (leave those as
 // integer pointers)
 FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)"); // Copied from int      
+
 // Fortran input types look like enums
-%typemap(in, noblock=1) enum SWIGTYPE, const enum SWIGTYPE&
+%typemap(in, noblock=1) enum SWIGTYPE
     {$1 = %static_cast(*$input, $1_ltype);}
-%typemap(out, noblock=1) enum SWIGTYPE, const enum SWIGTYPE&
+%typemap(out, noblock=1) enum SWIGTYPE
     {$result = %static_cast($1, int);}
-%typemap(ftype, out="integer(kind($fenumname))")
-    enum SWIGTYPE, const enum SWIGTYPE&
+%typemap(ftype, out="integer(kind($fenumname))") enum SWIGTYPE
    "integer(kind($fenumname)), intent(in)"
 
+%typemap(in, noblock=1) const enum SWIGTYPE& ($*1_ltype temp)
+    {temp = %static_cast(*$input, $*1_ltype);
+     $1 = &temp;}
+%typemap(out, noblock=1) const enum SWIGTYPE&
+    {$result = %static_cast(*$1, int);}
+%typemap(ftype) const enum SWIGTYPE& = enum SWIGTYPE;
+   
 //---------------------------------------------------------------------------//
 // CLASS DEFINITION
 //---------------------------------------------------------------------------//
