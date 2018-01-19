@@ -484,21 +484,8 @@ FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
 %typemap(fout)   SWIGTYPE (*)(ANY)
     "$result = $1"
 
-// Const function pointers need special treatment
-%typemap(ctype)  SWIGTYPE (*const)(ANY)
-    %{$1_ltype%}
-%typemap(in)     SWIGTYPE (*const)(ANY)
-    %{$1 = $input;%}
-%typemap(out)    SWIGTYPE (*const)(ANY)
-    %{$result = $1;%}
-%typemap(imtype, in="type(C_FUNPTR), intent(in), value") SWIGTYPE (*const)(ANY)
-    "type(C_FUNPTR)"
-%typemap(ftype, out="type(C_FUNPTR)")  SWIGTYPE (*const)(ANY)
-    "type(C_FUNPTR), intent(in), value"
-%typemap(fin)    SWIGTYPE (*const)(ANY)
-    "$1 = $input"
-%typemap(fout)   SWIGTYPE (*const)(ANY)
-    "$result = $1"
+// Copy to immutable function pointers
+FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY), SWIGTYPE (*const)(ANY));
 
 //---------------------------------------------------------------------------//
 // MEMBER FUNCTION POINTERS

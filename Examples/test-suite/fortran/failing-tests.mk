@@ -1,7 +1,6 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  constant_directive \
   constant_pointers \
   default_constructor \
   director_enum \

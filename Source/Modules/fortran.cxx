@@ -2328,12 +2328,34 @@ int FORTRAN::constantWrapper(Node* n)
          *   {const_CTYPE = SwigType_add_qualifier(CTYPE, "const")}
          *   {SwigType_str(const_CTYPE, swigc_SYMNAME) = VALUE;}
          */
+        Swig_save("constantWrapper", n, "wrap:name", "lname", NULL);
+
         // SYMNAME -> swigc_SYMNAME
         String* wname = Swig_name_wrapper(symname);
         Setattr(n, "wrap:name",  wname);
 
         // Set the value to replace $1 with in the 'out' typemap
         Setattr(n, "lname", value);
+
+        // Get conversion to C type from native c++ type, *AFTER* changing
+        // lname and wrap:name
+        String* cwrap_code = attach_typemap(
+                "out", n, WARN_TYPEMAP_OUT_UNDEF);
+        if (!cwrap_code)
+            return SWIG_NOWRAP;
+
+        if (Strstr(cwrap_code, "\n"))
+        {
+            // There's a newline in the output code, indicating it's
+            // nontrivial.
+            Swig_warning(WARN_LANG_NATIVE_UNIMPL,
+                         input_file, line_number,
+                         "The 'out' typemap for '%s' is too complex "
+                         "to wrap as a %%constant variable. This will be "
+                         "implemented later\n", symname);
+
+            return SWIG_NOWRAP;
+        }
 
         // Get type of C value
         Swig_typemap_lookup("ctype", n, symname, NULL);
@@ -2346,14 +2368,7 @@ int FORTRAN::constantWrapper(Node* n)
         SwigType_add_qualifier(c_return_type, "const");
         String* declstring = SwigType_str(c_return_type, wname);
 
-        // Get conversion to C type from native c++ type
-        // TODO: this only works for simple data types
-        String* cwrap_code = attach_typemap(
-                "out", n, WARN_TYPEMAP_OUT_UNDEF);
-        if (!cwrap_code)
-            return SWIG_NOWRAP;
-
-        // Wrirte SWIG code
+        // Write SWIG code
         Replaceall(cwrap_code, "$result", declstring);
         Printv(f_wrapper, "SWIGEXPORT SWIGEXTERN ", cwrap_code, "\n\n", NULL);
 
@@ -2365,6 +2380,7 @@ int FORTRAN::constantWrapper(Node* n)
                "   bind(C, name=\"", wname, "\") :: ", symname, "\n",
                NULL);
 
+        Swig_restore(n);
         Delete(declstring);
         Delete(wname);
     }
