@@ -1,8 +1,4 @@
 
-# failed to compile wrapper
-FAILING_CPP_TESTS += \
-  typemap_directorout
-
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \

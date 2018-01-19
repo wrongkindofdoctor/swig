@@ -392,8 +392,6 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
                    const SWIGTYPE* const, const SWIGTYPE&, const SWIGTYPE[],
                    const SWIGTYPE[ANY]);
 
-// Fix 
-
 // Structs will generate free/malloc usage via the %free typemap, but SWIG
 // doesn't include <stdlib.h> by default. Override the swigtype usage so that
 // downstream code doesn't fail.
@@ -420,9 +418,6 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
   // Remove constructors and destructors
   %nodefaultctor CTYPE;
   %nodefaultdtor CTYPE;
-
-  %typemap(imtype, import="$fclassname") CTYPE
-    "type($fclassname)"
 
   // Bound structs act just like simple types
   FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, "type($fclassname)")
