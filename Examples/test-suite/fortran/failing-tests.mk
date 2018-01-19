@@ -1,8 +1,6 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  default_constructor \
-  namespace_spaces \
   typemap_directorout
 
 # failed to compile fortran
@@ -14,6 +12,7 @@ FAILING_CPP_TESTS += \
   constructor_copy \
   contract \
   cpp_basic \
+  default_constructor \
   director_basic \
   director_classes \
   director_default \
@@ -35,7 +34,6 @@ FAILING_CPP_TESTS += \
   li_attribute_template \
   li_boost_shared_ptr \
   member_pointer_const \
-  mixed_types \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
   multiple_inheritance_nspace \

@@ -109,13 +109,13 @@
  * set up, i.e. globalin
  */
 %define FORT_COPY_TYPEMAPS(SRC_TYPE, DST_TYPE...)
-  %typemap(ctype)  DST_TYPE = SRC_TYPE;
-  %typemap(in)     DST_TYPE = SRC_TYPE;
-  %typemap(out)    DST_TYPE = SRC_TYPE;
-  %typemap(imtype) DST_TYPE = SRC_TYPE;
-  %typemap(ftype)  DST_TYPE = SRC_TYPE;
-  %typemap(fin)    DST_TYPE = SRC_TYPE;
-  %typemap(fout)   DST_TYPE = SRC_TYPE;
+  %typemap(ctype)     DST_TYPE = SRC_TYPE;
+  %typemap(in)        DST_TYPE = SRC_TYPE;
+  %typemap(out)       DST_TYPE = SRC_TYPE;
+  %typemap(imtype)    DST_TYPE = SRC_TYPE;
+  %typemap(ftype)     DST_TYPE = SRC_TYPE;
+  %typemap(fin)       DST_TYPE = SRC_TYPE;
+  %typemap(fout)      DST_TYPE = SRC_TYPE;
 %enddef
   
 //---------------------------------------------------------------------------//
@@ -172,10 +172,11 @@
     "$1 = c_loc($input)"
   %typemap(fout) CPPTYPE*
     "call c_f_pointer($1, $result)"
+  FORT_COPY_TYPEMAPS(CPPTYPE*, CPPTYPE* const);
 
   // Mutable references and arrays are treated just like pointers
   FORT_COPY_TYPEMAPS(CPPTYPE*,
-                     CPPTYPE&, CPPTYPE[], CPPTYPE[ANY]);
+                     CPPTYPE&, CPPTYPE*&, CPPTYPE[], CPPTYPE[ANY]);
   // ...except that fixed-sized arrays can be treated natively
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(inout)"
@@ -196,6 +197,7 @@
   %typemap(ftype)  const CPPTYPE*    = CPPTYPE*;
   %typemap(fin)    const CPPTYPE*    = CPPTYPE*;
   %typemap(fout)   const CPPTYPE*    = CPPTYPE*;
+  FORT_COPY_TYPEMAPS(const CPPTYPE*, const CPPTYPE* const);
 
   // We treat const references like value types for fundamental types.
   %typemap(ctype) const CPPTYPE& = CPPTYPE;
@@ -209,7 +211,12 @@
   %typemap(fin)    const CPPTYPE& = CPPTYPE;
   %typemap(fout)   const CPPTYPE& = CPPTYPE;
 
-  
+  // References to pointers
+  FORT_COPY_TYPEMAPS(CPPTYPE*,
+                     CPPTYPE*&, const CPPTYPE* const&);
+  FORT_COPY_TYPEMAPS(const CPPTYPE*,
+                     const CPPTYPE*&, const CPPTYPE* const&);
+
   // Const arrays are basically like const pointers
   FORT_COPY_TYPEMAPS(const CPPTYPE*,
                      const CPPTYPE[], const CPPTYPE[ANY]);
@@ -217,6 +224,9 @@
   %typemap(ftype, out=FTYPE ", dimension(:), pointer") const CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(in)"
   %typemap(fout) const CPPTYPE[ANY] = CPPTYPE[ANY];
+
+  FORT_COPY_TYPEMAPS(CPPTYPE*,
+                     CPPTYPE const [], CPPTYPE const [ANY]);
 %enddef
 
 //---------------------------------------------------------------------------//
@@ -365,9 +375,9 @@ SWIGTYPE
 // Raw pointers act mostly like value types (with overrides below)
 %typemap(ctype)  const SWIGTYPE* = SWIGTYPE*;
 %typemap(in, noblock=1) const SWIGTYPE*
-  {$1 = %static_cast($input->ptr, $1_basetype*);}
+  {$1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(out, noblock=1) const SWIGTYPE*
-  {$result.ptr  = %const_cast($1, $1_basetype*);
+  {$result.ptr  = (void*)$1;
    $result.flag = SWIGF_CONST_REFERENCE;}
 %typemap(imtype) const SWIGTYPE* = SWIGTYPE*;
 %typemap(ftype, out="type($fclassname)") const SWIGTYPE*
@@ -376,8 +386,13 @@ SWIGTYPE
 %typemap(fout)   const SWIGTYPE* = SWIGTYPE*;
 
 // Use const-correct arguments/return values.
-FORT_COPY_TYPEMAPS(SWIGTYPE*, SWIGTYPE* const, SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY]);
-FORT_COPY_TYPEMAPS(const SWIGTYPE*, const SWIGTYPE* const, const SWIGTYPE&, const SWIGTYPE[], const SWIGTYPE[ANY]);
+FORT_COPY_TYPEMAPS(SWIGTYPE*,
+                   SWIGTYPE* const, SWIGTYPE&, SWIGTYPE[], SWIGTYPE[ANY]);
+FORT_COPY_TYPEMAPS(const SWIGTYPE*,
+                   const SWIGTYPE* const, const SWIGTYPE&, const SWIGTYPE[],
+                   const SWIGTYPE[ANY]);
+
+// Fix 
 
 // Structs will generate free/malloc usage via the %free typemap, but SWIG
 // doesn't include <stdlib.h> by default. Override the swigtype usage so that
@@ -421,43 +436,35 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*, const SWIGTYPE* const, const SWIGTYPE&, cons
 //---------------------------------------------------------------------------//
 // OPAQUE POINTERS
 //---------------------------------------------------------------------------//
-/*!
- * \def FORT_OPAQUE_PTR_TYPEMAP
- *
- * Map the given type to an opaque C pointer.
- */
-%define FORT_OPAQUE_PTR_TYPEMAP(CTYPE)
-  %typemap(ctype) CTYPE
-    "$1_ltype"
-  %typemap(in, noblock=1) CTYPE
-    {$1 = %const_cast($input, $1_ltype);}
-  %typemap(out) CTYPE
-    "$result = $1;"
-  %typemap(imtype, in="type(C_PTR), value") CTYPE
-    "type(C_PTR)"
-  %typemap(ftype) CTYPE
-    "type(C_PTR)"
-  %typemap(fin)  CTYPE
-    "$1 = $input"
-  %typemap(fout)  CTYPE
-    "$result = $1"
-%enddef
+
+%typemap(ctype) void*
+  "$1_ltype"
+%typemap(in, noblock=1) void*
+  {$1 = %reinterpret_cast($input, $1_ltype);}
+%typemap(out) void*
+  "$result = $1;"
+%typemap(imtype, in="type(C_PTR), value") void*
+  "type(C_PTR)"
+%typemap(ftype) void*
+  "type(C_PTR)"
+%typemap(fin)  void*
+  "$1 = $input"
+%typemap(fout)  void*
+  "$result = $1"
 
 // Void pointers are returned as opaque C pointers
-FORT_OPAQUE_PTR_TYPEMAP(void*)
-FORT_OPAQUE_PTR_TYPEMAP(void[])
-
+FORT_COPY_TYPEMAPS(void*,
+                   const void*, void* const, void&, void[], void[ANY]);
 // Handles are returned as opaque C pointers
-FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE**)
-FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* [])
-FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* [ANY])
-FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const*)
-FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const[])
-FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const[ANY])
+FORT_COPY_TYPEMAPS(void*,
+                   SWIGTYPE**, SWIGTYPE* [], SWIGTYPE* [ANY])
 
-// Pointer references are returned as opaque C pointers
-FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE*&)
-FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
+// Use const-correct arguments/return values.
+%typemap(in, noblock=1) const void*
+{$1 = %const_cast($input, $1_ltype);}
+FORT_COPY_TYPEMAPS(const void*,
+                   const SWIGTYPE**, const SWIGTYPE* [], const SWIGTYPE* [ANY],
+                   SWIGTYPE* const *, SWIGTYPE* const [], SWIGTYPE* const [ANY]);
 
 //---------------------------------------------------------------------------//
 // FUNCTION POINTERS
@@ -479,7 +486,8 @@ FORT_OPAQUE_PTR_TYPEMAP(SWIGTYPE* const&)
     "$result = $1"
 
 // Copy to immutable function pointers
-FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY), SWIGTYPE (*const)(ANY));
+FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY),
+                   SWIGTYPE (*const)(ANY));
 
 //---------------------------------------------------------------------------//
 // MEMBER FUNCTION POINTERS
@@ -487,30 +495,27 @@ FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY), SWIGTYPE (*const)(ANY));
 #ifdef __cplusplus
 
 %typemap(ctype, fragment="SwigfOpaqueMemFunPtr_wrap",
-         null="SwigfOpaqueMemFunPtr_uninitialized()")
-        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
+         null="SwigfOpaqueMemFunPtr_uninitialized()") SWIGTYPE (CLASS::*)
     %{SwigfOpaqueMemFunPtr%}
-%typemap(in, fragment="SwigfBruteCast")
-        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
+%typemap(in, fragment="SwigfBruteCast") SWIGTYPE (CLASS::*)
     %{$1 = brute_cast<$1_ltype>($input);%}
-%typemap(out, fragment="SwigfBruteCast")
-        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
+%typemap(out, fragment="SwigfBruteCast") SWIGTYPE (CLASS::*)
     %{$result = brute_cast<SwigfOpaqueMemFunPtr>($1);%}
 %typemap(imtype, in="type(SwigfOpaqueMemFunPtr), intent(in), value",
          import="SwigfOpaqueMemFunPtr",
-         fragment="SwigfOpaqueMemFunPtr")
-        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
+         fragment="SwigfOpaqueMemFunPtr") SWIGTYPE (CLASS::*)
     "type(SwigfOpaqueMemFunPtr)"
 %typemap(ftype, out="type(SwigfOpaqueMemFunPtr)",
-         fragment="SwigfOpaqueMemFunPtr")
-        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
+         fragment="SwigfOpaqueMemFunPtr") SWIGTYPE (CLASS::*)
     "type(SwigfOpaqueMemFunPtr), intent(in), value"
-%typemap(fin)
-        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
+%typemap(fin) SWIGTYPE (CLASS::*)
     "$1 = $input"
-%typemap(fout)
-        SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
+%typemap(fout) SWIGTYPE (CLASS::*)
     "$result = $1"
+
+// Copy to immutable member function pointers
+FORT_COPY_TYPEMAPS(SWIGTYPE (CLASS::*),
+                   SWIGTYPE (CLASS::* const));
 
 #endif
 
