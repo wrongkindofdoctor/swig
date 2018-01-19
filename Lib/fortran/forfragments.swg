@@ -244,7 +244,7 @@ using swig::brute_cast;
 //---------------------------------------------------------------------------//
 
 // Add array wrapper to C++ code when used by Fortran fragment
-%fragment("SwigfOpaqueMemFunPtr_wrap", "header") %{
+%fragment("SwigfOpaqueMemFunPtr_wrap", "header", fragment="<cstring>") %{
 struct SwigfOpaqueMemFunPtr
 {
     enum { MEMPTR_SIZE = 32 };
@@ -254,6 +254,13 @@ struct SwigfOpaqueMemFunPtr
                  "Member pointer buffer isn't large enough");
 #endif
 };
+
+SwigfOpaqueMemFunPtr SwigfOpaqueMemFunPtr_uninitialized()
+{
+    SwigfOpaqueMemFunPtr result;
+    std::memset(result.data, sizeof(result.data), 0);
+    return result;
+}
 %}
 
 // This fragment is inserted by the fortran.cxx code when an unknown class is

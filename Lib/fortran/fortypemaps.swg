@@ -486,7 +486,8 @@ FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY), SWIGTYPE (*const)(ANY));
 //---------------------------------------------------------------------------//
 #ifdef __cplusplus
 
-%typemap(ctype, fragment="SwigfOpaqueMemFunPtr_wrap")
+%typemap(ctype, fragment="SwigfOpaqueMemFunPtr_wrap",
+         null="SwigfOpaqueMemFunPtr_uninitialized()")
         SWIGTYPE (CLASS::*), SWIGTYPE (CLASS::* const)
     %{SwigfOpaqueMemFunPtr%}
 %typemap(in, fragment="SwigfBruteCast")

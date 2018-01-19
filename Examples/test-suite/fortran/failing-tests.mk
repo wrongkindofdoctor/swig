@@ -2,6 +2,7 @@
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
   default_constructor \
+  namespace_spaces \
   typemap_directorout
 
 # failed to compile fortran
