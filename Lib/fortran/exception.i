@@ -178,21 +178,21 @@ void swigf_store_exception(int code, const char *msg);
 // *_impl* is the one that changes.
 %fragment("SwigfExceptionMacro", "runtime") %{
 #undef SWIG_exception_impl
-#define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
-    swigf_store_exception(CODE, MSG); return NULLRETURN;
+#define SWIG_exception_impl(CODE, MSG, RETURNNULL) \
+    swigf_store_exception(CODE, MSG); RETURNNULL;
 %}
 #else
 %fragment("SwigfExceptionMacro", "runtime") %{
 #undef SWIG_exception_impl
-#define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
-    swigf_store_exception(CODE, MSG); return NULLRETURN;
+#define SWIG_exception_impl(CODE, MSG, RETURNNULL) \
+    swigf_store_exception(CODE, MSG); RETURNNULL;
 %}
 #endif
 
 // Note that this replaces wrapper code: the phrase "SWIG_exception" never
 // shows up in the .cxx file
 #define SWIG_exception(CODE, MSG) \
-    SWIG_exception_impl(CODE, MSG, $null)
+    SWIG_exception_impl(CODE, MSG, return $null)
 
 //---------------------------------------------------------------------------//
 // Insert exception code (will insert different code depending on if C/C++ and

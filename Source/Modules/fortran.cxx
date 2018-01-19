@@ -1034,6 +1034,7 @@ void FORTRAN::cfuncWrapper(Node *n)
             String* tm_in = get_typemap("in", p, WARN_TYPEMAP_IN_UNDEF);
             if (tm_in)
             {
+                this->replace_fclassname(Getattr(p, "type"), tm_in);
                 Replaceall(tm_in, "$input", imname);
                 Setattr(p, "emit:input", imname);
                 Printv(cfunc->code, tm_in, "\n", NULL);
@@ -1156,7 +1157,7 @@ void FORTRAN::cfuncWrapper(Node *n)
     Replaceall(cfunc->code, "$cleanup", cleanup);
     Replaceall(cfunc->code, "$symname", symname);
     Replaceall(cfunc->code, "SWIG_contract_assert(",
-               "SWIG_contract_assert($null, ");
+               "SWIG_contract_assert(return $null, ");
     Replaceall(cfunc->code, "$null",
                null_return_type ? null_return_type : "0");
 

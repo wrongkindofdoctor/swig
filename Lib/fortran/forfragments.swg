@@ -62,6 +62,17 @@ SwigfClassWrapper SwigfClassWrapper_uninitialized()
 }
 %}
 
+%fragment("SwigfCheckMutable", "runtime")
+%{
+#define SWIGF_check_mutable(SWIGF_CLASS_WRAPPER, TYPENAME, FNAME, RETURNNULL) \
+    if ((SWIGF_CLASS_WRAPPER).flag == SWIGF_CONST_REFERENCE) { \
+        SWIG_exception_impl(SWIG_TypeError, \
+            "Cannot pass const " TYPENAME " (class " FNAME ") " \
+            "to a function that requires a mutable reference", \
+            RETURNNULL); \
+    }
+%}
+
 // This fragment is inserted by the fortran.cxx code when an unknown class is
 // encountered. Note that we declare the enum as a C_INT instead of
 // `integer(kind(SwigfProxyFlag))` to avoid a warning in GCC. The types will
@@ -73,7 +84,6 @@ type, bind(C) :: SwigfClassWrapper
   integer(C_INT), public :: flag = SWIGF_UNINIT
 end type
 %}
-
 //---------------------------------------------------------------------------//
 // UNKNOWN CLASS
 //---------------------------------------------------------------------------//

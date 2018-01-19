@@ -350,8 +350,9 @@ SWIGTYPE
 
 // Raw pointers act mostly like value types (with overrides below)
 %typemap(ctype)  SWIGTYPE* = SWIGTYPE;
-%typemap(in, noblock=1) SWIGTYPE*
-  {$1 = %static_cast($input->ptr, $1_ltype);}
+%typemap(in, noblock=1, fragment="SwigfCheckMutable") SWIGTYPE*
+  {SWIGF_check_mutable(*$input, "$1_ltype", "$fclassname", return $null);
+  $1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(out, noblock=1) SWIGTYPE*
   {$result.ptr  = $1;
    $result.flag = ($owner ? SWIGF_MOVING : SWIGF_REFERENCE);}

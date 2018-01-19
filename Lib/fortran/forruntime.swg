@@ -17,22 +17,24 @@
 %fragment("<stdexcept>");
 %insert(runtime) %{
 // Default exception handler
-#define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
-    throw std::logic_error(MSG); return NULLRETURN;
+#define SWIG_exception_impl(CODE, MSG, RETURNNULL) \
+    throw std::logic_error(MSG); RETURNNULL;
 %}
 #else
 %insert(runtime) %{
 #include <assert.h>
 /* Default C exception handler */
-#define SWIG_exception_impl(CODE, MSG, NULLRETURN) \
-    printf(stderr, MSG, NULL); assert(0); return NULLRETURN;
+#define SWIG_exception_impl(CODE, MSG, RETURNNULL) \
+    printf(stderr, MSG, NULL); assert(0); RETURNNULL;
 %}
 #endif
 
+// Note that RETURNNULL is first because it's inserted via a 'Replaceall' in
+// the fortran.cxx file.
 %insert(runtime) %{
 /* Contract support */
-#define SWIG_contract_assert(NULLRETURN, EXPR, MSG) \
-    if (!(EXPR)) { SWIG_exception_impl(SWIG_ValueError, MSG, NULLRETURN); }
+#define SWIG_contract_assert(RETURNNULL, EXPR, MSG) \
+    if (!(EXPR)) { SWIG_exception_impl(SWIG_ValueError, MSG, RETURNNULL); }
 %}
 
 //---------------------------------------------------------------------------//
