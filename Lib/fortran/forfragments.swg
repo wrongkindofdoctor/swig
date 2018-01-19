@@ -64,11 +64,11 @@ SwigfClassWrapper SwigfClassWrapper_uninitialized()
 
 %fragment("SwigfCheckMutable", "runtime")
 %{
-#define SWIGF_check_mutable(SWIGF_CLASS_WRAPPER, TYPENAME, FNAME, RETURNNULL) \
+#define SWIGF_check_mutable(SWIGF_CLASS_WRAPPER, TYPENAME, FNAME, FUNCNAME, RETURNNULL) \
     if ((SWIGF_CLASS_WRAPPER).flag == SWIGF_CONST_REFERENCE) { \
         SWIG_exception_impl(SWIG_TypeError, \
             "Cannot pass const " TYPENAME " (class " FNAME ") " \
-            "to a function that requires a mutable reference", \
+            "to a function (" FUNCNAME ") that requires a mutable reference", \
             RETURNNULL); \
     }
 %}

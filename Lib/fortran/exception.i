@@ -99,7 +99,7 @@ void swigf_check_unhandled_exception()
     if (::SWIG_FORTRAN_ERROR_INT != 0)
     {
         throw std::runtime_error(
-                "An unhandled exception occurred in $symname: "
+                "An unhandled exception occurred in $decl: "
                 + swigf_last_exception_msg);
     }
 }

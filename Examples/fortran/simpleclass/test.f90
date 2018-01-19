@@ -43,6 +43,8 @@ subroutine test_simple_class_memory()
     type(SimpleClass) :: orig
     type(SimpleClass) :: copied
     type(SimpleClass) :: assigned
+    type(SimpleClass) :: constref
+    type(SimpleClass) :: unassigned
 
     write(0, *) "Constructing..."
     call orig%create()
@@ -64,6 +66,10 @@ subroutine test_simple_class_memory()
     call print_value(orig)
     call print_value(assigned)
 
+    ! Get a class by const reference; it should fail if you try to modify it
+    constref = get_class()
+    ! call constref%double_it()
+
     ! Release created
     write(0, *) "Releasing orig"
     call orig%release()
@@ -73,6 +79,12 @@ subroutine test_simple_class_memory()
     ! Release assigned
     write(0, *) "Releasing assigned"
     call assigned%release()
+    ! Release global const reference
+    write(0, *) "Releasing const reference"
+    call constref%release()
+    ! Release a pointer in its null state
+    write(0, *) "Releasing unassigned"
+    call unassigned%release()
 end subroutine
 
 subroutine test_basic_struct()

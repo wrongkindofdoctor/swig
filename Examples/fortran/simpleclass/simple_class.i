@@ -25,7 +25,7 @@ using std::endl;
 %}
 
 %inline %{
-void print_pointer(int msg, SimpleClass* ptr)
+void print_pointer(int msg, const SimpleClass* ptr)
 {
     cout << "F " << (msg == 0 ? "Constructed"
                    : msg == 1 ? "Releasing"
