@@ -20,9 +20,6 @@
 #define ALL_SWIGSP__ SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
 #define CONST_ALL_SWIGSP__ const SWIGSP__ &, const SWIGSP__ *, const SWIGSP__ *&
 
-// Optional: restore std::logic_error("Attempt to dereference null $1_type")
-#define SWIGF_ASSERT_NONNULL(argp)
-
 //---------------------------------------------------------------------------//
 // Shared pointers *always* return either NULL or a newly allocated shared
 // pointer.
@@ -52,21 +49,22 @@ ALL_SWIGSP__, CONST_ALL_SWIGSP__
 // Original class by value: access the 'ptr' member of the input, return a
 // SP-owned copy of the obtained value.
 //---------------------------------------------------------------------------//
-%typemap(in, noblock=1) CONST TYPE ($&1_type argp = 0)
+%typemap(in, noblock=1,
+         fragment="SwigfCheckNonnull") CONST TYPE ($&1_type argp = 0)
 {
+    SWIGF_check_nonnull($input, "$1_ltype", "$fclassname", "$decl", return $null)
     argp = $input->ptr ? %static_cast($input->ptr, SWIGSP__*)->get() : NULL;
-    SWIGF_ASSERT_NONNULL(argp);
     $1 = *argp;
 }
 %typemap(out, noblock=1) CONST TYPE
 {
-   $result.ptr  = new SWIGSP__(%new_copy($1, $1_basetype));
-   $result.flag = SWIGF_MOVING;
+   $result.ptr = new SWIGSP__(%new_copy($1, $1_basetype));
+   $result.mem = SWIGF_MOVE;
 }
 
 //---------------------------------------------------------------------------//
 // Original class by pointer. Note that the deleter is determined by the owner
-// flag, but the shared pointer instance itself is in a "moving" state
+// mem, but the shared pointer instance itself is in a "moving" mem
 // regardless.
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) CONST TYPE * (SWIGSP__* smartarg)
@@ -78,24 +76,25 @@ ALL_SWIGSP__, CONST_ALL_SWIGSP__
 %typemap(out, noblock=1, fragment="SWIG_null_deleter") CONST TYPE *
 {
     $result.ptr = $1 ? new SWIGSP__($1 SWIG_NO_NULL_DELETER_$owner) : NULL;
-    $result.flag = SWIGF_MOVING;
+    $result.mem = SWIGF_MOVE;
 }
 
 //---------------------------------------------------------------------------//
 // Original class by reference. Same as by pointer, but with null checks.
 //---------------------------------------------------------------------------//
-%typemap(in, noblock=1) CONST TYPE& (SWIGSP__* smartarg)
+%typemap(in, noblock=1,
+         fragment="SwigfCheckNonnull") CONST TYPE& (SWIGSP__* smartarg)
 {
+    SWIGF_check_nonnull($input,
+                        "$1_ltype", "$fclassname", "$decl", return $null)
     smartarg = %static_cast($input->ptr, SWIGSP__*);
-    SWIGF_ASSERT_NONNULL(smartarg);
-    SWIGF_ASSERT_NONNULL(smartarg->get());
     $1 = %as_mutable(smartarg->get());
 }
 
 %typemap(out) CONST TYPE&
 {
     $result.ptr = new SWIGSP__($1 SWIG_NO_NULL_DELETER_$owner);
-    $result.flag = SWIGF_MOVING;
+    $result.mem = SWIGF_MOVE;
 }
 
 //---------------------------------------------------------------------------//
@@ -108,8 +107,8 @@ ALL_SWIGSP__, CONST_ALL_SWIGSP__
 
 %typemap(out, noblock=1) SWIGSP__
 {
-    $result.ptr  = %new_copy($1, SWIGSP__);
-    $result.flag = SWIGF_MOVING;
+    $result.ptr = %new_copy($1, SWIGSP__);
+    $result.mem = SWIGF_MOVE;
 }
 
 //---------------------------------------------------------------------------//
@@ -122,8 +121,8 @@ ALL_SWIGSP__, CONST_ALL_SWIGSP__
 
 %typemap(out, noblock=1) SWIGSP__&
 {
-    $result.ptr  = SWIG_SHARED_PTR_NOT_NULL(*$1) ? new $*1_ltype(*$1) : 0;
-    $result.flag = SWIGF_MOVING;
+    $result.ptr = SWIG_SHARED_PTR_NOT_NULL(*$1) ? new $*1_ltype(*$1) : 0;
+    $result.mem = SWIGF_MOVE;
 }
 
 //---------------------------------------------------------------------------//

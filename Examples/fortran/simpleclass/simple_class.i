@@ -70,30 +70,54 @@ Multiply the value by 2.
 
 //%rename(assign) SimpleClass::operator=;
 
+// Insert assignment implementation
+%fragment("SwigfClassAssign");
+
 %extend SimpleClass {
 
-void assign(const SimpleClass& other)
-{
-    *$self = other;
-}
-
 %insert("ftypes") %{
-  procedure, private :: assign_simpleclass_impl
-  generic :: assignment(=) => assign_simpleclass_impl
+  procedure, private :: swigf_SimpleClass_assign
+  generic :: assignment(=) => swigf_SimpleClass_assign
 %}
 
+%insert("wrapper") %{
+SWIGEXPORT void swigc_SimpleClass_assign(
+        SwigfClassWrapper* farg1,
+        SwigfClassWrapper* farg2)
+{
+    SWIGF_assign(SimpleClass, farg1, SimpleClass, farg2);
+}
+%}
+
+%insert("finterfaces") %{
+subroutine swigc_SimpleClass_assign(farg1, farg2) &
+    bind(C, name="swigc_SimpleClass_assign")
+    use, intrinsic :: ISO_C_BINDING
+  import :: SwigfClassWrapper
+  type(SwigfClassWrapper) :: farg1
+  type(SwigfClassWrapper) :: farg2
+end subroutine
+%}
+
+/* Self   Other   -> Action
+ *
+ * UNINIT  MOVING  ->  pself = pother;
+ * UNINIT  MOVING  ->  pself = pother;
+ * OWNER  OWNER   ->   *pself = *pother;
+ * OWNER  MOVING  ->   delete pself; self = pother;
+ *               OR??? *pself = move(*pother); delete pother;
+ * OWNER  OWNER   ->   *pself = *pother;
+ *        /REF/CREF
+ *
+ */
 %insert("fwrapper") %{
-subroutine assign_simpleclass_impl(self, other)
+subroutine swigf_SimpleClass_assign(self, other)
     use, intrinsic :: ISO_C_BINDING
     class(SimpleClass), intent(inout) :: self
     class(SimpleClass), intent(in) :: other
     call print_pointer(2, other)
     call print_pointer(3, self)
-    if (self%swigdata%flag == SWIGF_OWNER) then
-      call swigc_SimpleClass_assign(self%swigdata, other%swigdata)
-    else
-      call self%create(other)
-    endif
+    call swigc_SimpleClass_assign(self%swigdata, other%swigdata)
 end subroutine
 %}
 

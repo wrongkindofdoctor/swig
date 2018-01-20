@@ -9,9 +9,7 @@
 
 %include <std_common.i>
 
-%{
-#include <utility>
-%}
+%fragment("<utility>");
 
 namespace std
 {

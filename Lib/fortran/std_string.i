@@ -9,9 +9,7 @@
 
 %include "std_common.i"
 
-%{
-#include <string>
-%}
+%fragment("<string>");
 
 namespace std
 {

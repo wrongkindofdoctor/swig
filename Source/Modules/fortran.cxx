@@ -567,7 +567,7 @@ int FORTRAN::top(Node* n)
     f_ftypes = NewStringEmpty();
     Swig_register_filebyname("ftypes", f_ftypes);
 
-    // Fortran class constructors
+    // Fortran BIND(C) interfavces
     f_finterfaces = NewStringEmpty();
     Swig_register_filebyname("finterfaces", f_finterfaces);
 

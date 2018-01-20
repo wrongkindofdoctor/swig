@@ -20,52 +20,73 @@
 
 //---------------------------------------------------------------------------//
 // CLASS WRAPPER
-// TODO: add const char* for class type??
 //---------------------------------------------------------------------------//
-%fragment("SwigfProxyFlag_wrap", "header") %{
+// Memory state enumeration
+//---------------------------------------------------------------------------//
+%fragment("SwigfMemState_wrap", "header") %{
 
-enum SwigfProxyFlag {
-    SWIGF_UNINIT = -1,
-    SWIGF_OWNER = 0,
-    SWIGF_MOVING = 1,
-    SWIGF_REFERENCE = 2,
-    SWIGF_CONST_REFERENCE = 3
+enum SwigfMemState {
+    SWIGF_NULL = -1,
+    SWIGF_OWN = 0,
+    SWIGF_MOVE,
+    SWIGF_REF,
+    SWIGF_CREF
 };
 
 %}
 
-%fragment("SwigfProxyFlag", "fpublic") %{
+%fragment("SwigfMemState", "fpublic") %{
  enum, bind(c)
-  enumerator :: SwigfProxyFlag = -1
-  enumerator :: SWIGF_UNINIT = -1
-  enumerator :: SWIGF_OWNER = 0
-  enumerator :: SWIGF_MOVING = 1
-  enumerator :: SWIGF_REFERENCE = 2
-  enumerator :: SWIGF_CONST_REFERENCE = 3
+  enumerator :: SwigfMemState = -1
+  enumerator :: SWIGF_NULL = -1
+  enumerator :: SWIGF_OWN = 0
+  enumerator :: SWIGF_MOVE
+  enumerator :: SWIGF_REF
+  enumerator :: SWIGF_CREF
  end enum
 %}
 
+//---------------------------------------------------------------------------//
+// Wrapper struct that holds a C pointer and memory state
+//---------------------------------------------------------------------------//
+
 %fragment("SwigfClassWrapper_wrap", "header",
-          fragment="SwigfProxyFlag_wrap") %{
+          fragment="SwigfMemState_wrap") %{
 struct SwigfClassWrapper
 {
-    void*          ptr;
-    SwigfProxyFlag flag;
+    void* ptr;
+    SwigfMemState mem;
 };
 
 SwigfClassWrapper SwigfClassWrapper_uninitialized()
 {
     SwigfClassWrapper result;
-    result.ptr  = NULL;
-    result.flag = SWIGF_UNINIT;
+    result.ptr = NULL;
+    result.mem = SWIGF_NULL;
     return result;
 }
 %}
 
+// Fortran declaration of the class wrapper above. Note that we declare the
+// enum as a C_INT instead of `integer(kind(SwigfMemState))` to avoid a warning
+// in GCC. The types will still be interoperable.
+%fragment("SwigfClassWrapper", "fpublic",
+          fragment="SwigfMemState", noblock=1) %{
+type, bind(C) :: SwigfClassWrapper
+  type(C_PTR), public :: ptr = C_NULL_PTR
+  integer(C_INT), public :: mem = SWIGF_NULL
+end type
+%}
+
+//---------------------------------------------------------------------------//
+// Runtime check for mutable argument
+//---------------------------------------------------------------------------//
+
+// Runtime check for a class wrapper not being const.
 %fragment("SwigfCheckMutable", "runtime")
 %{
 #define SWIGF_check_mutable(SWIGF_CLASS_WRAPPER, TYPENAME, FNAME, FUNCNAME, RETURNNULL) \
-    if ((SWIGF_CLASS_WRAPPER).flag == SWIGF_CONST_REFERENCE) { \
+    if ((SWIGF_CLASS_WRAPPER).mem == SWIGF_CREF) { \
         SWIG_exception_impl(SWIG_TypeError, \
             "Cannot pass const " TYPENAME " (class " FNAME ") " \
             "to a function (" FUNCNAME ") that requires a mutable reference", \
@@ -73,17 +94,161 @@ SwigfClassWrapper SwigfClassWrapper_uninitialized()
     }
 %}
 
-// This fragment is inserted by the fortran.cxx code when an unknown class is
-// encountered. Note that we declare the enum as a C_INT instead of
-// `integer(kind(SwigfProxyFlag))` to avoid a warning in GCC. The types will
-// still be interoperable.
-%fragment("SwigfClassWrapper", "fpublic",
-          fragment="SwigfProxyFlag", noblock=1) %{
-type, bind(C) :: SwigfClassWrapper
-  type(C_PTR), public :: ptr = C_NULL_PTR
-  integer(C_INT), public :: flag = SWIGF_UNINIT
-end type
+// Runtime check for a class wrapper not being const.
+%fragment("SwigfCheckNonnull", "runtime")
+%{
+#define SWIGF_check_nonnull(SWIGF_CLASS_WRAPPER, TYPENAME, FNAME, FUNCNAME, RETURNNULL) \
+    if ((SWIGF_CLASS_WRAPPER).mem == SWIGF_NULL) { \
+        SWIG_exception_impl(SWIG_TypeError, \
+            "Cannot pass null " TYPENAME " (class " FNAME ") " \
+            "to function (" FUNCNAME ")", RETURNNULL); \
+    }
 %}
+
+//---------------------------------------------------------------------------//
+// Assignment: C++ implementation
+//---------------------------------------------------------------------------//
+
+#ifdef __cplusplus
+
+// Optional "std::move" support if using C++11
+%fragment("SwigfStdMove", "runtime", fragment="<utility>")
+%{
+#if __cplusplus >= 201103L
+#define SWIGF_STDMOVE(EXPR) std::move(EXPR)
+#else
+#define SWIGF_STDMOVE(EXPR) (EXPR)
+#endif
+%}
+
+%fragment("SwigfClassAssign_wrap", "header",
+          fragment="SwigfClassWrapper_wrap", fragment="SwigfStdMove") %{
+template<class T1, class T2>
+void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
+  T1* pself  = static_cast<T1*>(self->ptr);
+  T2* pother = static_cast<T2*>(other->ptr);
+
+  switch (self->mem) {
+    case SWIGF_NULL:
+      /* LHS is unassigned */
+      switch (other->mem) {
+        case SWIGF_NULL: /* null op */ break;
+        case SWIGF_MOVE:
+          self->ptr = other->ptr;
+          other->ptr = NULL;
+          self->mem = SWIGF_OWN;
+          other->mem = SWIGF_NULL;
+          break;
+        case SWIGF_OWN:
+          self->ptr = new T1(*pother);
+          self->mem = SWIGF_OWN;
+          break;
+        case SWIGF_REF:
+        case SWIGF_CREF:
+          self->ptr = new T1(*pother);
+          self->mem = SWIGF_OWN;
+          break;
+      }
+      break;
+    case SWIGF_OWN:
+      /* LHS owns memory */
+      switch (other->mem) {
+        case SWIGF_NULL:
+          /* Delete LHS */
+          delete pself;
+          self->ptr = NULL;
+          self->mem = SWIGF_NULL;
+          break;
+        case SWIGF_MOVE:
+          /* Move RHS into LHS; delete RHS */
+          *pself = SWIGF_STDMOVE(*pother);
+          delete pother;
+          other->ptr = NULL;
+          other->mem = SWIGF_NULL;
+          break;
+        case SWIGF_OWN:
+        case SWIGF_REF:
+        case SWIGF_CREF:
+          /* Copy RHS to LHS */
+          *pself = *pother;
+          break;
+      }
+      break;
+    case SWIGF_MOVE:
+      SWIG_exception_impl(SWIG_RuntimeError,
+        "Left-hand side of assignment should never be in a 'MOVE' state",
+        return);
+      break;
+    case SWIGF_REF:
+      /* LHS is a reference */
+      switch (other->mem) {
+        case SWIGF_NULL:
+          /* Remove LHS reference */
+          self->ptr = NULL;
+          self->mem = SWIGF_NULL;
+          break;
+        case SWIGF_MOVE:
+          /* Move RHS into LHS; delete RHS. The original ownership stays the
+           * same. */
+          *pself = SWIGF_STDMOVE(*pother);
+          delete pother;
+          other->ptr = NULL;
+          other->mem = SWIGF_NULL;
+          break;
+        case SWIGF_OWN:
+        case SWIGF_REF:
+        case SWIGF_CREF:
+          /* Copy RHS to LHS */
+          *pself = *pother;
+          break;
+      }
+    case SWIGF_CREF:
+      switch (other->mem) {
+        case SWIGF_NULL:
+          /* Remove LHS reference */
+          self->ptr = NULL;
+          self->mem = SWIGF_NULL;
+        default:
+          SWIG_exception_impl(SWIG_RuntimeError,
+              "Cannot assign to a const reference", return);
+          break;
+      }
+  }
+}
+%}
+
+// Assignment: left = right
+%fragment("SwigfClassAssign", "runtime",
+          fragment="SwigfClassAssign_wrap") %{
+#define SWIGF_assign(LEFTTYPE, LEFT, RIGHTTYPE, RIGHT) \
+    SwigfAssign<LEFTTYPE , RIGHTTYPE >(LEFT, RIGHT);
+%}
+
+//---------------------------------------------------------------------------//
+// Assignment: C implementation
+//---------------------------------------------------------------------------//
+#else
+
+%fragment("SwigfClassAssign_wrap", "header",
+          fragment="SwigfClassWrapper_wrap", "<stddef.h>") %{
+void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other,
+                 size_t size)
+{
+    // XXX TODO: memcpy
+  assert(0);
+}
+
+// Assignment: left = right. TODO: check that left and right are the same type?
+// (or at least the same size)
+%fragment("SwigfClassAssign", "runtime",
+          fragment="SwigfClassAssign_wrap") %{
+#define SWIGF_assign(LEFTTYPE, LEFT, RIGHTTYPE, RIGHT) \
+    SwigfAssign(LEFT, sizeof(LEFTTYPE), RIGHT);
+%}
+
+
+#endif
+
 //---------------------------------------------------------------------------//
 // UNKNOWN CLASS
 //---------------------------------------------------------------------------//
@@ -93,7 +258,7 @@ end type
 %fragment("SwigfUnknownClass", "fpublic", noblock=1,
           fragment="SwigfClassWrapper") %{
 type :: SwigfUnknownClass
-   type(SwigfClassWrapper), public :: swigdata
+  type(SwigfClassWrapper), public :: swigdata
 end type
 %}
 

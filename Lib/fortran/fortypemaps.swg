@@ -308,11 +308,11 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
   "type(SwigfClassWrapper), public :: swigdata"
 // Whether the data on class $input is valid
 %typemap(fassociated) SWIGTYPE
-  "$input%swigdata%flag == SWIGF_UNINIT"
+  "$input%swigdata%mem == SWIGF_NULL"
 // Reset the pointer
 %typemap(fdisassociate, noblock=1) SWIGTYPE
- %{$input%swigdata%flag = SWIGF_UNINIT
-   $input%swigdata%ptr  = C_NULL_PTR%}
+ %{$input%swigdata%ptr = C_NULL_PTR
+   $input%swigdata%mem = SWIGF_NULL%}
 
 //---------------------------------------------------------------------------//
 // CLASS TYPEMAPS
@@ -341,11 +341,13 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
          fragment="SwigfClassWrapper_wrap")
 SWIGTYPE
   {const SwigfClassWrapper *}
-%typemap(in, noblock=1) SWIGTYPE
-  {$1 = *%static_cast($input->ptr, $&1_ltype);}
+%typemap(in, noblock=1,
+         fragment="SwigfCheckNonnull") SWIGTYPE
+  {SWIGF_check_nonnull(*$input, "$1_ltype", "$fclassname", "$decl", return $null);
+   $1 = *%static_cast($input->ptr, $&1_ltype);}
 %typemap(out, noblock=1) SWIGTYPE
-  {$result.ptr  = %new_copy($1, $1_ltype);
-   $result.flag = SWIGF_MOVING;}
+  {$result.ptr = %new_copy($1, $1_ltype);
+   $result.mem = SWIGF_MOVE;}
 
 // These remaining types apply to ALL generic class pointers.
 %typemap(imtype, import="SwigfClassWrapper", fragment="SwigfClassWrapper")
@@ -364,8 +366,8 @@ SWIGTYPE
   {SWIGF_check_mutable(*$input, "$1_ltype", "$fclassname", "$decl", return $null);
   $1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(out, noblock=1) SWIGTYPE*
-  {$result.ptr  = $1;
-   $result.flag = ($owner ? SWIGF_MOVING : SWIGF_REFERENCE);}
+  {$result.ptr = $1;
+   $result.mem = ($owner ? SWIGF_MOVE : SWIGF_REF);}
 %typemap(imtype) SWIGTYPE* = SWIGTYPE;
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*
   "class($fclassname)"
@@ -377,8 +379,8 @@ SWIGTYPE
 %typemap(in, noblock=1) const SWIGTYPE*
   {$1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(out, noblock=1) const SWIGTYPE*
-  {$result.ptr  = (void*)$1;
-   $result.flag = SWIGF_CONST_REFERENCE;}
+  {$result.ptr = (void*)$1;
+   $result.mem = SWIGF_CREF;}
 %typemap(imtype) const SWIGTYPE* = SWIGTYPE*;
 %typemap(ftype, out="type($fclassname)") const SWIGTYPE*
   "class($fclassname)"
@@ -392,6 +394,17 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
                    const SWIGTYPE* const, const SWIGTYPE&, const SWIGTYPE[],
                    const SWIGTYPE[ANY]);
 
+// Check for non-null reference inputs
+%typemap(in, noblock=1,
+         fragment="SwigfCheckMutable",
+         fragment="SwigfCheckNonnull") SWIGTYPE&
+  {SWIGF_check_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
+  SWIGF_check_mutable(*$input, "$1_type", "$fclassname", "$decl", return $null);
+  $1 = %static_cast($input->ptr, $1_ltype);}
+%typemap(in, noblock=1,
+         fragment="SwigfCheckNonnull") const SWIGTYPE&
+  {SWIGF_check_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
+  $1 = %static_cast($input->ptr, $1_ltype);}
 // Structs will generate free/malloc usage via the %free typemap, but SWIG
 // doesn't include <stdlib.h> by default. Override the swigtype usage so that
 // downstream code doesn't fail.
