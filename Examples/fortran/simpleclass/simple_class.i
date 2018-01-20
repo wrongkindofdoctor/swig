@@ -118,6 +118,7 @@ subroutine swigf_SimpleClass_assign(self, other)
     call print_pointer(2, other)
     call print_pointer(3, self)
     call swigc_SimpleClass_assign(self%swigdata, other%swigdata)
+    write(0,*) "New self state: ", self%swigdata%mem
 end subroutine
 %}
 

@@ -1918,6 +1918,18 @@ int FORTRAN::constructorHandler(Node* n)
     }
     Delete(releasestr);
 
+    // The 'new' C function returns memory marked as MOVE; the constructor
+    // method must capture it.
+    const char update_flag[] = "self%swigdata%mem = SWIGF_OWN";
+    if (String* appendstr = Getattr(n, "feature:fortranappend"))
+    {
+        Printv(appendstr, "\n", update_flag, NULL);
+    }
+    else
+    {
+        Setattr(n, "feature:fortranappend", update_flag);
+    }
+
     // NOTE: return type has not yet been assigned at this point
     Language::constructorHandler(n);
 

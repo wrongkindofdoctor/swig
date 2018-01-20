@@ -26,20 +26,23 @@
 %fragment("SwigfMemState_wrap", "header") %{
 
 enum SwigfMemState {
-    SWIGF_NULL = -1,
-    SWIGF_OWN = 0,
+    SWIGF_NULL = 0,
+    SWIGF_OWN,
     SWIGF_MOVE,
     SWIGF_REF,
     SWIGF_CREF
 };
+
+const char* const swigf_mem_state_strings[]
+  = {"NULL", "OWN", "MOVE", "REF", "CREF"};
 
 %}
 
 %fragment("SwigfMemState", "fpublic") %{
  enum, bind(c)
   enumerator :: SwigfMemState = -1
-  enumerator :: SWIGF_NULL = -1
-  enumerator :: SWIGF_OWN = 0
+  enumerator :: SWIGF_NULL = 0
+  enumerator :: SWIGF_OWN
   enumerator :: SWIGF_MOVE
   enumerator :: SWIGF_REF
   enumerator :: SWIGF_CREF
@@ -131,10 +134,17 @@ end type
 
 %fragment("SwigfClassAssign_wrap", "header",
           fragment="SwigfClassWrapper_wrap", fragment="SwigfStdMove") %{
+#include <iostream>
+  using std::cout; using std::endl;
+
 template<class T1, class T2>
 void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
   T1* pself  = static_cast<T1*>(self->ptr);
   T2* pother = static_cast<T2*>(other->ptr);
+
+  cout << "Assign {" << pself << "," << swigf_mem_state_strings[self->mem]
+    << "} <= {" << pother << "," << swigf_mem_state_strings[other->mem]
+    << "}" << endl;
 
   switch (self->mem) {
     case SWIGF_NULL:
@@ -222,6 +232,9 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
           break;
       }
   }
+  cout << "Result: {" << self->ptr << "," << swigf_mem_state_strings[self->mem]
+    << "}" << endl;
+
 }
 %}
 
