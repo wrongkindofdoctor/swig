@@ -105,6 +105,14 @@ end type
     }
 %}
 
+%fragment("SwigfCheckMutableNonnull", "runtime",
+          fragment="SwigfCheckMutable", fragment="SwigfCheckNonnull")
+%{
+#define SWIGF_check_mutable_nonnull(SWIGF_CLASS_WRAPPER, TYPENAME, FNAME, FUNCNAME, RETURNNULL) \
+    SWIGF_check_nonnull(SWIGF_CLASS_WRAPPER, TYPENAME, FNAME, FUNCNAME, RETURNNULL); \
+    SWIGF_check_mutable(SWIGF_CLASS_WRAPPER, TYPENAME, FNAME, FUNCNAME, RETURNNULL);
+%}
+
 //---------------------------------------------------------------------------//
 // Assignment: C++ implementation
 //---------------------------------------------------------------------------//

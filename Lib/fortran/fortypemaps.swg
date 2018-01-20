@@ -308,7 +308,7 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
   "type(SwigfClassWrapper), public :: swigdata"
 // Whether the data on class $input is valid
 %typemap(fassociated) SWIGTYPE
-  "$input%swigdata%mem == SWIGF_NULL"
+  "$input%swigdata%mem /= SWIGF_NULL"
 // Reset the pointer
 %typemap(fdisassociate, noblock=1) SWIGTYPE
  %{$input%swigdata%ptr = C_NULL_PTR
@@ -396,15 +396,25 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
 
 // Check for non-null reference inputs
 %typemap(in, noblock=1,
-         fragment="SwigfCheckMutable",
-         fragment="SwigfCheckNonnull") SWIGTYPE&
-  {SWIGF_check_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
-  SWIGF_check_mutable(*$input, "$1_type", "$fclassname", "$decl", return $null);
+         fragment="SwigfCheckMutableNonnull") SWIGTYPE&
+  {SWIGF_check_mutable_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
   $1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(in, noblock=1,
          fragment="SwigfCheckNonnull") const SWIGTYPE&
   {SWIGF_check_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
   $1 = %static_cast($input->ptr, $1_ltype);}
+
+// Check for non-null, mutable class input "self"
+%typemap(in, noblock=1,
+         fragment="SwigfCheckMutableNonnull") SWIGTYPE* self
+  {SWIGF_check_mutable_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
+  $1 = %static_cast($input->ptr, $1_ltype);}
+// Check for non-null class input "self"
+%typemap(in, noblock=1,
+         fragment="SwigfCheckNonnull") const SWIGTYPE* self
+  {SWIGF_check_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
+  $1 = %static_cast($input->ptr, $1_ltype);}
+
 // Structs will generate free/malloc usage via the %free typemap, but SWIG
 // doesn't include <stdlib.h> by default. Override the swigtype usage so that
 // downstream code doesn't fail.
