@@ -70,6 +70,7 @@ Multiply the value by 2.
 
 //%rename(assign) SimpleClass::operator=;
 
+#if 0
 // Insert assignment implementation
 %fragment("SwigfClassAssign");
 
@@ -99,17 +100,6 @@ subroutine swigc_SimpleClass_assign(farg1, farg2) &
 end subroutine
 %}
 
-/* Self   Other   -> Action
- *
- * UNINIT  MOVING  ->  pself = pother;
- * UNINIT  MOVING  ->  pself = pother;
- * OWNER  OWNER   ->   *pself = *pother;
- * OWNER  MOVING  ->   delete pself; self = pother;
- *               OR??? *pself = move(*pother); delete pother;
- * OWNER  OWNER   ->   *pself = *pother;
- *        /REF/CREF
- *
- */
 %insert("fwrapper") %{
 subroutine swigf_SimpleClass_assign(self, other)
     use, intrinsic :: ISO_C_BINDING
@@ -123,6 +113,7 @@ end subroutine
 %}
 
 };
+#endif
 
 %feature("new") emit_class;
 

@@ -126,45 +126,82 @@ end type
 %fragment("SwigfStdMove", "runtime", fragment="<utility>")
 %{
 #if __cplusplus >= 201103L
-#define SWIGF_STDMOVE(EXPR) std::move(EXPR)
+#include <type_traits>
+#include <utility>
+namespace swigf {
+
+template<class T>
+struct AssignmentTraits
+{
+  using if_cc = std::enable_if<typename std::is_copy_constructible<T>::type>;
+  using if_mc = std::enable_if<typename std::is_move_constructible<T>::type>;
+  using if_ca = std::enable_if<typename std::is_copy_assignable<T>::type>;
+  using if_ma = std::enable_if<typename std::is_move_assignable<T>::type>;
+
+  static T* copy_construct(const void* other)
+  {
+    SWIG_exception_impl(SWIG_TypeError,
+                        "Invalid assignment: class type has no copy constructor",
+                        return nullptr);
+  }
+  template<class U>
+  static T* copy_construct(const U* other, if_cc::type* = 0)
+  {
+    return new T(*other);
+  }
+
+  template<class U>
+  static T* move_construct(U* other)
+  {
+    return new T(std::move(*other));
+  }
+
+  template<class U>
+  static void copy_assign(T* self, const U* other)
+  {
+    *self = *other;
+  }
+
+  template<class U>
+  static void move_assign(T* self, U* other)
+  {
+    *self = std::move(*other);
+  }
+};
+
+} // end namespace swigf    
 #else
-#define SWIGF_STDMOVE(EXPR) (EXPR)
 #endif
 %}
 
 %fragment("SwigfClassAssign_wrap", "header",
           fragment="SwigfClassWrapper_wrap", fragment="SwigfStdMove") %{
-#include <iostream>
-  using std::cout; using std::endl;
 
 template<class T1, class T2>
 void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
+  typedef swigf::AssignmentTraits<T1> Traits_t;
   T1* pself  = static_cast<T1*>(self->ptr);
   T2* pother = static_cast<T2*>(other->ptr);
-
-  cout << "Assign {" << pself << "," << swigf_mem_state_strings[self->mem]
-    << "} <= {" << pother << "," << swigf_mem_state_strings[other->mem]
-    << "}" << endl;
 
   switch (self->mem) {
     case SWIGF_NULL:
       /* LHS is unassigned */
       switch (other->mem) {
         case SWIGF_NULL: /* null op */ break;
-        case SWIGF_MOVE:
+        case SWIGF_MOVE: /* capture pointer from RHS */
           self->ptr = other->ptr;
           other->ptr = NULL;
           self->mem = SWIGF_OWN;
           other->mem = SWIGF_NULL;
           break;
-        case SWIGF_OWN:
-          self->ptr = new T1(*pother);
+        case SWIGF_OWN: /* copy from RHS */
+          self->ptr = Traits_t::copy_construct(pother);
           self->mem = SWIGF_OWN;
           break;
-        case SWIGF_REF:
+        case SWIGF_REF: /* pointer to RHS */
         case SWIGF_CREF:
-          self->ptr = new T1(*pother);
-          self->mem = SWIGF_OWN;
+          self->ptr = other->ptr;
+          self->mem = other->mem;
           break;
       }
       break;
@@ -179,7 +216,7 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
           break;
         case SWIGF_MOVE:
           /* Move RHS into LHS; delete RHS */
-          *pself = SWIGF_STDMOVE(*pother);
+          Traits_t::move_assign(pself, pother);
           delete pother;
           other->ptr = NULL;
           other->mem = SWIGF_NULL;
@@ -188,7 +225,7 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
         case SWIGF_REF:
         case SWIGF_CREF:
           /* Copy RHS to LHS */
-          *pself = *pother;
+          Traits_t::copy_assign(pself, pother);
           break;
       }
       break;
@@ -208,7 +245,7 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
         case SWIGF_MOVE:
           /* Move RHS into LHS; delete RHS. The original ownership stays the
            * same. */
-          *pself = SWIGF_STDMOVE(*pother);
+          *pself = swigf::move_assign(pother);
           delete pother;
           other->ptr = NULL;
           other->mem = SWIGF_NULL;
@@ -217,7 +254,7 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
         case SWIGF_REF:
         case SWIGF_CREF:
           /* Copy RHS to LHS */
-          *pself = *pother;
+          *pself = swigf::copy_assign(pother);
           break;
       }
     case SWIGF_CREF:
@@ -232,9 +269,6 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
           break;
       }
   }
-  cout << "Result: {" << self->ptr << "," << swigf_mem_state_strings[self->mem]
-    << "}" << endl;
-
 }
 %}
 

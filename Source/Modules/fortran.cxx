@@ -422,7 +422,6 @@ class FORTRAN : public Language
     void cfuncWrapper(Node* n);
     void imfuncWrapper(Node* n);
     void proxyfuncWrapper(Node* n);
-    void smartptrWrapper(Node* n);
     void write_docstring(Node* n, String* dest);
 
     void write_wrapper(String* filename);
@@ -914,6 +913,7 @@ int FORTRAN::functionWrapper(Node *n)
                    NULL);
         }
     }
+    Setattr(n, "fortran:alias", alias);
 
     Delete(alias);
     Delete(fname);
@@ -1590,77 +1590,6 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Write extra methods needed for smart pointers.
- */
-void FORTRAN::smartptrWrapper(Node* n)
-{
-    String* symname = Getattr(n, "sym:name");
-    String* spclass = Getattr(n, "feature:smartptr");
-
-    // TODO: use function_wrapper for this instead
-#if 0
-
-    // Create overloaded aliased name
-    String* alias = NewString("assignment(=)");
-    String* fname = NewStringf("swigf_assign_%s",
-                                    Getattr(n, "sym:name"));
-    String* wrapname = NewStringf("swigc_spcopy_%s",
-                                  Getattr(n, "sym:name"));
-
-    // Add self-assignment to method overload list
-    assert(!is_basic_struct());
-    assert(!Getattr(d_method_overloads, alias));
-    List* overloads = NewList();
-    Setattr(d_method_overloads, alias, overloads);
-    Append(overloads, fname);
-
-    // Define the method
-    Printv(f_ftypes,
-           "  procedure, private :: ", fname, "\n",
-           NULL);
-
-    // Add the proxy code implementation of assignment (increments the
-    // reference counter)
-    Printv(f_fwrapper,
-       "  subroutine ", fname, "(self, other)\n"
-       "   use, intrinsic :: ISO_C_BINDING\n"
-       "   class(", symname, "), intent(inout) :: self\n"
-       "   type(", symname, "), intent(in) :: other\n"
-           "if (c_associated(self%swigptr)) call self%release()\n"
-       "   self%swigptr = ", wrapname, "(other%swigptr)\n"
-       "  end subroutine\n",
-       NULL);
-
-    // Add interface code
-    Printv(f_finterfaces,
-           "  function ", wrapname, "(farg1) &\n"
-           "     bind(C, name=\"", wrapname, "\") &\n"
-           "     result(fresult)\n"
-           "   use, intrinsic :: ISO_C_BINDING\n"
-           "   type(C_PTR) :: fresult\n"
-           "   type(C_PTR), value :: farg1\n"
-           "  end function\n",
-           NULL);
-
-    // Add C code
-    Wrapper* cfunc = NewWrapper();
-    Printv(cfunc->def, "SWIGEXPORT void* ", wrapname, "(void* farg1) {\n",
-           NULL);
-    Printv(cfunc->code, spclass, "* arg1 = (", spclass, " *)farg1;\n"
-                   ""
-                   "    return new ", spclass, "(*arg1);\n"
-                   "}\n",
-                   NULL);
-    Wrapper_print(cfunc, f_wrapper);
-
-    Delete(alias);
-    Delete(fname);
-    Delete(wrapname);
-    DelWrapper(cfunc);
-#endif
-}
-//---------------------------------------------------------------------------//
-/*!
  * \brief Write documentation for the given node to the passed string.
  */
 void FORTRAN::write_docstring(Node* n, String* dest)
@@ -1838,12 +1767,6 @@ int FORTRAN::classHandler(Node *n)
 
     if (!basic_struct)
     {
-        // Add assignment operator for smart pointers
-        if (Getattr(n, "feature:smartptr"))
-        {
-            this->smartptrWrapper(n);
-        }
-
         // Write overloads
         for (Iterator kv = First(d_method_overloads); kv.key; kv = Next(kv))
         {
@@ -1884,8 +1807,6 @@ int FORTRAN::constructorHandler(Node* n)
     if (Cmp(symname, classname))
     {
         // User provided a custom name (it differs from the class name)
-        // Printf(stderr, "User aliased constructor name %s => %s\n",
-        //        Getattr(classn, "sym:name"), symname);
         alias = symname;
 
         // To avoid conflicts with templated functions, modify the
@@ -2023,12 +1944,56 @@ int FORTRAN::memberfunctionHandler(Node *n)
         return SWIG_NOWRAP;
     }
 
-    // Preserve original member name
-    String* alias = Copy(Getattr(n, "sym:name"));
+    // If the function name starts with two underscores, modify it
+    String* symname = Getattr(n, "sym:name");
+    String* alias = NULL;
+    List* overloads = NULL;
+    if (Strstr(symname, "__assign__"))
+    {
+        // This is the assignment operator
+        assert(d_method_overloads);
+
+        // Special assignment operator
+        alias = NewString("assignment(=)");
+        // Add assignment to generics, even if only one instance is created
+        overloads = Getattr(d_method_overloads, alias);
+        if (!overloads)
+        {
+            overloads = NewList();
+            Setattr(d_method_overloads, alias, overloads);
+        }
+
+        // Set return type to void: fortran requires a subroutine but C++
+        // usually returns *this;
+        Setattr(n, "type", "void");
+        Swig_print_node(n);
+    }
+
+    if (strncmp(Char(symname), "__", 2) == 0)
+    {
+        // For now, just delete the leading underscores
+        alias = NewString(Char(symname) + 2);
+    }
+    else
+    {
+        // Preserve original member name
+        alias = Copy(symname);
+    }
     Setattr(n, "fortran:alias", alias);
-    Delete(alias);
 
     Language::memberfunctionHandler(n);
+
+    if (overloads)
+    {
+        // We need to add the newly constructed function name to the list of
+        // overloads, *after* the member function handler has passed the node
+        // through functionWrapper etc.
+        String* fname = Getattr(n, "fortran:alias");
+        assert(fname);
+        Append(overloads, fname);
+    }
+
+    Delete(alias);
     return SWIG_OK;
 }
 

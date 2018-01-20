@@ -370,7 +370,7 @@ SWIGTYPE
    $result.mem = ($owner ? SWIGF_MOVE : SWIGF_REF);}
 %typemap(imtype) SWIGTYPE* = SWIGTYPE;
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*
-  "class($fclassname)"
+  "class($fclassname), intent(inout)"
 %typemap(fin)    SWIGTYPE* = SWIGTYPE;
 %typemap(fout)   SWIGTYPE* = SWIGTYPE;
   
@@ -383,7 +383,7 @@ SWIGTYPE
    $result.mem = SWIGF_CREF;}
 %typemap(imtype) const SWIGTYPE* = SWIGTYPE*;
 %typemap(ftype, out="type($fclassname)") const SWIGTYPE*
-  "class($fclassname)"
+  "class($fclassname), intent(in)"
 %typemap(fin)    const SWIGTYPE* = SWIGTYPE*;
 %typemap(fout)   const SWIGTYPE* = SWIGTYPE*;
 
