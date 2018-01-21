@@ -1924,23 +1924,44 @@ int FORTRAN::memberfunctionHandler(Node *n)
     List* overloads = NULL;
     if (Strstr(symname, "__assign__"))
     {
-        // This is the assignment operator
-        assert(d_method_overloads);
+        // This is the assignment operator. Currently we don't account for
+        // duplicate copy/move assignment...
 
-        // Special assignment operator
-        alias = NewString("assignment(=)");
         // Add assignment to generics, even if only one instance is created
-        overloads = Getattr(d_method_overloads, alias);
+        String* generic_name = NewString("assignment(=)");
+        assert(d_method_overloads);
+        overloads = Getattr(d_method_overloads, generic_name);
         if (!overloads)
         {
             overloads = NewList();
-            Setattr(d_method_overloads, alias, overloads);
+            Setattr(d_method_overloads, generic_name, overloads);
         }
 
         // Set return type to void: fortran requires a subroutine but C++
         // usually returns *this;
         Setattr(n, "type", "void");
-        Swig_print_node(n);
+
+        // To determine whether this is the copy assignment operator, see if
+        // there's only a single parameter whose base type is this class name.
+        // ParmList is a linked list.
+        Parm* p = Getattr(n, "parms");
+        if (p && !nextSibling(p))
+        {
+            // Single argument. Use the typedef system to evaluate the
+            // argument. If it's a const-reference-to-this-class, it's the copy
+            // assignment operator.
+            SwigType* type = SwigType_typedef_resolve_all(Getattr(p, "type"));
+            SwigType* classtype = Getattr(getCurrentClass(), "classtype");
+            SwigType* copy_assign_type = NewStringf("r.q(const).%s", classtype);
+            
+            if (Strcmp(type, copy_assign_type) == 0)
+            {
+                // We are indeed copy assignment!
+                Swig_print_node(n);
+            }
+            Delete(type);
+            Delete(copy_assign_type);
+        }
     }
 
     if (strncmp(Char(symname), "__", 2) == 0)
