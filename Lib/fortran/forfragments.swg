@@ -117,7 +117,7 @@ end type
 %}
 
 //---------------------------------------------------------------------------//
-// Assignment: C++ implementation
+// Assignment: C++ and C++11 implementation
 //---------------------------------------------------------------------------//
 
 #ifdef __cplusplus
@@ -125,59 +125,140 @@ end type
 // Optional "std::move" support if using C++11
 %fragment("SwigfStdMove", "runtime", fragment="<utility>")
 %{
-#if __cplusplus >= 201103L
-#include <type_traits>
-#include <utility>
 namespace swigf {
 
+enum AssignmentFlags {
+  IS_COPY_CONSTR = 0x1,
+  IS_COPY_ASSIGN = 0x2,
+  IS_MOVE_CONSTR = 0x4,
+  IS_MOVE_ASSIGN = 0x8
+};
+
+// Define our own switching struct to support pre-c++11 builds
+template<bool Val>
+struct bool_constant {};
+typedef bool_constant<true>  true_type;
+typedef bool_constant<false> false_type;
+
+// Copy construction and assignment
+template<class T, class U>
+T* copy_construct_impl(const U* other, true_type) {
+  return new T(*other);
+}
+template<class T, class U>
+void copy_assign_impl(T* self, const U* other, true_type) {
+  *self = *other;
+}
+
+// Disabled construction and assignment
+template<class T, class U>
+T* copy_construct_impl(const U* other, false_type)
+{
+  SWIG_exception_impl(SWIG_TypeError,
+                      "Invalid assignment: class type has no copy constructor",
+                      return NULL);
+}
+template<class T, class U>
+void copy_assign_impl(T* self, const U* other, false_type) {
+{
+  SWIG_exception_impl(SWIG_TypeError,
+                      "Invalid assignment: class type has no copy assignment",
+                      return NULL);
+}
+
+#if __cplusplus >= 201103L
+#include <utility>
+#include <type_traits>
+
+// Move construction and assignment
+template<class T, class U>
+T* move_construct_impl(U* other, true_type) {
+  return new T(std::move(*other));
+}
+template<class T, class U>
+void move_assign_impl(T* self, U* other, true_type) {
+  *self = std::move(*other);
+}
+
+// Disabled move construction and assignment
+template<class T, class U>
+T* move_construct_impl(U* other, false_type)
+{
+  SWIG_exception_impl(SWIG_TypeError,
+                      "Invalid assignment: class type has no move constructor",
+                      return NULL);
+}
+template<class T, class U>
+void move_assign_impl(T* self, U* other, false_type) {
+{
+  SWIG_exception_impl(SWIG_TypeError,
+                      "Invalid assignment: class type has no move assignment",
+                      return NULL);
+}
+
 template<class T>
+constexpr int assignment_flags()
+{
+  return   (std::is_copy_constructible<T>::value ? IS_COPY_CONSTR : 0)
+         | (std::is_copy_assignable<T>::value    ? IS_COPY_ASSIGN : 0)
+         | (std::is_move_constructible<T>::value ? IS_MOVE_CONSTR : 0)
+         | (std::is_move_assignable<T>::value    ? IS_MOVE_ASSIGN : 0);
+}
+#endif
+
+template<class T, int Flags>
 struct AssignmentTraits
 {
-  using if_cc = std::enable_if<typename std::is_copy_constructible<T>::type>;
-  using if_mc = std::enable_if<typename std::is_move_constructible<T>::type>;
-  using if_ca = std::enable_if<typename std::is_copy_assignable<T>::type>;
-  using if_ma = std::enable_if<typename std::is_move_assignable<T>::type>;
-
-  static T* copy_construct(const void* other)
-  {
-    SWIG_exception_impl(SWIG_TypeError,
-                        "Invalid assignment: class type has no copy constructor",
-                        return nullptr);
-  }
   template<class U>
-  static T* copy_construct(const U* other, if_cc::type* = 0)
+  static T* copy_construct(const U* other)
   {
-    return new T(*other);
-  }
-
-  template<class U>
-  static T* move_construct(U* other)
-  {
-    return new T(std::move(*other));
+    return copy_construct_impl<T,U>(other,
+                                    bool_constant<Flags & IS_COPY_CONSTR>());
   }
 
   template<class U>
   static void copy_assign(T* self, const U* other)
   {
-    *self = *other;
+    return copy_assign_impl<T,U>(other,
+                                 bool_constant<Flags & IS_COPY_ASSIGN>());
   }
 
+#if __cplusplus >= 201103L
+  template<class U>
+  static T* move_construct(U* other)
+  {
+    return move_construct_impl<T,U>(other,
+                                    bool_constant<Flags & IS_MOVE_CONSTR>());
+  }
   template<class U>
   static void move_assign(T* self, U* other)
   {
-    *self = std::move(*other);
+    return move_assign_impl<T,U>(other,
+                                 bool_constant<Flags & IS_MOVE_ASSIGN>());
   }
 };
+#else
+  template<class U>
+  static T* move_construct(U* other)
+  {
+    return copy_construct_impl<T,U>(other,
+                                    bool_constant<Flags & IS_COPY_CONSTR>());
+  }
+  template<class U>
+  static void move_assign(T* self, U* other)
+  {
+    return copy_assign_impl<T,U>(other,
+                                 bool_constant<Flags & IS_COPY_ASSIGN>());
+  }
+#endif
 
 } // end namespace swigf    
-#else
-#endif
 %}
 
 %fragment("SwigfClassAssign_wrap", "header",
           fragment="SwigfClassWrapper_wrap", fragment="SwigfStdMove") %{
 
-template<class T1, class T2>
+template<class T1, class T2, int AFlags>
 void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
   typedef swigf::AssignmentTraits<T1> Traits_t;
   T1* pself  = static_cast<T1*>(self->ptr);
