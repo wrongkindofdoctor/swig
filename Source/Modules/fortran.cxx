@@ -173,7 +173,7 @@ bool is_bindc(Node *n)
         // No user override given: if it's extern(C) storage function, default
         // to binding it.
         String* kind = Getattr(n, "kind");
-        if (Strcmp(kind, "function") != 0)
+        if (!kind || Strcmp(kind, "function") != 0)
         {
             // Not a function
             return false;
@@ -427,6 +427,7 @@ class FORTRAN : public Language
     virtual int functionWrapper(Node *n);
     virtual int destructorHandler(Node *n);
     virtual int constructorHandler(Node *n);
+    virtual int classDeclaration(Node *n);
     virtual int classHandler(Node *n);
     virtual int memberfunctionHandler(Node *n);
     virtual int membervariableHandler(Node *n);
@@ -1265,7 +1266,7 @@ void FORTRAN::imfuncWrapper(Node *n)
     // >>> RETURN VALUES
 
     // Attach typemap for return value
-    String* im_return_str = attach_typemap(tmtype, "out", n, warning_flag);
+    String* im_return_str = attach_typemap(tmtype, n, warning_flag);
 
     // Check whether the C routine returns a variable
     const bool is_imsubroutine = (Len(im_return_str) == 0);
@@ -1722,6 +1723,23 @@ String* FORTRAN::makeParameterName(Node *n, Parm *p,
 
 //---------------------------------------------------------------------------//
 /*!
+ * \brief Process a class declaration.
+ *
+ * The superclass calls classHandler.
+ */
+int FORTRAN::classDeclaration(Node *n)
+{
+    if (is_bindc(n))
+    {
+        // Prevent default constructors, destructors, etc.
+        SetFlag(n, "feature:nodefault");
+    }
+    
+    return Language::classDeclaration(n);
+}
+
+//---------------------------------------------------------------------------//
+/*!
  * \brief Process classes.
  */
 int FORTRAN::classHandler(Node *n)
@@ -1734,7 +1752,7 @@ int FORTRAN::classHandler(Node *n)
     if (add_fsymbol(symname, n) == SWIG_NOWRAP)
         return SWIG_NOWRAP;
 
-    if (GetFlag(n, "feature:fortran:bindc"))
+    if (is_bindc(n))
     {
         // Instead of adding setters/getters and methods,
         basic_struct = true;
@@ -1855,12 +1873,6 @@ int FORTRAN::classHandler(Node *n)
  */
 int FORTRAN::constructorHandler(Node* n)
 {
-    if (is_basic_struct() && GetFlag(n, "default_constructor"))
-    {
-        // Don't create constructors for C-bound structs
-        return SWIG_NOWRAP;
-    }
-
     Node *classn = getCurrentClass();
     assert(classn);
 
@@ -1928,12 +1940,6 @@ int FORTRAN::constructorHandler(Node* n)
  */
 int FORTRAN::destructorHandler(Node* n)
 {
-    if (is_basic_struct())
-    {
-        // Don't create destructors for C-bound structs
-        return SWIG_NOWRAP;
-    }
-
     Setattr(n, "fortran:alias", "release");
 
     Node* classnode = getCurrentClass();
