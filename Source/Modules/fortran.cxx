@@ -106,7 +106,7 @@ bool is_fortran_integer(String* s)
  */
 bool is_native_enum(Node *n)
 {
-    String* enum_feature = Getattr(n, "feature:enumerator");
+    String* enum_feature = Getattr(n, "feature:fortran:enumerator");
     if (!enum_feature)
     {
         // Determine from enum values
@@ -131,7 +131,7 @@ bool is_native_enum(Node *n)
     }
     else
     {
-        // "feature:enumerator" was set as a flag
+        // "feature:fortran:enumerator" was set as a flag
         return true;
     }
 }
@@ -142,7 +142,7 @@ bool is_native_enum(Node *n)
  */
 bool is_native_parameter(Node *n)
 {
-    String* param_feature = Getattr(n, "feature:parameter");
+    String* param_feature = Getattr(n, "feature:fortran:parameter");
     if (!param_feature)
     {
         // No user override given
@@ -1401,7 +1401,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
     // >>> BUILD WRAPPER FUNCTION AND INTERFACE CODE
 
-    String* prepend = Getattr(n, "feature:fortranprepend");
+    String* prepend = Getattr(n, "feature:fortran:prepend");
     if (prepend)
     {
         Chop(prepend);
@@ -1522,7 +1522,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     }
 
     // Optional "append" proxy code
-    String* append = Getattr(n, "feature:fortranappend");
+    String* append = Getattr(n, "feature:fortran:append");
     if (append)
     {
         Chop(append);
@@ -1798,26 +1798,26 @@ int FORTRAN::constructorHandler(Node* n)
     
     String* releasestr = NewStringf("if (%s) call self%%release()\n", fassoc);
     Replaceall(releasestr, "$input", "self");
-    if (String* prependstr = Getattr(n, "feature:fortranprepend"))
+    if (String* prependstr = Getattr(n, "feature:fortran:prepend"))
     {
         Printv(prependstr, "\n", releasestr, NULL);
     }
     else
     {
-        Setattr(n, "feature:fortranprepend", releasestr);
+        Setattr(n, "feature:fortran:prepend", releasestr);
     }
     Delete(releasestr);
 
     // The 'new' C function returns memory marked as MOVE; the constructor
     // method must capture it.
     const char update_flag[] = "self%swigdata%mem = SWIGF_OWN";
-    if (String* appendstr = Getattr(n, "feature:fortranappend"))
+    if (String* appendstr = Getattr(n, "feature:fortran:append"))
     {
         Printv(appendstr, "\n", update_flag, NULL);
     }
     else
     {
-        Setattr(n, "feature:fortranappend", update_flag);
+        Setattr(n, "feature:fortran:append", update_flag);
     }
 
     // NOTE: return type has not yet been assigned at this point
@@ -1840,13 +1840,13 @@ int FORTRAN::destructorHandler(Node* n)
     String* fassoc = this->attach_class_typemap("fassociated", WARN_NONE);
     String* returnstr = NewStringf("if (.not. (%s)) return\n", fassoc);
     Replaceall(returnstr, "$input", "self");
-    if (String* prependstr = Getattr(n, "feature:fortranprepend"))
+    if (String* prependstr = Getattr(n, "feature:fortran:prepend"))
     {
         Printv(prependstr, "\n", returnstr, NULL);
     }
     else
     {
-        Setattr(n, "feature:fortranprepend", returnstr);
+        Setattr(n, "feature:fortran:prepend", returnstr);
     }
 
     // Add statement to clear pointer after releasing
@@ -1861,13 +1861,13 @@ int FORTRAN::destructorHandler(Node* n)
     }
     Replaceall(fdis, "$input", "self");
     
-    if (String* appendstr = Getattr(n, "feature:fortranappend"))
+    if (String* appendstr = Getattr(n, "feature:fortran:append"))
     {
         Printv(appendstr, "\n", fdis, NULL);
     }
     else
     {
-        Setattr(n, "feature:fortranappend", fdis);
+        Setattr(n, "feature:fortran:append", fdis);
     }
 
     Language::destructorHandler(n);
@@ -2037,7 +2037,7 @@ int FORTRAN::membervariableHandler(Node *n)
  */
 int FORTRAN::globalvariableHandler(Node *n)
 {
-    if (GetFlag(n, "feature:parameter"))
+    if (GetFlag(n, "feature:fortran:parameter"))
     {
         this->constantWrapper(n);
     }
