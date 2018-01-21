@@ -338,6 +338,9 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
     {$result = %static_cast(*$1, int);}
 %typemap(ftype) const enum SWIGTYPE& = enum SWIGTYPE;
    
+#if 0
+// NOTE: GCC generates lots of warnings when you try to bind to an enum type,
+// even if that enum is C-bound. Instead, just use integer bindings.
 %typemap(bindc) enum SWIGTYPE
   "integer(kind($fenumname))"
 %typemap(bindc) enum SWIGTYPE*
@@ -347,6 +350,17 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
   "integer(kind($fenumname))"
 %typemap(imbindc, in="integer(kind($fenumname))") enum SWIGTYPE*
   "type(C_PTR)"
+#else
+%typemap(bindc) enum SWIGTYPE
+  "integer(C_INT)"
+%typemap(bindc) enum SWIGTYPE*
+  "type(C_PTR)"
+
+%typemap(imbindc, in="integer(C_INT), value") enum SWIGTYPE
+  "integer(kind($fenumname))"
+%typemap(imbindc, in="integer(C_INT)") enum SWIGTYPE*
+  "type(C_PTR)"
+#endif
 
 //---------------------------------------------------------------------------//
 // CLASS DEFINITION

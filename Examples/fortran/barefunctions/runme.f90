@@ -9,6 +9,7 @@
 program main
     implicit none
     call test_consts()
+    call test_bindc()
     call test_funcs()
     call test_enum()
 
@@ -28,6 +29,13 @@ subroutine test_consts()
 !     wrapped_const = 2
 !     MY_SPECIAL_NUMBERS = 4
 end subroutine test_consts
+
+subroutine test_bindc()
+    use bare
+    use ISO_C_BINDING
+    real(kind=C_DOUBLE), dimension(3) :: point = (/1.0d0, 2.0d0, 3.0d0/)
+    call print_sphere(point, 1.23d0)
+end subroutine
 
 subroutine test_enum()
     use bare

@@ -28,6 +28,11 @@ const double& get_something_rcref(int x);
 
 void print_array(std::pair<const double*, size_t> arr);
 
+extern "C" {
+// This function is simply bound, not wrapped.
+void print_sphere(const double origin[3], const double* radius);
+}
+
 //---------------------------------------------------------------------------//
 
 //! An enumeration declared using external C variables
