@@ -1825,6 +1825,12 @@ int FORTRAN::classHandler(Node *n)
  */
 int FORTRAN::constructorHandler(Node* n)
 {
+    if (is_basic_struct() && GetFlag(n, "default_constructor"))
+    {
+        // Don't create constructors for C-bound structs
+        return SWIG_NOWRAP;
+    }
+
     Node *classn = getCurrentClass();
     assert(classn);
 
@@ -1892,6 +1898,12 @@ int FORTRAN::constructorHandler(Node* n)
  */
 int FORTRAN::destructorHandler(Node* n)
 {
+    if (is_basic_struct())
+    {
+        // Don't create destructors for C-bound structs
+        return SWIG_NOWRAP;
+    }
+
     Setattr(n, "fortran:alias", "release");
 
     Node* classnode = getCurrentClass();

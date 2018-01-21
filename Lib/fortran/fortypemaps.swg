@@ -519,10 +519,6 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
 %define %fortran_bindc_typedef_struct(CTYPE, TD_CTYPE)
   // Mark the class as being C-bound
   %bindc TD_CTYPE;
-  // Remove constructors and destructors
-  %nodefaultctor TD_CTYPE;
-  %nodefaultdtor TD_CTYPE;
-
   // Bound structs act just like simple types
   FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, "type($fclassname)")
 
