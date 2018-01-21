@@ -972,20 +972,17 @@ void FORTRAN::cfuncWrapper(Node *n)
 
     // >>> FUNCTION PARAMETERS/ARGUMENTS
 
-    ParmList* parmlist = Getattr(n, "parms");
-
     // Emit all of the local variables for holding arguments.
+    ParmList* parmlist = Getattr(n, "parms");
     emit_parameter_variables(parmlist, cfunc);
     Swig_typemap_attach_parms("ctype",  parmlist, cfunc);
     emit_attach_parmmaps(parmlist, cfunc);
     Setattr(n, "wrap:parms", parmlist);
 
     // Create a list of parameters wrapped by the intermediate function
-    List* imparmlist = NewList();
+    List* cparmlist = NewList();
 
-    // >>> BUILD WRAPPER FUNCTION AND INTERFACE CODE
     const char* prepend_comma = "";
-    int i = 0;
     Parm* p = parmlist;
     while (p)
     {
@@ -993,12 +990,7 @@ void FORTRAN::cfuncWrapper(Node *n)
         {
             // Skip this typemap
             p = Getattr(p, "tmap:in:next");
-            ++i;
             continue;
-        }
-        else if (!Getattr(p, "tmap:in"))
-        {
-            // No attached typemap
         }
         else if (SwigType_isvarargs(Getattr(p, "type")))
         {
@@ -1012,33 +1004,24 @@ void FORTRAN::cfuncWrapper(Node *n)
             // Name of the argument in the function call (e.g. farg1)
             String* imname = NewStringf("f%s", Getattr(p, "lname"));
             Setattr(p, "imname", imname);
-            Append(imparmlist, p);
+            Append(cparmlist, p);
 
             // Get the user-provided C type string, and convert it to a SWIG
             // internal representation using Swig_cparse_type . Then convert the
             // type and argument name to a valid C expression using SwigType_str.
-            SwigType* parsed_tm = parse_typemap("ctype", NULL, p,
-                                                WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
+            SwigType* parsed_tm = parse_typemap(
+                    "ctype", NULL, p, WARN_FORTRAN_TYPEMAP_CTYPE_UNDEF);
             if (!parsed_tm)
             {
-                Swig_print_node(p);
-                // Swig error
-                assert(0);
+                Swig_error(input_file, line_number, "Failed to parse 'ctype' "
+                           "typemap for argument %s of %s", 
+                           SwigType_str(Getattr(p, "type"), Getattr(p, "name")),
+                           SwigType_namestr(symname));
+                return;
             }
             String* carg = SwigType_str(parsed_tm, imname);
             Printv(cfunc->def, prepend_comma, carg, NULL);
             Delete(carg);
-
-            // >>> C ARGUMENT CONVERSION
-
-            String* tm_in = get_typemap("in", p, WARN_TYPEMAP_IN_UNDEF);
-            if (tm_in)
-            {
-                this->replace_fclassname(Getattr(p, "type"), tm_in);
-                Replaceall(tm_in, "$input", imname);
-                Setattr(p, "emit:input", imname);
-                Printv(cfunc->code, tm_in, "\n", NULL);
-            }
 
             // Next iteration
             prepend_comma = ", ";
@@ -1046,69 +1029,55 @@ void FORTRAN::cfuncWrapper(Node *n)
 
         // Next iteration
         p = nextSibling(p);
-        ++i;
     }
+
     // Save list of wrapped parms for im declaration and proxy
-    Setattr(n, "wrap:imparms", imparmlist);
+    Setattr(n, "wrap:cparms", cparmlist);
 
     // END FUNCTION DEFINITION
     Printv(cfunc->def,  ") {", NULL);
 
     // >>> ADDITIONAL WRAPPER CODE
 
-    // Insert constraint checking code on C++ code
-    p = parmlist;
-    while (p)
+    String* cleanup = NewStringEmpty();
+    String* outarg = NewStringEmpty();
+    
+    // Insert input conversion, constraint checking, and cleanup code
+    for (Iterator it = First(cparmlist); it.item; it = Next(it))
     {
+        Parm* p = it.item;
+        if (String* tm = Getattr(p, "tmap:in"))
+        {
+            this->replace_fclassname(Getattr(p, "type"), tm);
+            String* imname = Getattr(p, "imname");
+            Replaceall(tm, "$input", imname);
+            Setattr(p, "emit:input", imname);
+            Printv(cfunc->code, tm, "\n", NULL);
+        }
         if (String* tm = Getattr(p, "tmap:check"))
         {
             Replaceall(tm, "$input", Getattr(p, "emit:input"));
             Printv(cfunc->code, tm, "\n", NULL);
-            p = Getattr(p, "tmap:check:next");
         }
-        else
-        {
-            p = nextSibling(p);
-        }
-    }
-
-    // Insert cleanup code
-    String* cleanup = NewStringEmpty();
-    p = parmlist;
-    while (p)
-    {
         if (String* tm = Getattr(p, "tmap:freearg"))
         {
             Replaceall(tm, "$input", Getattr(p, "emit:input"));
             Printv(cleanup, tm, "\n", NULL);
-            p = Getattr(p, "tmap:freearg:next");
         }
-        else
-        {
-            p = nextSibling(p);
-        }
-    }
-
-    // Insert argument output code
-    String* outarg = NewStringEmpty();
-    p = parmlist;
-    while (p)
-    {
         if (String* tm = Getattr(p, "tmap:argout"))
         {
             Replaceall(tm, "$result", "fresult");
             Replaceall(tm, "$input", Getattr(p, "emit:input"));
             Printv(outarg, tm, "\n", NULL);
-            p = Getattr(p, "tmap:argout:next");
-        }
-        else
-        {
-            p = nextSibling(p);
         }
     }
 
     // Generate code to make the C++ function call
     Swig_director_emit_dynamic_cast(n, cfunc);
+    if (Strstr(symname, "assign")) // XXX debug code
+    {
+        Swig_print_node(n);
+    }
     String* actioncode = emit_action(n);
 
     // Generate code to return the value
@@ -1134,6 +1103,9 @@ void FORTRAN::cfuncWrapper(Node *n)
     Printv(cfunc->code, outarg, NULL);
     Printv(cfunc->code, cleanup, NULL);
 
+    // Return value "resource management", as opposed to the "out" typemap's
+    // "value conversion" (not used in any of SWIG codebase as far as I can
+    // tell; only mentioned once in manual)
     if (String* ret_code
         = Swig_typemap_lookup("ret", n, Swig_cresult_name(), NULL))
     {
@@ -1150,7 +1122,9 @@ void FORTRAN::cfuncWrapper(Node *n)
 
     Printf(cfunc->code, "}\n");
 
-    Replaceall(cfunc->code, "SWIG_contract_assert(",
+    // Update contract assertion macro to include 'return' function
+    Replaceall(cfunc->code,
+               "SWIG_contract_assert(",
                "SWIG_contract_assert(return $null, ");
 
     // Apply standard SWIG substitutions
@@ -1176,7 +1150,7 @@ void FORTRAN::cfuncWrapper(Node *n)
     // Write the C++ function into the wrapper code file
     Wrapper_print(cfunc, f_wrapper);
 
-    Delete(imparmlist);
+    Delete(cparmlist);
     Delete(outarg);
     Delete(cleanup);
     Delete(c_return_str);
@@ -1223,13 +1197,13 @@ void FORTRAN::imfuncWrapper(Node *n)
     // >>> FUNCTION PARAMETERS/ARGUMENTS
 
     ParmList* parmlist = Getattr(n, "parms");
-    Swig_typemap_attach_parms("imtype",   parmlist, NULL);
+    Swig_typemap_attach_parms("imtype", parmlist, NULL);
 
     // Get the list of actual parameters used by the C function
     // (these are pointers to values in parmlist, with some elements possibly
     // removed)
-    List* proxparmlist = Getattr(n, "wrap:imparms");
-    assert(proxparmlist);
+    List* cparmlist = Getattr(n, "wrap:cparms");
+    assert(cparmlist);
 
     // Append "using" statements and dummy variables to the interface
     // "definition" (before the code and local variable declarations)
@@ -1237,7 +1211,7 @@ void FORTRAN::imfuncWrapper(Node *n)
 
     // >>> BUILD WRAPPER FUNCTION AND INTERFACE CODE
     const char* prepend_comma = "";
-    for (Iterator it = First(proxparmlist); it.item; it = Next(it))
+    for (Iterator it = First(cparmlist); it.item; it = Next(it))
     {
         Parm* p = it.item;
 
@@ -1377,14 +1351,14 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     // Get the list of actual parameters used by the C function
     // (these are pointers to values in parmlist, with some elements possibly
     // removed)
-    List* proxparmlist = Getattr(n, "wrap:imparms");
-    assert(proxparmlist);
+    List* cparmlist = Getattr(n, "wrap:cparms");
+    assert(cparmlist);
 
     if (node_is_constructor(n))
     {
         // Prepend "self" to the parameter list (with trailing comma if
         // necessary)
-        Printv(ffunc->def, "self", (Len(proxparmlist) > 0 ? ", " : ""), NULL);
+        Printv(ffunc->def, "self", (Len(cparmlist) > 0 ? ", " : ""), NULL);
 
         // Add dummy argument to wrapper body
         String* ftype = attach_typemap("ftype", n,
@@ -1393,7 +1367,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
         Printv(fargs, "   ", ftype, " :: self\n", NULL);
     }
 
-    for (Iterator it = First(proxparmlist); it.item; it = Next(it))
+    for (Iterator it = First(cparmlist); it.item; it = Next(it))
     {
         Parm* p = it.item;
         // Temporarily set lname to imname so that "fin" typemap will
@@ -1410,7 +1384,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     Swig_typemap_attach_parms("ffreearg", parmlist, ffunc);
 
     // Restore parameter names
-    for (Iterator it = First(proxparmlist); it.item; it = Next(it))
+    for (Iterator it = First(cparmlist); it.item; it = Next(it))
     {
         Parm* p = it.item;
         String* imname = Getattr(p, "imname");
@@ -1437,7 +1411,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
     int i = 0;
     const char* prepend_comma = "";
-    for (Iterator it = First(proxparmlist); it.item; it = Next(it), ++i)
+    for (Iterator it = First(cparmlist); it.item; it = Next(it), ++i)
     {
         Parm* p = it.item;
         String* cpptype = Getattr(p, "type");
@@ -1558,7 +1532,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
     // Insert Fortran cleanup code
     String* fcleanup = NewStringEmpty();
-    for (Iterator it = First(proxparmlist); it.item; it = Next(it), ++i)
+    for (Iterator it = First(cparmlist); it.item; it = Next(it), ++i)
     {
         Parm* p = it.item;
         if (String* tm = Getattr(p, "tmap:ffreearg"))
