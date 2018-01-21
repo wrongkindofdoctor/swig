@@ -492,17 +492,22 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
 // BIND(C) STRUCT TYPES
 //---------------------------------------------------------------------------//
 /*!
- * \def FORT_BINDC_STRUCT
- * \brief Add a typemap for a fundamental built-in type.
+ * \def %fortran_bindc_typedef_struct
+ * \brief Wrap a struct as BIND(C).
  *
- * The C++ and C types are the same in this case.
+ * Because SWIG's processing of the feature directive doesn't quite work, if
+ * you define a struct as 'typedef struct A {} B;' the features have to apply
+ * to A but the typedefs to B.
+ *
+ * In the typical case that you're wrapping 'struct A {};', then use
+ * %fortran_bindc_struct .
  */
-%define %fortran_bindc_struct(CTYPE)
+%define %fortran_bindc_typedef_struct(CTYPE, TD_CTYPE)
   // Mark the class as being C-bound
-  %feature("fortran:bindc") CTYPE;
+  %feature("fortran:bindc") TD_CTYPE;
   // Remove constructors and destructors
-  %nodefaultctor CTYPE;
-  %nodefaultdtor CTYPE;
+  %nodefaultctor TD_CTYPE;
+  %nodefaultdtor TD_CTYPE;
 
   // Bound structs act just like simple types
   FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, "type($fclassname)")
@@ -516,6 +521,11 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
   %typemap(bindc, import="$fclassname") CTYPE
     "type($fclassname)"
 %enddef
+
+%define %fortran_bindc_struct(CTYPE)
+    %fortran_bindc_typedef_struct(CTYPE, CTYPE)
+%enddef
+
 
 //---------------------------------------------------------------------------//
 // OPAQUE POINTERS
