@@ -163,6 +163,37 @@ bool is_native_parameter(Node *n)
 
 //---------------------------------------------------------------------------//
 /*!
+ * \brief Determine whether to wrap a function/class as a c-bound struct.
+ */
+bool is_bindc(Node *n)
+{
+    String* bindc_feature = Getattr(n, "feature:fortran:bindc");
+    if (!bindc_feature)
+    {
+        // No user override given: if it's extern(C) storage function, default
+        // to binding it.
+        String* kind = Getattr(n, "kind");
+        if (Strcmp(kind, "function") != 0)
+        {
+            // Not a function
+            return false;
+        }
+        return !CPlusPlus || Swig_storage_isexternc(n);
+    }
+    else if (Strcmp(bindc_feature, "0") == 0)
+    {
+        // Not a native param
+        return false;
+    }
+    else
+    {
+        // Value specified and isn't "0"
+        return true;
+    }
+}
+
+//---------------------------------------------------------------------------//
+/*!
  * \brief Whether an SWIG type can be rendered as TYPE VAR.
  *
  * Some declarations (arrays, function pointers, member function pointers)
@@ -785,7 +816,7 @@ int FORTRAN::moduleDirective(Node *n)
  */
 int FORTRAN::functionWrapper(Node *n)
 {
-    const bool is_bindc = GetFlag(n, "feature:fortran:bindc");
+    const bool is_cbound = is_bindc(n);
     const bool is_overloaded = Getattr(n, "sym:overloaded");
 
     // >>> SET UP WRAPPER NAME
@@ -795,7 +826,7 @@ int FORTRAN::functionWrapper(Node *n)
     String* fname = NULL; // Fortran proxy function name
     String* wname = NULL; // SWIG wrapper function name
 
-    if (!is_bindc)
+    if (!is_cbound)
     {
         // Create name for C wrapper function
         wname = Swig_name_wrapper(symname);
@@ -857,7 +888,7 @@ int FORTRAN::functionWrapper(Node *n)
         alias = Copy(alias);
     }
 
-    if (!is_bindc)
+    if (!is_cbound)
     {
         // >>> GENERATE WRAPPER CODE
 
@@ -868,8 +899,7 @@ int FORTRAN::functionWrapper(Node *n)
     }
     else
     {
-        String* storage = Getattr(n, "storage");
-        if (CPlusPlus && (!storage || (Strcmp(storage, "externc") != 0)))
+        if (CPlusPlus && !Swig_storage_isexternc(n))
         {
             Swig_warning(WARN_LANG_IDENTIFIER,
                          input_file, line_number,
@@ -1225,7 +1255,7 @@ void FORTRAN::imfuncWrapper(Node *n)
     const char* tmtype = "imtype";
     const char* tmimportkey = "tmap:imtype:import";
     int warning_flag = WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF;
-    if (GetFlag(n, "feature:fortran:bindc"))
+    if (is_bindc(n))
     {
         tmtype = "imbindc";
         tmimportkey = "tmap:imbindc:import";

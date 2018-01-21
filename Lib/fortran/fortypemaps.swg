@@ -527,15 +527,19 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
     "type($fclassname)"
   %typemap(imtype) const CTYPE, const CTYPE& = CTYPE;
 
-  // Interface code has to "import' the class type.
+  // interface code has to "import' the class type.
   %typemap(bindc, import="$fclassname") CTYPE
     "type($fclassname)"
+
+  // Interface code has to "import' the class type.
+  %typemap(imbindc, import="$fclassname") CTYPE
+    "type($fclassname)"
+  %typemap(imbindc) const CTYPE, const CTYPE& = CTYPE;
 %enddef
 
 %define %fortran_bindc_struct(CTYPE)
-    %fortran_bindc_typedef_struct(CTYPE, CTYPE)
+  %fortran_bindc_typedef_struct(CTYPE, CTYPE)
 %enddef
-
 
 //---------------------------------------------------------------------------//
 // OPAQUE POINTERS

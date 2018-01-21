@@ -27,8 +27,6 @@
 #ifdef SWIGFORTRAN
 %include <typemaps.i>
 
-%bindc print_sphere;
-
 // Instantiate array pointer conversion for doubles from pair<double*,size_t>
 %fortran_view(double)
 #endif
