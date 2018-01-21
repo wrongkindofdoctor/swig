@@ -913,7 +913,6 @@ int FORTRAN::functionWrapper(Node *n)
                    NULL);
         }
     }
-    Setattr(n, "fortran:alias", alias);
 
     Delete(alias);
     Delete(fname);
