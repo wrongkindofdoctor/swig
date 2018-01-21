@@ -1648,10 +1648,6 @@ int FORTRAN::classHandler(Node *n)
     {
         // Instead of adding setters/getters and methods,
         basic_struct = true;
-        // Warn because this is still relatively untesteed
-        Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
-             "C struct binding (class '%s') is still under development\n",
-             SwigType_namestr(symname));
     }
 
     // Process base classes
@@ -2000,23 +1996,26 @@ int FORTRAN::membervariableHandler(Node *n)
     if (is_basic_struct())
     {
         // Write the type for the class member
-        String* im_typestr = attach_typemap(
-                "imtype", n, WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
+        String* bindc_typestr = attach_typemap(
+                "bindc", n, WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF);
         String* symname = Getattr(n, "sym:name");
+        SwigType* datatype = Getattr(n, "type");
 
-        if (!im_typestr)
+        if (!bindc_typestr)
         {
             // In order for the struct's data to correspond to the C-aligned
             // data, an interface type MUST be specified!
             String* class_symname = Getattr(getCurrentClass(), "sym:name");
             Swig_error(input_file, line_number, "Struct '%s' has the 'bindc' "
-                       "feature set, but member variable '%s' has no 'imtype' "
-                       "defined",
-                       SwigType_namestr(class_symname), symname);
+                       "feature set, but member variable '%s' (type '%s') "
+                       "has no 'bindc' typemap defined",
+                       SwigType_namestr(class_symname), symname,
+                       SwigType_namestr(datatype));
             return SWIG_NOWRAP;
         }
+        this->replace_fclassname(datatype, bindc_typestr);
 
-        Printv(f_ftypes, "  ", im_typestr, ", public :: ", symname, "\n",
+        Printv(f_ftypes, "  ", bindc_typestr, ", public :: ", symname, "\n",
                NULL);
     }
     else

@@ -98,6 +98,9 @@
 %typemap(fout)   void
   ""
 
+%typemap(imbindc) void
+  ""
+
 //---------------------------------------------------------------------------//
 // FUNDAMENTAL TYPES
 //---------------------------------------------------------------------------//
@@ -164,7 +167,7 @@
     {$1 = %reinterpret_cast($input, $1_ltype);}
   %typemap(out, noblock=1) CPPTYPE*
     {$result = %reinterpret_cast($1, CTYPE*);}
-  %typemap(imtype, in="type(C_PTR), value") CPPTYPE*
+  %typemap(imtype, in="type(C_PTR), value", bindc=FTYPE) CPPTYPE*
     "type(C_PTR)"
   %typemap(ftype, out=FTYPE ", pointer") CPPTYPE*
     FTYPE ", target, intent(inout)"
@@ -193,7 +196,9 @@
     {$1 = %reinterpret_cast(%const_cast($input, CTYPE*), $1_ltype);}
   %typemap(out, noblock=1) const CPPTYPE*
     {$result = %const_cast(%reinterpret_cast($1, const CTYPE*), CTYPE*);}
-  %typemap(imtype) const CPPTYPE*    = CPPTYPE*;
+  %typemap(imtype, in="type(C_PTR), value")
+        const CPPTYPE*
+    "type(C_PTR)"
   %typemap(ftype)  const CPPTYPE*    = CPPTYPE*;
   %typemap(fin)    const CPPTYPE*    = CPPTYPE*;
   %typemap(fout)   const CPPTYPE*    = CPPTYPE*;
@@ -236,10 +241,44 @@
  * \def FORT_FUND_TYPEMAP
  * \brief Add a typemap for a fundamental built-in type.
  *
- * The C++ and C types are the same in this case.
+ * The C++ and C types for standard argument wrapping are the same in this
+ * case.
+ *
+ * For fundamental types we also define the "bindc" typemap, for mapping
+ * member data of a "BIND(C)" struct from CTYPE to the equivalent Fortran type.
+ * Usually this is the same as imtype, but since not all types are BIND(C)
+ * compatible, this typemap is more restrictrive than "imtype".
+ *
+ * Finally, the fundamental type enables *declaring* C functions as pure
+ * Fortran interface functions (using the '%bindc' feature) as opposed to
+ * generating C wrapper code for them. This uses the 'imbindc' typemap.
  */
 %define FORT_FUND_TYPEMAP(CTYPE, FTYPE)
   FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, FTYPE)
+
+  %typemap(bindc) CTYPE
+    FTYPE
+  %typemap(bindc) CTYPE*
+    "type(C_PTR)"
+  %typemap(bindc) CTYPE[ANY]
+    FTYPE ", dimension($1_dim0)"
+  %typemap(bindc) CTYPE[] = CTYPE*;
+
+  %typemap(imbindc, in=FTYPE ", value") CTYPE
+    FTYPE
+  %typemap(imbindc, in=FTYPE) CTYPE*
+     "type(C_PTR)"
+  %typemap(imbindc, in=FTYPE ", dimension($1_dim0)") CTYPE[ANY]
+     "type(C_PTR)"
+  %typemap(imbindc, in=FTYPE ", dimension(*)") CTYPE[]
+     "type(C_PTR)"
+
+  %typemap(imbindc, in=FTYPE", intent(in)") const CTYPE*
+     "type(C_PTR)"
+  %typemap(imbindc, in=FTYPE", dimension($1_dim0), intent(in)") const CTYPE[ANY]
+     "type(C_PTR)"
+  %typemap(imbindc, in=FTYPE ", dimension(*), intent(in)") const CTYPE[]
+     "type(C_PTR)"
 %enddef
 
 FORT_FUND_TYPEMAP(bool       , "logical(C_BOOL)"     )
@@ -268,12 +307,12 @@ FORT_FUND_TYPEMAP(char       , "integer(C_SIGNED_CHAR)")
  * by default.
  */
 // Note: ssize_t is defined in <sys/types.h> and isn't part of the standard
-FORT_FUND_TYPEMAP(unsigned char     , "integer(C_SIGNED_CHAR)"); // Copied from char     
-FORT_FUND_TYPEMAP(unsigned short    , "integer(C_SHORT)"); // Copied from short    
-FORT_FUND_TYPEMAP(unsigned int      , "integer(C_INT)"); // Copied from int      
-FORT_FUND_TYPEMAP(unsigned long     , "integer(C_LONG)"); // Copied from long     
-FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)"); // Copied from long long
-FORT_FUND_TYPEMAP(sssize_t          , "integer(C_SIZE_T)"); // Copied from size_t   
+FORT_FUND_TYPEMAP(unsigned char     , "integer(C_SIGNED_CHAR)");
+FORT_FUND_TYPEMAP(unsigned short    , "integer(C_SHORT)");
+FORT_FUND_TYPEMAP(unsigned int      , "integer(C_INT)");
+FORT_FUND_TYPEMAP(unsigned long     , "integer(C_LONG)");
+FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)");
+FORT_FUND_TYPEMAP(sssize_t          , "integer(C_SIZE_T)");
 
 //---------------------------------------------------------------------------//
 // ENUMS
@@ -299,6 +338,16 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
     {$result = %static_cast(*$1, int);}
 %typemap(ftype) const enum SWIGTYPE& = enum SWIGTYPE;
    
+%typemap(bindc) enum SWIGTYPE
+  "integer(kind($fenumname))"
+%typemap(bindc) enum SWIGTYPE*
+  "type(C_PTR)"
+
+%typemap(imbindc, in="integer(kind($fenumname)), value") enum SWIGTYPE
+  "integer(kind($fenumname))"
+%typemap(imbindc, in="integer(kind($fenumname))") enum SWIGTYPE*
+  "type(C_PTR)"
+
 //---------------------------------------------------------------------------//
 // CLASS DEFINITION
 //---------------------------------------------------------------------------//
@@ -426,6 +475,19 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
   "const void*"
 #endif
 
+// C binding for opaque classes
+%typemap(bindc, fragment="SwigfClassWrapper") SwigfClassWrapper
+  "type(SwigfClassWrapper)"
+
+%typemap(imbindc, in="type(SwigfClassWrapper), value",
+         import="SwigfClassWrapper", fragment="SwigfClassWrapper")
+    SwigfClassWrapper
+  "type(SwigfClassWrapper)"
+%typemap(imbindc, in="type(SwigfClassWrapper)",
+         import="SwigfClassWrapper", fragment="SwigfClassWrapper")
+    SwigfClassWrapper*
+  "type(C_PTR)"
+
 //---------------------------------------------------------------------------//
 // BIND(C) STRUCT TYPES
 //---------------------------------------------------------------------------//
@@ -449,6 +511,10 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
   %typemap(imtype, import="$fclassname") CTYPE
     "type($fclassname)"
   %typemap(imtype) const CTYPE, const CTYPE& = CTYPE;
+
+  // Interface code has to "import' the class type.
+  %typemap(bindc, import="$fclassname") CTYPE
+    "type($fclassname)"
 %enddef
 
 //---------------------------------------------------------------------------//
@@ -484,6 +550,13 @@ FORT_COPY_TYPEMAPS(const void*,
                    const SWIGTYPE**, const SWIGTYPE* [], const SWIGTYPE* [ANY],
                    SWIGTYPE* const *, SWIGTYPE* const [], SWIGTYPE* const [ANY]);
 
+
+// Generic pointers are treated as C pointers when binding
+%typemap(bindc) SWIGTYPE*
+  "type(C_PTR)"
+%typemap(imbindc, in="type(C_PTR), value") SWIGTYPE*
+  "type(C_PTR)"
+
 //---------------------------------------------------------------------------//
 // FUNCTION POINTERS
 //---------------------------------------------------------------------------//
@@ -494,7 +567,7 @@ FORT_COPY_TYPEMAPS(const void*,
     %{$1 = $input;%}
 %typemap(out)    SWIGTYPE (*)(ANY)
     %{$result = $1;%}
-%typemap(imtype, in="type(C_FUNPTR), intent(in), value") SWIGTYPE (*)(ANY)
+%typemap(imtype, in="type(C_FUNPTR), value") SWIGTYPE (*)(ANY)
     "type(C_FUNPTR)"
 %typemap(ftype, out="type(C_FUNPTR)")  SWIGTYPE (*)(ANY)
     "type(C_FUNPTR), intent(in), value"
@@ -506,6 +579,11 @@ FORT_COPY_TYPEMAPS(const void*,
 // Copy to immutable function pointers
 FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY),
                    SWIGTYPE (*const)(ANY));
+
+%typemap(bindc) SWIGTYPE (*)(ANY)
+  "type(C_FUNPTR)"
+%typemap(imbindc, in="type(C_FUNPTR), value") SWIGTYPE (*)(ANY)
+  "type(C_FUNPTR)"
 
 //---------------------------------------------------------------------------//
 // MEMBER FUNCTION POINTERS

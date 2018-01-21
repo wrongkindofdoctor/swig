@@ -1,8 +1,11 @@
 %module pod_struct
 
+%rename(RenamedOtherStruct) OtherStruct;
+
 #ifdef SWIGFORTRAN
 // Treat the struct as a native fortran struct rather than as a class with
 // getters/setters.
+%fortran_bindc_struct(OtherStruct);
 %fortran_bindc_struct(SimpleStruct);
 #endif
 
@@ -11,6 +14,13 @@
 
 typedef double (*BinaryOp)(double x, double y);
 
+struct Foo;
+
+struct OtherStruct {
+    int j;
+    int k;
+};
+
 struct SimpleStruct {
     int i;
     double d;
@@ -18,6 +28,11 @@ struct SimpleStruct {
     BinaryOp funptr;
     void* v;
     const char* s;
+    OtherStruct o;
+    float p[3];
+    int argv[];
+    // Foo f // uncommenting will produce an error in Fortran since 'Foo' is a
+             // class and not POD
 };
 
 void set_val(SimpleStruct s);
