@@ -64,7 +64,7 @@ inline void fortran_check_unhandled_exception()
 #ifndef SWIGIMPORTED
 // Fortran error variables
 %fragment("SwigfErrorParams", "fparams") {
- integer(C_INT), bind(C) :: SWIG_FORTRAN_ERROR_INT = 0
+ integer(C_INT), bind(C) :: SWIG_FORTRAN_ERROR_INT
 }
 
 // Declare those variables public
@@ -77,11 +77,11 @@ inline void fortran_check_unhandled_exception()
 // C++ Variable definitions: used only if %included, not %imported
 //---------------------------------------------------------------------------//
 #if defined(__cplusplus) && !defined(SWIGIMPORTED)
-// Insert C++ declaration of fortran data
+// Insert C++ definition of fortran data
 %fragment("SwigfErrorVars_wrap", "header",
           fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
 extern "C" {
-extern int SWIG_FORTRAN_ERROR_INT;
+int SWIG_FORTRAN_ERROR_INT = 0;
 }
 }
 
