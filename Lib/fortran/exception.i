@@ -74,9 +74,18 @@ inline void fortran_check_unhandled_exception()
 #endif
 
 //---------------------------------------------------------------------------//
+// Function declaration: whether imported or not
+//---------------------------------------------------------------------------//
+
+%fragment("SwigfExceptionDeclaration", "runtime") {
+void swigf_check_unhandled_exception();
+void swigf_store_exception(int code, const char *msg);
+}
+
+//---------------------------------------------------------------------------//
 // C++ Variable definitions: used only if %included, not %imported
 //---------------------------------------------------------------------------//
-#if defined(__cplusplus) && !defined(SWIGIMPORTED)
+#ifdef __cplusplus
 // Insert C++ definition of fortran data
 %fragment("SwigfErrorVars_wrap", "header",
           fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
@@ -114,12 +123,10 @@ void swigf_store_exception(int code, const char *msg)
 }
 
 }
-#endif
-
 //---------------------------------------------------------------------------//
 // C variable definitions: used only if %included, not %imported
 //---------------------------------------------------------------------------//
-#if !defined(__cplusplus) && !defined(SWIGIMPORTED)
+#else
 // Insert C declaration of fortran data
 %fragment("SwigfErrorVars_wrap_c", "header",
           fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
@@ -144,28 +151,6 @@ void swigf_store_exception(int code, const char * msg)
     // Print the message immediately
     printf(stderr, "An error of type %d occurred: %s\n", code, msg, NULL);
 }
-}
-#endif
-
-//---------------------------------------------------------------------------//
-// C++ Variable declarations: used only if %imported
-//---------------------------------------------------------------------------//
-#if defined(__cplusplus) && defined(SWIGIMPORTED)
-%fragment("SwigfExceptionDefinition", "header") {
-// Functions are defined in an imported module
-void swigf_check_unhandled_exception();
-void swigf_store_exception(int code, const char *msg);
-}
-#endif
-
-//---------------------------------------------------------------------------//
-// C Variable declarations: used only if %imported
-//---------------------------------------------------------------------------//
-#if !defined(__cplusplus) && defined(SWIGIMPORTED)
-%fragment("SwigfExceptionDefinition", "header") {
-// Functions are defined in an imported module
-void swigf_check_unhandled_exception();
-void swigf_store_exception(int code, const char *msg);
 }
 #endif
 
@@ -198,7 +183,10 @@ void swigf_store_exception(int code, const char *msg);
 // Insert exception code (will insert different code depending on if C/C++ and
 // whether or not this module is being %imported)
 %fragment("SwigfExceptionMacro");
+%fragment("SwigfExceptionDeclaration");
+#ifndef SWIGIMPORTED
 %fragment("SwigfExceptionDefinition");
+#endif
 #ifdef __cplusplus
 %fragment("SwigfExceptionDeprecated");
 #endif

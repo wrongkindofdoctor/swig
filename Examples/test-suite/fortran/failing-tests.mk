@@ -1,7 +1,6 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  li_std_except_as_class \
   special_variables
 
 # failed to compile fortran
