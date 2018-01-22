@@ -73,23 +73,17 @@ Multiply the value by 2.
 // Insert assignment implementation
 %fragment("SwigfClassAssign");
 
-%inline %{
-extern "C" {
-void swigc_SimpleClass_assign(
-        SwigfClassWrapper* farg1,
-        SwigfClassWrapper* farg2)
-{
-    SWIGF_assign(SimpleClass, farg1, SimpleClass, farg2,
-                 swigf::IS_COPY_CONSTR | swigf::IS_COPY_ASSIGN);
-}
-}
-%}
+%feature("fortran:generic", "assignment(=)") SimpleClass::swigf_assignment;
 
-#if 0
 %extend SimpleClass {
 
+void swigf_assignment(const SimpleClass* other)
+{
+    SWIGF_assign(SimpleClass, $self, SimpleClass, other,
+                 swigf::IS_COPY_CONSTR | swigf::IS_COPY_ASSIGN);
+}
+
 };
-#endif
 
 %feature("new") emit_class;
 

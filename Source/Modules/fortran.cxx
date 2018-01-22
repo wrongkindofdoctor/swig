@@ -230,6 +230,7 @@ String* get_typemap(
         int                       warning,
         bool                      attach)
 {
+    assert(tmname);
     String* result = NULL;
     String* key = NewStringf("tmap:%s", tmname);
 
@@ -1734,6 +1735,64 @@ int FORTRAN::classDeclaration(Node *n)
         // Prevent default constructors, destructors, etc.
         SetFlag(n, "feature:nodefault");
     }
+    else if (0)
+    //else if (!GetFlag(n, "feature:fortran:noassignment"))
+    {
+        // Generate default assignment function.
+
+        // Create the child node
+        Node *cn = NewHash();
+        set_nodeType(cn, "cdecl");
+        Setfile(cn, Getfile(n));
+        Setline(cn, Getline(n));
+        Setattr(cn, "parentNode", n);
+
+        // Set the node's name
+        String* cname = Getattr(n, "name");
+        String* name = Swig_scopename_last(cname);
+        Setattr(cn, "name", name);
+
+        // Create parameters (single RHS value)
+        String* rhs_type = NewStringf("r.q(const).%s", cname);
+        Parm* p = NewParm(rhs_type, "other", n);
+        Setattr(cn, "parms", p);
+
+        // Set function declaration
+        String* decl = NewStringf("f(%s).", rhs_type);
+        Setattr(cn, "decl", decl);
+
+        // Create special assignment symname
+        String* oldname = NewStringf("%s_swigc_assign", Getattr(n, "sym:name"));
+        String* symname = Swig_name_make(cn, cname, name, decl, oldname);
+        assert(Strcmp(symname, "$ignore") != 0);
+        SetFlag(cn, "feature:fortran:bindc");
+        Setattr(cn, "sym:name", symname);
+        Setattr(cn, "feature:fortran:generic", "assignment(=)");
+        Setattr(cn, "storage", "externc");
+
+        // Add symbol to scope
+        Symtab* oldscope = Swig_symbol_setscope(Getattr(n, "symtab"));
+        Node* on = Swig_symbol_add(symname, cn);
+        Swig_features_get(Swig_cparse_features(),
+                          Swig_symbol_qualifiedscopename(0), name, decl, cn);
+        Swig_symbol_setscope(oldscope);
+        assert(on == cn);
+
+        // Mark the child node as public, and put it underneath a "public"
+        // "access" block in the parent.
+        Setattr(cn, "access", "public");
+        Node *access = NewHash();
+        set_nodeType(access, "access");
+        Setattr(access, "kind", "public");
+        appendChild(n, access);
+        appendChild(n, cn);
+        Delete(access);
+
+        Delete(decl);
+        Delete(symname);
+        Delete(name);
+        Delete(cn);
+    }
     
     return Language::classDeclaration(n);
 }
@@ -2025,47 +2084,6 @@ int FORTRAN::memberfunctionHandler(Node *n)
     String* symname = Getattr(n, "sym:name");
     String* alias = NULL;
     List* overloads = NULL;
-    if (Strstr(symname, "__assign__"))
-    {
-        // This is the assignment operator. Currently we don't account for
-        // duplicate copy/move assignment...
-
-        // Add assignment to generics, even if only one instance is created
-        String* generic_name = NewString("assignment(=)");
-        assert(d_method_overloads);
-        overloads = Getattr(d_method_overloads, generic_name);
-        if (!overloads)
-        {
-            overloads = NewList();
-            Setattr(d_method_overloads, generic_name, overloads);
-        }
-
-        // Set return type to void: fortran requires a subroutine but C++
-        // usually returns *this;
-        Setattr(n, "type", "void");
-
-        // To determine whether this is the copy assignment operator, see if
-        // there's only a single parameter whose base type is this class name.
-        // ParmList is a linked list.
-        Parm* p = Getattr(n, "parms");
-        if (p && !nextSibling(p))
-        {
-            // Single argument. Use the typedef system to evaluate the
-            // argument. If it's a const-reference-to-this-class, it's the copy
-            // assignment operator.
-            SwigType* type = SwigType_typedef_resolve_all(Getattr(p, "type"));
-            SwigType* classtype = Getattr(getCurrentClass(), "classtype");
-            SwigType* copy_assign_type = NewStringf("r.q(const).%s", classtype);
-            
-            if (Strcmp(type, copy_assign_type) == 0)
-            {
-                // We are indeed copy assignment!
-                Swig_print_node(n);
-            }
-            Delete(type);
-            Delete(copy_assign_type);
-        }
-    }
 
     if (strncmp(Char(symname), "__", 2) == 0)
     {
@@ -2078,6 +2096,18 @@ int FORTRAN::memberfunctionHandler(Node *n)
         alias = Copy(symname);
     }
     Setattr(n, "fortran:alias", alias);
+
+    if (String* generic_name = Getattr(n, "feature:fortran:generic"))
+    {
+        // Add the function generics, even if only one instance is created.
+        assert(d_method_overloads);
+        overloads = Getattr(d_method_overloads, generic_name);
+        if (!overloads)
+        {
+            overloads = NewList();
+            Setattr(d_method_overloads, generic_name, overloads);
+        }
+    }
 
     Language::memberfunctionHandler(n);
 
