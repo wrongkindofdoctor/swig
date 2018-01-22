@@ -68,49 +68,25 @@ void SimpleClass::double_it()
 Multiply the value by 2.
 %};
 
-//%rename(assign) SimpleClass::operator=;
+%ignore SimpleClass::operator=;
 
-#if 0
 // Insert assignment implementation
 %fragment("SwigfClassAssign");
 
-%extend SimpleClass {
-
-%insert("ftypes") %{
-  procedure, private :: swigf_SimpleClass_assign
-  generic :: assignment(=) => swigf_SimpleClass_assign
-%}
-
-%insert("wrapper") %{
-SWIGEXPORT void swigc_SimpleClass_assign(
+%inline %{
+extern "C" {
+void swigc_SimpleClass_assign(
         SwigfClassWrapper* farg1,
         SwigfClassWrapper* farg2)
 {
-    SWIGF_assign(SimpleClass, farg1, SimpleClass, farg2);
+    SWIGF_assign(SimpleClass, farg1, SimpleClass, farg2,
+                 swigf::IS_COPY_CONSTR | swigf::IS_COPY_ASSIGN);
+}
 }
 %}
 
-%insert("finterfaces") %{
-subroutine swigc_SimpleClass_assign(farg1, farg2) &
-    bind(C, name="swigc_SimpleClass_assign")
-    use, intrinsic :: ISO_C_BINDING
-  import :: SwigfClassWrapper
-  type(SwigfClassWrapper) :: farg1
-  type(SwigfClassWrapper) :: farg2
-end subroutine
-%}
-
-%insert("fwrapper") %{
-subroutine swigf_SimpleClass_assign(self, other)
-    use, intrinsic :: ISO_C_BINDING
-    class(SimpleClass), intent(inout) :: self
-    class(SimpleClass), intent(in) :: other
-    call print_pointer(2, other)
-    call print_pointer(3, self)
-    call swigc_SimpleClass_assign(self%swigdata, other%swigdata)
-    write(0,*) "New self state: ", self%swigdata%mem
-end subroutine
-%}
+#if 0
+%extend SimpleClass {
 
 };
 #endif

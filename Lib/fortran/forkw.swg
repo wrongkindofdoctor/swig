@@ -11,7 +11,7 @@
 // Give special names to special operations
 %rename(__ptr__)    *::operator->;
 %rename(__deref__)  *::operator*();
-%rename(__assign__) *::operator=;
+//%rename(__assign__) *::operator=;
 %rename(__eq__) *::operator==;
 
 // By default SWIG gives these underscore prefix/suffix

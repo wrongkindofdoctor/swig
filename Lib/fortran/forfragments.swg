@@ -123,7 +123,7 @@ end type
 #ifdef __cplusplus
 
 // Optional "std::move" support if using C++11
-%fragment("SwigfStdMove", "runtime", fragment="<utility>")
+%fragment("SwigfStdMove", "header", fragment="<utility>")
 %{
 namespace swigf {
 
@@ -152,15 +152,13 @@ void copy_assign_impl(T* self, const U* other, true_type) {
 
 // Disabled construction and assignment
 template<class T, class U>
-T* copy_construct_impl(const U* other, false_type)
-{
+T* copy_construct_impl(const U* other, false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no copy constructor",
                       return NULL);
 }
 template<class T, class U>
 void copy_assign_impl(T* self, const U* other, false_type) {
-{
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no copy assignment",
                       return NULL);
@@ -182,23 +180,20 @@ void move_assign_impl(T* self, U* other, true_type) {
 
 // Disabled move construction and assignment
 template<class T, class U>
-T* move_construct_impl(U* other, false_type)
-{
+T* move_construct_impl(U* other, false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no move constructor",
                       return NULL);
 }
 template<class T, class U>
 void move_assign_impl(T* self, U* other, false_type) {
-{
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no move assignment",
                       return NULL);
 }
 
 template<class T>
-constexpr int assignment_flags()
-{
+constexpr int assignment_flags() {
   return   (std::is_copy_constructible<T>::value ? IS_COPY_CONSTR : 0)
          | (std::is_copy_assignable<T>::value    ? IS_COPY_ASSIGN : 0)
          | (std::is_move_constructible<T>::value ? IS_MOVE_CONSTR : 0)
@@ -219,7 +214,7 @@ struct AssignmentTraits
   template<class U>
   static void copy_assign(T* self, const U* other)
   {
-    return copy_assign_impl<T,U>(other,
+    return copy_assign_impl<T,U>(self, other,
                                  bool_constant<Flags & IS_COPY_ASSIGN>());
   }
 
@@ -233,7 +228,7 @@ struct AssignmentTraits
   template<class U>
   static void move_assign(T* self, U* other)
   {
-    return move_assign_impl<T,U>(other,
+    return move_assign_impl<T,U>(self, other,
                                  bool_constant<Flags & IS_MOVE_ASSIGN>());
   }
 };
@@ -260,7 +255,7 @@ struct AssignmentTraits
 
 template<class T1, class T2, int AFlags>
 void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
-  typedef swigf::AssignmentTraits<T1> Traits_t;
+  typedef swigf::AssignmentTraits<T1, AFlags> Traits_t;
   T1* pself  = static_cast<T1*>(self->ptr);
   T2* pother = static_cast<T2*>(other->ptr);
 
@@ -326,7 +321,7 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
         case SWIGF_MOVE:
           /* Move RHS into LHS; delete RHS. The original ownership stays the
            * same. */
-          *pself = swigf::move_assign(pother);
+          Traits_t::move_assign(pself, pother);
           delete pother;
           other->ptr = NULL;
           other->mem = SWIGF_NULL;
@@ -335,7 +330,7 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
         case SWIGF_REF:
         case SWIGF_CREF:
           /* Copy RHS to LHS */
-          *pself = swigf::copy_assign(pother);
+          Traits_t::copy_assign(pself, pother);
           break;
       }
     case SWIGF_CREF:
@@ -356,8 +351,16 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
 // Assignment: left = right
 %fragment("SwigfClassAssign", "runtime",
           fragment="SwigfClassAssign_wrap") %{
-#define SWIGF_assign(LEFTTYPE, LEFT, RIGHTTYPE, RIGHT) \
-    SwigfAssign<LEFTTYPE , RIGHTTYPE >(LEFT, RIGHT);
+
+#if __cplusplus >= 201103L
+#define SWIGF_assign(LEFTTYPE, LEFT, RIGHTTYPE, RIGHT, FLAGS) \
+    SwigfAssign<LEFTTYPE , RIGHTTYPE, swigf::assignment_flags<LEFTTYPE >() >( \
+            LEFT, RIGHT);
+#else
+#define SWIGF_assign(LEFTTYPE, LEFT, RIGHTTYPE, RIGHT, FLAGS) \
+    SwigfAssign<LEFTTYPE , RIGHTTYPE, FLAGS >(LEFT, RIGHT);
+#endif
+
 %}
 
 //---------------------------------------------------------------------------//
