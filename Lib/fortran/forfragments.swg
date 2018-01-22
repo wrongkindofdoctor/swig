@@ -477,14 +477,15 @@ end subroutine
 // This fragment allows making an opaque datatype from C++ member function
 // pointers (which according to the standard CANNOT be converted to a pointer).
 // encountered. Its syntax is exactly like static_cast.
+// Note that the <cstring> fragment imports size_t into the global namespace.
 %fragment("SwigfBruteCast", "runtime",
-          fragment="<cstring>", fragment="<cstdlib>") %{
+          fragment="<cstring>") %{
 template<typename Dst, typename Src>
 void swigf_opaque_memcpy(Dst* dst, const Src* src)
 {
-    const std::size_t MINSIZE
+    const size_t MINSIZE
         = (sizeof(dst) < sizeof(src) ? sizeof(dst) : sizeof(src));
-    const std::size_t MAXSIZE
+    const size_t MAXSIZE
         = (sizeof(dst) > sizeof(src) ? sizeof(dst) : sizeof(src));
     std::memcpy(dst, src, MINSIZE);
     if (MAXSIZE > MINSIZE)
