@@ -1,46 +1,8 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  li_attribute_template \
-  li_boost_shared_ptr \
-  li_std_combinations \
   li_std_except_as_class \
-  li_std_map \
-  li_std_pair \
-  li_std_pair_using \
-  smart_pointer_template_defaults_overload \
-  special_variable_macros \
-  special_variables \
-  template_arg_replace \
-  template_arg_typename \
-  template_base_template \
-  template_default \
-  template_default2 \
-  template_default_arg_overloaded_extend \
-  template_default_arg_virtual_destructor \
-  template_default_class_parms \
-  template_default_class_parms_typedef \
-  template_enum_ns_inherit \
-  template_forward \
-  template_ns \
-  template_ns4 \
-  template_ns_inherit \
-  template_partial_specialization \
-  template_partial_specialization_typedef \
-  template_specialization_defarg \
-  template_specialization_enum \
-  template_tbase_template \
-  template_template_parameters \
-  template_typedef \
-  template_typedef_class_template \
-  template_typedef_cplx \
-  template_typedef_cplx2 \
-  template_typedef_cplx3 \
-  template_typedef_cplx4 \
-  template_typedef_funcptr \
-  template_typedef_ptr \
-  template_typemaps_typedef \
-  template_typemaps_typedef2
+  special_variables
 
 # failed to compile fortran
 FAILING_CPP_TESTS += \
@@ -70,6 +32,8 @@ FAILING_CPP_TESTS += \
   fvirtual \
   inherit_target_language \
   li_attribute \
+  li_attribute_template \
+  li_boost_shared_ptr \
   member_pointer_const \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
@@ -94,6 +58,8 @@ FAILING_CPP_TESTS += \
   smart_pointer_inherit \
   smart_pointer_rename \
   smart_pointer_template_const_overload \
+  smart_pointer_template_defaults_overload \
+  template_arg_typename \
   template_basic \
   template_default_arg \
   template_enum \
@@ -101,6 +67,7 @@ FAILING_CPP_TESTS += \
   template_extend_overload \
   template_inherit_abstract \
   template_methods \
+  template_ns \
   template_ref_type \
   template_typedef_inherit \
   typemap_ns_using \

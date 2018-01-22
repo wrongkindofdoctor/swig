@@ -1722,8 +1722,9 @@ void FORTRAN::assignmentWrapper(Node* n)
            "SwigfClassWrapper const * other) {\n",
            NULL);
     Printv(cfunc->code,
-        "SWIGF_assign(", classtype, ", self,\n"
-        "             ", classtype, ", const_cast<SwigfClassWrapper*>(other),\n"
+        "typedef ", classtype, " swigf_lhs_classtype;\n"
+        "SWIGF_assign(swigf_lhs_classtype, self,\n"
+        "             swigf_lhs_classtype, const_cast<SwigfClassWrapper*>(other),\n"
         "             ", flags, ");\n"
         "}\n", NULL);
     Wrapper_print(cfunc, f_wrapper);
