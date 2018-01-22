@@ -206,11 +206,11 @@ typedef const std::string& Swig_Err_String;
 %}
 
 #define STRING_TYPES Swig_Err_String
-#define AW_TYPE SwigfArrayWrapper< const char >
+#define AW_TYPE SwigfArrayWrapper
 
 // C wrapper type: pointer to templated array wrapper
-%typemap(ctype, noblock=1, out="SwigfArrayWrapper< const char >",
-       fragment="SwigfArrayWrapper") STRING_TYPES
+%typemap(ctype, noblock=1, out="SwigfArrayWrapper",
+       fragment="SwigfArrayWrapper_wrap") STRING_TYPES
 {AW_TYPE*}
 
 // C output initialization

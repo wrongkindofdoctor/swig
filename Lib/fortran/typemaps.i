@@ -17,44 +17,44 @@
 //
 //---------------------------------------------------------------------------//
 %define FORT_VIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE...)
-  #define PAIR_TYPE ::std::pair< CONST_CTYPE*, std::size_t >
-  #define AW_TYPE SwigfArrayWrapper< CONST_CTYPE >
+  #define SWIGPAIR__ ::std::pair< CONST_CTYPE*, std::size_t >
 
   // C wrapper type: pointer to templated array wrapper
   %typemap(ctype, noblock=1,
-           out={SwigfArrayWrapper< CONST_CTYPE >},
-           null={SwigfArrayWrapper< CONST_CTYPE >()},
-           fragment="SwigfArrayWrapper") PAIR_TYPE
-    {AW_TYPE*}
+           out="SwigfArrayWrapper",
+           null="SwigfArrayWrapper_uninitialized()",
+           fragment="SwigfArrayWrapper_wrap") SWIGPAIR__
+    {SwigfArrayWrapper*}
 
   // C input initialization typemaps
-  %typemap(arginit, noblock=1) PAIR_TYPE
-    {$1 = PAIR_TYPE();}
+  %typemap(arginit, noblock=1) SWIGPAIR__
+    {$1 = SWIGPAIR__();}
 
-  // C input translation typemaps: $1 is PAIR_TYPE, $input is AW_TYPE
-  %typemap(in) PAIR_TYPE
-    %{$1.first  = $input->data;
+  // C input translation typemaps: $1 is SWIGPAIR__, $input is SwigfArrayWrapper
+  %typemap(in) SWIGPAIR__
+    %{$1.first  = static_cast<CONST_CTYPE*>($input->data);
       $1.second = $input->size;%}
 
   // C output initialization
-  %typemap(arginit) AW_TYPE
+  %typemap(arginit) SwigfArrayWrapper
     %{$1.data = NULL;
       $1.size = 0;%}
 
-  // C output translation typemaps: $1 is PAIR_TYPE, $input is AW_TYPE
-  %typemap(out) PAIR_TYPE
+  // C output translation typemaps: $1 is SWIGPAIR__, $input is SwigfArrayWrapper
+  %typemap(out) SWIGPAIR__
     %{$result.data = $1.first;
       $result.size = $1.second;%}
 
   // Interface type: fortran equivalent of "ctype"
   // Since the type is declared in the module, it's necessary to use the
   // fortran "import" statement to bring it into scope.
-  %typemap(imtype, import="SwigfArrayWrapper") PAIR_TYPE
+  %typemap(imtype, import="SwigfArrayWrapper",
+           fragment="SwigfArrayWrapper") SWIGPAIR__
      "type(SwigfArrayWrapper)"
 
   // Fortran proxy code: "out" is when it's a return value;
   // the main type is when it's an input value
-  %typemap(ftype, out=FTYPE ", dimension(:), pointer") PAIR_TYPE
+  %typemap(ftype, out=FTYPE ", dimension(:), pointer") SWIGPAIR__
     FTYPE ", dimension(:), target, intent(inout)"
 
   // Fortran proxy translation code: convert from ftype $input to imtype $1
@@ -65,30 +65,35 @@
   // contiguous arrays are passed. Conceivably we could improve this to use
   // strided access by also passing c_loc($input(2)) and doing pointer
   // arithmetic.
-  %typemap(findecl) PAIR_TYPE
+  %typemap(findecl) SWIGPAIR__
   FTYPE ", pointer :: $1_view"
 
-  %typemap(fin) PAIR_TYPE
+  %typemap(fin) SWIGPAIR__
     %{$1_view => $input(1)
       $1%data = c_loc($1_view)
       $1%size = size($input)%}
 
-  // Instantiate type so that SWIG respects %novaluewrapper
-  %template() PAIR_TYPE;
-
   // Fortran proxy translation code: convert from imtype 1 to ftype $result
-  %typemap(fout) PAIR_TYPE
+  %typemap(fout) SWIGPAIR__
   %{
       call c_f_pointer($1%data, $result, [$1%size])
   %}
-  #undef PAIR_TYPE
-  #undef AW_TYPE
+
+  // Instantiate type so that SWIG respects %novaluewrapper
+  %template() SWIGPAIR__;
+
+  #undef SWIGPAIR__
 %enddef
 
 // Declare wrapper functions for std::pair<T*,size_t> and <const T*, ...>
 %define FORT_VIEW_TYPEMAP(FTYPE, CTYPE)
     FORT_VIEW_TYPEMAP_IMPL(FTYPE, CTYPE)
     FORT_VIEW_TYPEMAP_IMPL(FTYPE, const CTYPE)
+
+  // Add const cast to output
+  %typemap(out) ::std::pair< const CTYPE*, std::size_t >
+    %{$result.data = const_cast<CTYPE*>($1.first);
+      $result.size = $1.second;%}
 %enddef
 
 // Macro for defining the typemaps inside a class (e.g. std_vector to allow
@@ -107,32 +112,37 @@
 
 %define FORT_STRVIEW_TYPEMAP_IMPL(CHARTYPE, CONST_CTYPE...)
   FORT_VIEW_TYPEMAP_IMPL("character(kind=" CHARTYPE ")", CONST_CTYPE)
-  #define PAIR_TYPE ::std::pair< CONST_CTYPE*, std::size_t >
+  #define SWIGPAIR__ ::std::pair< CONST_CTYPE*, std::size_t >
 
   // Fortran proxy code: accept a character string, but since we don't seem to
   // be able to get character string pointers, return as an array view.
-  %typemap(ftype, out="character(kind=" CHARTYPE "), dimension(:), pointer") PAIR_TYPE
+  %typemap(ftype, out="character(kind=" CHARTYPE "), dimension(:), pointer") SWIGPAIR__
     "character(kind=" CHARTYPE ", len=*), target"
 
-  %typemap(findecl) PAIR_TYPE
+  %typemap(findecl) SWIGPAIR__
   %{
     character(kind=C_CHAR), dimension(:), allocatable, target :: $1_chars
   %}
 
   // Fortran proxy translation code: copy var-length character type to
   // fixed-length character array
-  %typemap(fin, fragment="SwigfStringToCharArray", noblock=1) PAIR_TYPE
+  %typemap(fin, fragment="SwigfStringToCharArray", noblock=1) SWIGPAIR__
   %{
     call swigf_string_to_chararray($input, $1_chars, $1)
   %}
 
-  #undef PAIR_TYPE
+  #undef SWIGPAIR__
 %enddef
 
 // Declare wrapper functions for std::pair<T*,size_t> and <const T*, ...>
 %define FORT_STRVIEW_TYPEMAP(CHARTYPE, CTYPE)
     FORT_STRVIEW_TYPEMAP_IMPL(CHARTYPE, CTYPE)
     FORT_STRVIEW_TYPEMAP_IMPL(CHARTYPE, const CTYPE)
+
+  // Add const cast to output
+  %typemap(out) ::std::pair< const CTYPE*, std::size_t >
+    %{$result.data = const_cast<CTYPE*>($1.first);
+      $result.size = $1.second;%}
 %enddef
 
 %define %fortran_string_view(CTYPE)
