@@ -1200,6 +1200,9 @@ void FORTRAN::cfuncWrapper(Node *n)
         String* null_return_type = Getattr(n, "tmap:ctype:null");
         Replaceall(cfunc->code, "$null",
                    null_return_type ? null_return_type : "0");
+
+        // Apply standard SWIG substitutions
+        Replaceall(cfunc->code, "$symname", Getattr(n, "sym:name"));
     }
 
     // Write the C++ function into the wrapper code file

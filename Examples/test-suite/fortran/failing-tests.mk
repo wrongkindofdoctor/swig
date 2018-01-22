@@ -1,8 +1,4 @@
 
-# failed to compile wrapper
-FAILING_CPP_TESTS += \
-  special_variables
-
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
@@ -58,6 +54,7 @@ FAILING_CPP_TESTS += \
   smart_pointer_rename \
   smart_pointer_template_const_overload \
   smart_pointer_template_defaults_overload \
+  special_variables \
   template_arg_typename \
   template_basic \
   template_default_arg \
