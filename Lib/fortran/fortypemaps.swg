@@ -369,13 +369,15 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
 // Data owned by the base class instance
 %typemap(fdata, fragment="SwigfClassWrapper") SWIGTYPE
   "type(SwigfClassWrapper), public :: swigdata"
+
 // Whether the data on class $input is valid
-%typemap(fassociated) SWIGTYPE
-  "$input%swigdata%mem /= SWIGF_NULL"
-// Reset the pointer
-%typemap(fdisassociate, noblock=1) SWIGTYPE
- %{$input%swigdata%ptr = C_NULL_PTR
-   $input%swigdata%mem = SWIGF_NULL%}
+%typemap(fdestructor) SWIGTYPE
+%{if ($input%swigdata%mem == SWIGF_NULL) return
+  if ($input%swigdata%mem == SWIGF_OWN) then
+    $action
+  end if
+  $input%swigdata%ptr = C_NULL_PTR
+  $input%swigdata%mem = SWIGF_NULL%}
 
 //---------------------------------------------------------------------------//
 // CLASS TYPEMAPS

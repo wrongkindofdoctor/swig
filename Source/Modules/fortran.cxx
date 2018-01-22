@@ -1543,6 +1543,18 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     // Save fortran function call action
     Setattr(n, "wrap:faction", fcall);
 
+    // Emit code to make the Fortran function call in the proxy code
+    if (String* action_wrap = Getattr(n, "feature:shadow"))
+    {
+        Replaceall(action_wrap, "$action", fcall);
+        Chop(action_wrap);
+        Printv(ffunc->code, action_wrap, "\n", NULL);
+    }
+    else
+    {
+        Printv(ffunc->code, fcall, "\n", NULL);
+    }
+
     if (!is_fsubroutine)
     {
         Setattr(n, "fname", swigf_result_name);
@@ -1556,9 +1568,6 @@ void FORTRAN::proxyfuncWrapper(Node *n)
            fargs, NULL);
 
     // >>> ADDITIONAL WRAPPER CODE
-
-    // Emit code to make the Fortran function call in the proxy code
-    Printv(ffunc->code, fcall, "\n", NULL);
 
     // Get transformations on the output data in the fortran proxy code
     String* fbody = Getattr(n, "feature:fout");
@@ -2004,18 +2013,10 @@ int FORTRAN::constructorHandler(Node* n)
     }
     Setattr(n, "fortran:alias", alias);
 
-    // Add statement to deallocate if already allocated
-    String* fassoc = this->attach_class_typemap("fassociated", WARN_NONE);
-    if (!fassoc)
-    {
-        Swig_error(input_file, line_number, "Class '%s' has no "
-                   "'%s' typemap defined\n", 
-                   SwigType_namestr(classname), "fassociated");
-        return SWIG_NOWRAP;
-    }
-    
-    String* releasestr = NewStringf("if (%s) call self%%release()\n", fassoc);
-    Replaceall(releasestr, "$input", "self");
+    // XXX: make free function, so we don't have to call release but instead
+    // just rely on our assignment semantics. This also fixes the need to mark
+    // as SWIGF_OWN
+    String* releasestr = NewStringf("call self%%release()\n");
     if (String* prependstr = Getattr(n, "feature:fortran:prepend"))
     {
         Printv(prependstr, "\n", releasestr, NULL);
@@ -2054,39 +2055,18 @@ int FORTRAN::destructorHandler(Node* n)
 
     Node* classnode = getCurrentClass();
 
-    // Add statement to return early if we're not associated
-    String* fassoc = this->attach_class_typemap("fassociated", WARN_NONE);
-    String* returnstr = NewStringf("if (.not. (%s)) return\n", fassoc);
-    Replaceall(returnstr, "$input", "self");
-    if (String* prependstr = Getattr(n, "feature:fortran:prepend"))
-    {
-        Printv(prependstr, "\n", returnstr, NULL);
-    }
-    else
-    {
-        Setattr(n, "feature:fortran:prepend", returnstr);
-    }
-
-    // Add statement to clear pointer after releasing
-    String* fdis = this->attach_class_typemap("fdisassociate", WARN_NONE);
+    // Hanlde ownership semantics by wrapping the destructor action
+    String* fdis = this->attach_class_typemap("fdestructor", WARN_NONE);
     if (!fdis)
     {
         Swig_error(input_file, line_number, "Class '%s' has no "
                    "'%s' typemap defined\n", 
                    SwigType_namestr(Getattr(classnode, "sym:name")),
-                   "fdisassociate");
+                   "fdestructor");
         return SWIG_NOWRAP;
     }
     Replaceall(fdis, "$input", "self");
-    
-    if (String* appendstr = Getattr(n, "feature:fortran:append"))
-    {
-        Printv(appendstr, "\n", fdis, NULL);
-    }
-    else
-    {
-        Setattr(n, "feature:fortran:append", fdis);
-    }
+    Setattr(n, "feature:shadow", fdis);
 
     Language::destructorHandler(n);
 
