@@ -1,31 +1,10 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  abstract_access \
-  abstract_basecast \
-  abstract_inherit \
-  abstract_inherit_ok \
-  abstract_signature \
-  abstract_typedef \
-  abstract_typedef2 \
-  abstract_virtual \
   allprotected \
   default_constructor \
   destructor_reprotected \
-  director_abstract \
-  director_binary_string \
-  director_constructor \
-  director_default \
-  director_detect \
-  director_frob \
-  director_ignore \
-  director_nested \
-  director_pass_by_value \
-  director_protected \
-  director_protected_overloaded \
-  director_using \
   global_scope_types \
-  inherit_void_arg \
   li_attribute_template \
   li_boost_shared_ptr \
   li_boost_shared_ptr_bits \
@@ -34,24 +13,10 @@ FAILING_CPP_TESTS += \
   li_std_map \
   li_std_pair \
   li_std_pair_using \
-  member_pointer \
-  member_pointer_const \
-  multiple_inheritance_abstract \
-  multiple_inheritance_nspace \
-  multiple_inheritance_shared_ptr \
-  name_warnings \
-  namespace_virtual_method \
-  nested_directors \
-  nested_scope \
-  private_assign \
-  pure_virtual \
   refcount \
-  smart_pointer_inherit \
-  smart_pointer_protected \
   smart_pointer_template_defaults_overload \
   special_variable_macros \
   special_variables \
-  swig_exception \
   template_arg_replace \
   template_arg_typename \
   template_base_template \
@@ -63,7 +28,6 @@ FAILING_CPP_TESTS += \
   template_default_class_parms_typedef \
   template_enum_ns_inherit \
   template_forward \
-  template_inherit_abstract \
   template_ns \
   template_ns4 \
   template_ns_inherit \
@@ -83,14 +47,12 @@ FAILING_CPP_TESTS += \
   template_typedef_ptr \
   template_typemaps_typedef \
   template_typemaps_typedef2 \
-  template_virtual \
   using_protected \
-  virtual_destructor \
-  virtual_poly \
-  virtual_vs_nonvirtual_base
+  virtual_destructor
 
 # failed to compile fortran
 FAILING_CPP_TESTS += \
+  abstract_signature \
   arrays_scope \
   bloody_hell \
   char_strings \
@@ -99,7 +61,11 @@ FAILING_CPP_TESTS += \
   cpp_basic \
   director_basic \
   director_classes \
+  director_default \
+  director_detect \
   director_enum \
+  director_frob \
+  director_ignore \
   director_keywords \
   director_overload2 \
   director_property \
@@ -111,9 +77,14 @@ FAILING_CPP_TESTS += \
   fvirtual \
   inherit_target_language \
   li_attribute \
+  member_pointer_const \
+  multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
+  multiple_inheritance_nspace \
+  multiple_inheritance_shared_ptr \
   namespace_class \
   namespace_nested \
+  nested_scope \
   nested_workaround \
   operator_overload \
   overload_arrays \
@@ -123,8 +94,10 @@ FAILING_CPP_TESTS += \
   overload_subtype \
   overload_template \
   overload_template_fast \
+  pure_virtual \
   return_const_value \
   smart_pointer_const_overload \
+  smart_pointer_inherit \
   smart_pointer_rename \
   smart_pointer_template_const_overload \
   template_basic \
@@ -132,6 +105,7 @@ FAILING_CPP_TESTS += \
   template_enum \
   template_explicit \
   template_extend_overload \
+  template_inherit_abstract \
   template_methods \
   template_ref_type \
   template_typedef_inherit \
@@ -142,4 +116,5 @@ FAILING_CPP_TESTS += \
   using_inherit \
   valuewrapper_base \
   variable_replacement \
+  virtual_poly \
   wallkw
