@@ -14,20 +14,17 @@ FAILING_CPP_TESTS += \
   director_default \
   director_detect \
   director_enum \
-  director_frob \
   director_ignore \
   director_keywords \
   director_overload2 \
   director_property \
   enum_scope_template \
   enum_thorough \
-  evil_diamond_prop \
   extend \
   extend_default \
   fvirtual \
   inherit_target_language \
   li_attribute \
-  li_attribute_template \
   li_boost_shared_ptr \
   member_pointer_const \
   multiple_inheritance_abstract \
@@ -48,31 +45,18 @@ FAILING_CPP_TESTS += \
   overload_template_fast \
   pure_virtual \
   refcount \
-  return_const_value \
-  smart_pointer_const_overload \
   smart_pointer_inherit \
-  smart_pointer_rename \
-  smart_pointer_template_const_overload \
   smart_pointer_template_defaults_overload \
   special_variables \
   template_arg_typename \
-  template_basic \
   template_default_arg \
   template_enum \
-  template_explicit \
   template_extend_overload \
   template_inherit_abstract \
   template_methods \
-  template_ns \
-  template_ref_type \
   template_typedef_inherit \
-  typemap_ns_using \
-  typemap_various \
-  using1 \
-  using2 \
   using_inherit \
   using_protected \
   valuewrapper_base \
   variable_replacement \
-  virtual_poly \
-  wallkw
+  virtual_poly
