@@ -152,16 +152,16 @@ void copy_assign_impl(T* self, const U* other, true_type) {
 
 // Disabled construction and assignment
 template<class T, class U>
-T* copy_construct_impl(const U* other, false_type) {
+T* copy_construct_impl(const U* , false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no copy constructor",
                       return NULL);
 }
 template<class T, class U>
-void copy_assign_impl(T* self, const U* other, false_type) {
+void copy_assign_impl(T* , const U* , false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no copy assignment",
-                      return NULL);
+                      return);
 }
 
 #if __cplusplus >= 201103L
@@ -180,16 +180,16 @@ void move_assign_impl(T* self, U* other, true_type) {
 
 // Disabled move construction and assignment
 template<class T, class U>
-T* move_construct_impl(U* other, false_type) {
+T* move_construct_impl(U*, false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no move constructor",
                       return NULL);
 }
 template<class T, class U>
-void move_assign_impl(T* self, U* other, false_type) {
+void move_assign_impl(T*, U*, false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no move assignment",
-                      return NULL);
+                      return);
 }
 
 template<class T>

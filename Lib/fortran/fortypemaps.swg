@@ -370,10 +370,9 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
 %typemap(fdata, fragment="SwigfClassWrapper") SWIGTYPE
   "type(SwigfClassWrapper), public :: swigdata"
 
-// Whether the data on class $input is valid
+// Call destructor if the data is owned; then clear the pointer
 %typemap(fdestructor) SWIGTYPE
-%{if ($input%swigdata%mem == SWIGF_NULL) return
-  if ($input%swigdata%mem == SWIGF_OWN) then
+%{if ($input%swigdata%mem == SWIGF_OWN) then
     $action
   end if
   $input%swigdata%ptr = C_NULL_PTR

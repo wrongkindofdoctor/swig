@@ -1672,11 +1672,10 @@ void FORTRAN::assignmentWrapper(Node* n)
     assert(!is_basic_struct());
 
     String* symname = Getattr(n, "sym:name");
-    String* spclass = Getattr(n, "feature:smartptr");
-    if (!spclass)
+    String* classtype = Getattr(n, "feature:smartptr");
+    if (!classtype)
     {
-        Swig_print_node(n);
-        spclass = symname;
+        classtype = Getattr(n, "classtype");
     }
 
     // Create overloaded aliased name
@@ -1742,8 +1741,8 @@ void FORTRAN::assignmentWrapper(Node* n)
            "SwigfClassWrapper const * other) {\n",
            NULL);
     Printv(cfunc->code,
-        "SWIGF_assign(", spclass, ", self,\n"
-        "             ", spclass, ", const_cast<SwigfClassWrapper*>(other),\n"
+        "SWIGF_assign(", classtype, ", self,\n"
+        "             ", classtype, ", const_cast<SwigfClassWrapper*>(other),\n"
         "             ", flags, ");\n"
         "}\n", NULL);
     Wrapper_print(cfunc, f_wrapper);

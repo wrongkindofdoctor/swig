@@ -12,6 +12,17 @@
 #define SWIG_SHARED_PTR_NOT_NULL(f) f
 #endif
 
+// Runtime check for a class wrapper not being const.
+%fragment("SwigfCheckSpNonnull", "runtime")
+%{
+#define SWIGF_check_sp_nonnull(INPUT, TYPENAME, FNAME, FUNCNAME, RETURNNULL) \
+    if (!(INPUT)) { \
+        SWIG_exception_impl(SWIG_TypeError, \
+            "Cannot pass null " TYPENAME " (class " FNAME ") " \
+            "to function (" FUNCNAME ")", RETURNNULL); \
+    }
+%}
+
 %define SWIG_SHARED_PTR_TYPEMAPS(CONST, TYPE...)
 //---------------------------------------------------------------------------//
 // Macro shortcuts
@@ -50,9 +61,9 @@ ALL_SWIGSP__, CONST_ALL_SWIGSP__
 // SP-owned copy of the obtained value.
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1,
-         fragment="SwigfCheckNonnull") CONST TYPE ($&1_type argp = 0)
+         fragment="SwigfCheckSpNonnull") CONST TYPE ($&1_type argp = 0)
 {
-    SWIGF_check_nonnull($input, "$1_ltype", "$fclassname", "$decl", return $null)
+    SWIGF_check_sp_nonnull($input, "$1_ltype", "$fclassname", "$decl", return $null)
     argp = $input->ptr ? %static_cast($input->ptr, SWIGSP__*)->get() : NULL;
     $1 = *argp;
 }
@@ -83,9 +94,9 @@ ALL_SWIGSP__, CONST_ALL_SWIGSP__
 // Original class by reference. Same as by pointer, but with null checks.
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1,
-         fragment="SwigfCheckNonnull") CONST TYPE& (SWIGSP__* smartarg)
+         fragment="SwigfCheckSpNonnull") CONST TYPE& (SWIGSP__* smartarg)
 {
-    SWIGF_check_nonnull($input,
+    SWIGF_check_sp_nonnull($input,
                         "$1_ltype", "$fclassname", "$decl", return $null)
     smartarg = %static_cast($input->ptr, SWIGSP__*);
     $1 = %as_mutable(smartarg->get());
