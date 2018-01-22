@@ -128,10 +128,11 @@ end type
 namespace swigf {
 
 enum AssignmentFlags {
-  IS_COPY_CONSTR = 0x1,
-  IS_COPY_ASSIGN = 0x2,
-  IS_MOVE_CONSTR = 0x4,
-  IS_MOVE_ASSIGN = 0x8
+  IS_DESTR       = 0x01,
+  IS_COPY_CONSTR = 0x02,
+  IS_COPY_ASSIGN = 0x04,
+  IS_MOVE_CONSTR = 0x08,
+  IS_MOVE_ASSIGN = 0x10
 };
 
 // Define our own switching struct to support pre-c++11 builds
@@ -139,6 +140,18 @@ template<bool Val>
 struct bool_constant {};
 typedef bool_constant<true>  true_type;
 typedef bool_constant<false> false_type;
+
+// Deletion
+template<class T>
+void destruct_impl(T* self, true_type) {
+  delete self;
+}
+template<class T>
+T* destruct_impl(T* , false_type) {
+  SWIG_exception_impl(SWIG_TypeError,
+                      "Invalid assignment: class type has no destructor",
+                      return NULL);
+}
 
 // Copy construction and assignment
 template<class T, class U>
@@ -194,7 +207,8 @@ void move_assign_impl(T*, U*, false_type) {
 
 template<class T>
 constexpr int assignment_flags() {
-  return   (std::is_copy_constructible<T>::value ? IS_COPY_CONSTR : 0)
+  return   (std::is_destructible<T>::value       ? IS_DESTR       : 0)
+         | (std::is_copy_constructible<T>::value ? IS_COPY_CONSTR : 0)
          | (std::is_copy_assignable<T>::value    ? IS_COPY_ASSIGN : 0)
          | (std::is_move_constructible<T>::value ? IS_MOVE_CONSTR : 0)
          | (std::is_move_assignable<T>::value    ? IS_MOVE_ASSIGN : 0);
@@ -204,45 +218,44 @@ constexpr int assignment_flags() {
 template<class T, int Flags>
 struct AssignmentTraits
 {
+  static void destruct(T* self)
+  {
+    destruct_impl<T>(self, bool_constant<Flags & IS_DESTR>());
+  }
+
   template<class U>
   static T* copy_construct(const U* other)
   {
-    return copy_construct_impl<T,U>(other,
-                                    bool_constant<Flags & IS_COPY_CONSTR>());
+    return copy_construct_impl<T,U>(other, bool_constant<Flags & IS_COPY_CONSTR>());
   }
 
   template<class U>
   static void copy_assign(T* self, const U* other)
   {
-    return copy_assign_impl<T,U>(self, other,
-                                 bool_constant<Flags & IS_COPY_ASSIGN>());
+    copy_assign_impl<T,U>(self, other, bool_constant<Flags & IS_COPY_ASSIGN>());
   }
 
 #if __cplusplus >= 201103L
   template<class U>
   static T* move_construct(U* other)
   {
-    return move_construct_impl<T,U>(other,
-                                    bool_constant<Flags & IS_MOVE_CONSTR>());
+    return move_construct_impl<T,U>(other, bool_constant<Flags & IS_MOVE_CONSTR>());
   }
   template<class U>
   static void move_assign(T* self, U* other)
   {
-    return move_assign_impl<T,U>(self, other,
-                                 bool_constant<Flags & IS_MOVE_ASSIGN>());
+    move_assign_impl<T,U>(self, other, bool_constant<Flags & IS_MOVE_ASSIGN>());
   }
 #else
   template<class U>
   static T* move_construct(U* other)
   {
-    return copy_construct_impl<T,U>(other,
-                                    bool_constant<Flags & IS_COPY_CONSTR>());
+    return copy_construct_impl<T,U>(other, bool_constant<Flags & IS_COPY_CONSTR>());
   }
   template<class U>
   static void move_assign(T* self, U* other)
   {
-    return copy_assign_impl<T,U>(self, other,
-                                 bool_constant<Flags & IS_COPY_ASSIGN>());
+    copy_assign_impl<T,U>(self, other, bool_constant<Flags & IS_COPY_ASSIGN>());
   }
 #endif
 };
@@ -286,14 +299,14 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
       switch (other->mem) {
         case SWIGF_NULL:
           /* Delete LHS */
-          delete pself;
+          Traits_t::destruct(pself);
           self->ptr = NULL;
           self->mem = SWIGF_NULL;
           break;
         case SWIGF_MOVE:
           /* Move RHS into LHS; delete RHS */
           Traits_t::move_assign(pself, pother);
-          delete pother;
+          Traits_t::destruct(pother);
           other->ptr = NULL;
           other->mem = SWIGF_NULL;
           break;
@@ -322,7 +335,7 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
           /* Move RHS into LHS; delete RHS. The original ownership stays the
            * same. */
           Traits_t::move_assign(pself, pother);
-          delete pother;
+          Traits_t::destruct(pother);
           other->ptr = NULL;
           other->mem = SWIGF_NULL;
           break;

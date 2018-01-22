@@ -1,19 +1,14 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  allprotected \
-  default_constructor \
-  destructor_reprotected \
   global_scope_types \
   li_attribute_template \
   li_boost_shared_ptr \
-  li_boost_shared_ptr_bits \
   li_std_combinations \
   li_std_except_as_class \
   li_std_map \
   li_std_pair \
   li_std_pair_using \
-  refcount \
   smart_pointer_template_defaults_overload \
   special_variable_macros \
   special_variables \
@@ -46,9 +41,7 @@ FAILING_CPP_TESTS += \
   template_typedef_funcptr \
   template_typedef_ptr \
   template_typemaps_typedef \
-  template_typemaps_typedef2 \
-  using_protected \
-  virtual_destructor
+  template_typemaps_typedef2
 
 # failed to compile fortran
 FAILING_CPP_TESTS += \
@@ -59,6 +52,7 @@ FAILING_CPP_TESTS += \
   constructor_copy \
   contract \
   cpp_basic \
+  default_constructor \
   director_basic \
   director_classes \
   director_default \
@@ -95,6 +89,7 @@ FAILING_CPP_TESTS += \
   overload_template \
   overload_template_fast \
   pure_virtual \
+  refcount \
   return_const_value \
   smart_pointer_const_overload \
   smart_pointer_inherit \
@@ -114,6 +109,7 @@ FAILING_CPP_TESTS += \
   using1 \
   using2 \
   using_inherit \
+  using_protected \
   valuewrapper_base \
   variable_replacement \
   virtual_poly \
