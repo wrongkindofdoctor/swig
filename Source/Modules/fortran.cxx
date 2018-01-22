@@ -345,42 +345,19 @@ SwigType* parse_typemap(const_String_or_char_ptr tmname,
 }
 
 //---------------------------------------------------------------------------//
-/*!
- * \brief Print as a python dict
- */
-void print_pydict(Node* n)
+String* add_explicit_scope(String* s)
 {
-    assert(n);
-
-    // Print name
-    const_String_or_char_ptr name = Getattr(n, "name");
-    if (!name)
-        name = Getattr(n, "sym:name");
-    if (!name)
-        name = "UNKNOWN";
-    Printf(stdout, "'%s': {\n", name);
-
-    // Print values
-    for (Iterator ki = First(n); ki.key != NULL; ki = Next(ki))
+    if (!CPlusPlus)
     {
-        Printf(stdout, " '%s': ", ki.key);
-        if (DohIsString(ki.item))
-        {
-            if (Len(ki.item) > 80 || Strstr(ki.item, "\n"))
-            {
-                Printf(stdout, "r'''\\\n%s''',\n", ki.item);
-            }
-            else
-            {
-                Printf(stdout, "r'%s',\n", ki.item);
-            }
-        }
-        else
-        {
-            Printf(stdout, "None,\n");
-        }
+        return s;
     }
-    Printf(stdout, "},\n\n", name);
+    if (!Strstr(s, "::"))
+    {
+        String* temp = NewStringf("::%s", s);
+        Delete(s);
+        s = temp;
+    }
+    return s;
 }
 
 //---------------------------------------------------------------------------//
@@ -1659,7 +1636,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief HACK: manually add assignment code to output file.
+ * \brief KLUDGE: manually add assignment code to output file.
  *
  * I'd later like to do this by adding a child node to the class during
  * classDeclaration, as is done with copy constructors in Language. But I kept
@@ -1677,6 +1654,7 @@ void FORTRAN::assignmentWrapper(Node* n)
     {
         classtype = Getattr(n, "classtype");
     }
+    classtype = add_explicit_scope(Copy(classtype));
 
     // Create overloaded aliased name
     String* generic = NewString("assignment(=)");
@@ -1724,7 +1702,7 @@ void FORTRAN::assignmentWrapper(Node* n)
     // Determine construction flags. These are ignored if C++11 is being used
     // to compile the wrapper.
     String* flags = NewString("0");
-    if (GetFlag(n, "allocate:default_destructor"))
+    if (GetFlag(n, "allocate:allocate:default_destructor"))
     {
         Printv(flags, " | swigf::IS_DESTR", NULL);
     }
@@ -1760,6 +1738,7 @@ void FORTRAN::assignmentWrapper(Node* n)
     Delete(generic);
     Delete(fname);
     Delete(wrapname);
+    Delete(classtype);
     DelWrapper(cfunc);
 }
 

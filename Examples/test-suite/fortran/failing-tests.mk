@@ -1,7 +1,6 @@
 
 # failed to compile wrapper
 FAILING_CPP_TESTS += \
-  global_scope_types \
   li_attribute_template \
   li_boost_shared_ptr \
   li_std_combinations \
