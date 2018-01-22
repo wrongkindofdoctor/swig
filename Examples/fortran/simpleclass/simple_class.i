@@ -70,6 +70,7 @@ Multiply the value by 2.
 
 %ignore SimpleClass::operator=;
 
+#if 0
 // Insert assignment implementation
 %fragment("SwigfClassAssign");
 
@@ -84,6 +85,7 @@ void swigf_assignment(const SimpleClass* other)
 }
 
 };
+#endif
 
 %feature("new") emit_class;
 

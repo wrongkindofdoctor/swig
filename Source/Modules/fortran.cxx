@@ -455,11 +455,11 @@ class FORTRAN : public Language
     void cfuncWrapper(Node* n);
     void imfuncWrapper(Node* n);
     void proxyfuncWrapper(Node* n);
+    void assignmentWrapper(Node* n);
     void write_docstring(Node* n, String* dest);
 
     void write_wrapper(String* filename);
     void write_module(String* filename);
-
 
     String* attach_class_typemap(const_String_or_char_ptr tmname, int warning);
 
@@ -943,25 +943,24 @@ int FORTRAN::functionWrapper(Node *n)
 
         if (is_overloaded)
         {
-            // Create overloaded aliased name
-            String* overalias = Copy(alias);
-            Append(overalias, Getattr(n, "sym:overname"));
+            // Overload the procedure name; save the original name as the
+            // 'generic'
+            String* generic = alias;
+            alias = Copy(alias);
+            Append(alias, Getattr(n, "sym:overname"));
 
             // Add name to method overload list
-            List* overloads = Getattr(d_method_overloads, alias);
+            List* overloads = Getattr(d_method_overloads, generic);
             if (!overloads)
             {
                 overloads = NewList();
-                Setattr(d_method_overloads, alias, overloads);
+                Setattr(d_method_overloads, generic, overloads);
             }
-            Append(overloads, overalias);
+            Append(overloads, alias);
 
             // Make the procedure private
             Append(qualifiers, ", private");
-
-            // The name we write is the overloaded alias
-            Delete(alias);
-            alias = overalias;
+            Delete(generic);
         }
         if (String* extra_quals = Getattr(n, "fortran:procedure"))
         {
@@ -1156,10 +1155,6 @@ void FORTRAN::cfuncWrapper(Node *n)
 
     // Generate code to make the C++ function call
     Swig_director_emit_dynamic_cast(n, cfunc);
-    if (Strstr(symname, "assign")) // XXX debug code
-    {
-        Swig_print_node(n);
-    }
     String* actioncode = emit_action(n);
 
     // Generate code to return the value
@@ -1655,6 +1650,110 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
 //---------------------------------------------------------------------------//
 /*!
+ * \brief HACK: manually add assignment code to output file.
+ *
+ * I'd later like to do this by adding a child node to the class during
+ * classDeclaration, as is done with copy constructors in Language. But I kept
+ * getting assertions in the type resolution part of the code.
+ *
+ * Here 'n' is the class node.
+ */
+void FORTRAN::assignmentWrapper(Node* n)
+{
+    assert(!is_basic_struct());
+
+    String* symname = Getattr(n, "sym:name");
+    String* spclass = Getattr(n, "feature:smartptr");
+    if (!spclass)
+    {
+        Swig_print_node(n);
+        spclass = symname;
+    }
+
+    // Create overloaded aliased name
+    String* generic = NewString("assignment(=)");
+    String* fname = NewStringf("swigf_assignment_%s",
+                               Getattr(n, "sym:name"));
+    String* wrapname = NewStringf("swigc_assignment_%s",
+                                  Getattr(n, "sym:name"));
+
+    // Add self-assignment to method overload list
+    List* overloads = Getattr(d_method_overloads, generic);
+    if (!overloads)
+    {
+        overloads = NewList();
+        Setattr(d_method_overloads, generic, overloads);
+    }
+    Append(overloads, fname);
+
+    // Define the method
+    Printv(f_ftypes,
+           "  procedure, private :: ", fname, "\n",
+           NULL);
+
+    // Add the proxy code implementation of assignment (increments the
+    // reference counter)
+    Printv(f_fwrapper,
+       "  subroutine ", fname, "(self, other)\n"
+       "   use, intrinsic :: ISO_C_BINDING\n"
+       "   class(", symname, "), intent(inout) :: self\n"
+       "   type(", symname, "), intent(in) :: other\n"
+       "   call ", wrapname, "(self%swigdata, other%swigdata)\n"
+       "  end subroutine\n",
+       NULL);
+
+    // Add interface code
+    Printv(f_finterfaces,
+           "  subroutine ", wrapname, "(self, other) &\n"
+           "     bind(C, name=\"", wrapname, "\")\n"
+           "   use, intrinsic :: ISO_C_BINDING\n"
+           "   import :: SwigfClassWrapper\n"
+           "   type(SwigfClassWrapper), intent(inout) :: self\n"
+           "   type(SwigfClassWrapper), intent(in) :: other\n"
+           "  end subroutine\n",
+           NULL);
+
+    // Determine construction flags. These are ignored if C++11 is being used
+    // to compile the wrapper.
+    String* flags = NewString("0");
+    if (GetFlag(n, "has_copy_constructor"))
+    {
+        Printv(flags, " | swigf::IS_COPY_CONSTR", NULL);
+    }
+    if (!GetFlag(n, "allocate:noassign")
+        || GetFlag(n, "allocate:has_assign"))
+    {
+        Printv(flags, " | swigf::IS_COPY_ASSIGN", NULL);
+    }
+
+    // Add C code
+    Wrapper* cfunc = NewWrapper();
+    Printv(cfunc->def, "SWIGEXPORT void ", wrapname, "("
+           "SwigfClassWrapper * self, "
+           "SwigfClassWrapper const * other) {\n",
+           NULL);
+    Printv(cfunc->code,
+        "SWIGF_assign(", spclass, ", self,\n"
+        "             ", spclass, ", const_cast<SwigfClassWrapper*>(other),\n"
+        "             ", flags, ");\n"
+        "}\n", NULL);
+    Wrapper_print(cfunc, f_wrapper);
+
+
+    // Insert assignment fragment
+    String* fragname = NewString("SwigfClassAssign");
+    Swig_fragment_emit(fragname);
+
+    Delete(fragname);
+    Delete(flags);
+    Delete(generic);
+    Delete(fname);
+    Delete(wrapname);
+    DelWrapper(cfunc);
+}
+
+//---------------------------------------------------------------------------//
+/*!
  * \brief Write documentation for the given node to the passed string.
  */
 void FORTRAN::write_docstring(Node* n, String* dest)
@@ -1665,7 +1764,15 @@ void FORTRAN::write_docstring(Node* n, String* dest)
         return;
 
     List* lines = SplitLines(docs);
-    for (Iterator it = First(lines); it.item; it = Next(it))
+
+    // Skip leading blank lines
+    Iterator it = First(lines);
+    while (it.item && Len(it.item) == 0)
+    {
+        it = Next(it);
+    }
+
+    for (; it.item; it = Next(it))
     {
         // Chop(it.item);
         Printv(dest, "! ", it.item, "\n", NULL);
@@ -1685,6 +1792,7 @@ String* FORTRAN::makeParameterName(Node *n, Parm *p,
     if (name)
     {
         if (Strstr(name, "::"))
+
         {
             // Name has qualifiers (probably a static variable setter)
             // so replace it with something simple
@@ -1735,65 +1843,6 @@ int FORTRAN::classDeclaration(Node *n)
         // Prevent default constructors, destructors, etc.
         SetFlag(n, "feature:nodefault");
     }
-    else if (0)
-    //else if (!GetFlag(n, "feature:fortran:noassignment"))
-    {
-        // Generate default assignment function.
-
-        // Create the child node
-        Node *cn = NewHash();
-        set_nodeType(cn, "cdecl");
-        Setfile(cn, Getfile(n));
-        Setline(cn, Getline(n));
-        Setattr(cn, "parentNode", n);
-
-        // Set the node's name
-        String* cname = Getattr(n, "name");
-        String* name = Swig_scopename_last(cname);
-        Setattr(cn, "name", name);
-
-        // Create parameters (single RHS value)
-        String* rhs_type = NewStringf("r.q(const).%s", cname);
-        Parm* p = NewParm(rhs_type, "other", n);
-        Setattr(cn, "parms", p);
-
-        // Set function declaration
-        String* decl = NewStringf("f(%s).", rhs_type);
-        Setattr(cn, "decl", decl);
-
-        // Create special assignment symname
-        String* oldname = NewStringf("%s_swigc_assign", Getattr(n, "sym:name"));
-        String* symname = Swig_name_make(cn, cname, name, decl, oldname);
-        assert(Strcmp(symname, "$ignore") != 0);
-        SetFlag(cn, "feature:fortran:bindc");
-        Setattr(cn, "sym:name", symname);
-        Setattr(cn, "feature:fortran:generic", "assignment(=)");
-        Setattr(cn, "storage", "externc");
-
-        // Add symbol to scope
-        Symtab* oldscope = Swig_symbol_setscope(Getattr(n, "symtab"));
-        Node* on = Swig_symbol_add(symname, cn);
-        Swig_features_get(Swig_cparse_features(),
-                          Swig_symbol_qualifiedscopename(0), name, decl, cn);
-        Swig_symbol_setscope(oldscope);
-        assert(on == cn);
-
-        // Mark the child node as public, and put it underneath a "public"
-        // "access" block in the parent.
-        Setattr(cn, "access", "public");
-        Node *access = NewHash();
-        set_nodeType(access, "access");
-        Setattr(access, "kind", "public");
-        appendChild(n, access);
-        appendChild(n, cn);
-        Delete(access);
-
-        Delete(decl);
-        Delete(symname);
-        Delete(name);
-        Delete(cn);
-    }
-    
     return Language::classDeclaration(n);
 }
 
@@ -1903,6 +1952,8 @@ int FORTRAN::classHandler(Node *n)
 
     if (!basic_struct)
     {
+        this->assignmentWrapper(n);
+
         // Write overloads
         for (Iterator kv = First(d_method_overloads); kv.key; kv = Next(kv))
         {
@@ -2756,6 +2807,7 @@ String* FORTRAN::make_unique_symname(Node* n)
 
     return symname;
 }
+
 //---------------------------------------------------------------------------//
 // Expose the code to the SWIG main function.
 //---------------------------------------------------------------------------//
