@@ -1724,12 +1724,11 @@ void FORTRAN::assignmentWrapper(Node* n)
     // Determine construction flags. These are ignored if C++11 is being used
     // to compile the wrapper.
     String* flags = NewString("0");
-    if (GetFlag(n, "has_copy_constructor"))
+    if (GetFlag(n, "allocate:copy_constructor"))
     {
         Printv(flags, " | swigf::IS_COPY_CONSTR", NULL);
     }
-    if (!GetFlag(n, "allocate:noassign")
-        || GetFlag(n, "allocate:has_assign"))
+    if (GetFlag(n, "allocate:has_assign") && !GetFlag(n, "allocate:noassign"))
     {
         Printv(flags, " | swigf::IS_COPY_ASSIGN", NULL);
     }

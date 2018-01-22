@@ -231,7 +231,6 @@ struct AssignmentTraits
     return move_assign_impl<T,U>(self, other,
                                  bool_constant<Flags & IS_MOVE_ASSIGN>());
   }
-};
 #else
   template<class U>
   static T* move_construct(U* other)
@@ -242,10 +241,11 @@ struct AssignmentTraits
   template<class U>
   static void move_assign(T* self, U* other)
   {
-    return copy_assign_impl<T,U>(other,
+    return copy_assign_impl<T,U>(self, other,
                                  bool_constant<Flags & IS_COPY_ASSIGN>());
   }
 #endif
+};
 
 } // end namespace swigf    
 %}
