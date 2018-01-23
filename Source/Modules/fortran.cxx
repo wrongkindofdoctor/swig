@@ -1846,53 +1846,43 @@ int FORTRAN::classDeclaration(Node *n)
  */
 int FORTRAN::classHandler(Node *n)
 {
-    // Basic attributes
+    // Add the class name or warn if it's a duplicate
     String* symname = Getattr(n, "sym:name");
-    String* basename = NULL;
-    bool basic_struct = false;
-
     if (add_fsymbol(symname, n) == SWIG_NOWRAP)
         return SWIG_NOWRAP;
 
-    if (is_bindc(n))
+    String* basename = NULL;
+
+    // Iterate through the base classes. If no bases are set (null pointer sent
+    // to `First`), the loop will be skipped and baseclass be NULL.
+    for (Iterator base = First(Getattr(n, "bases"));
+         base.item;
+         base = Next(base))
     {
-        // Instead of adding setters/getters and methods,
-        basic_struct = true;
+        Node* b = base.item;
+        if (GetFlag(b, "feature:ignore"))
+            continue;
+        if (basename)
+        {
+            // Another base class exists
+            Swig_warning(WARN_FORTRAN_MULTIPLE_INHERITANCE,
+                         Getfile(b), Getline(b),
+                         "Multiple inheritance is not supported in Fortran. "
+                         "Ignoring base class %s for %s",
+                         SwigType_namestr(Getattr(b, "sym:name")),
+                         SwigType_namestr(Getattr(n, "sym:name")));
+        }
+        basename = Getattr(b, "sym:name");
     }
 
-    // Process base classes
-    List *baselist = Getattr(n, "bases");
-    if (baselist && Len(baselist) > 0)
+    const bool basic_struct = is_bindc(n);
+    if (basic_struct && basename)
     {
-        String* typestr = SwigType_namestr(symname);
-        if (basic_struct)
-        {
-            // Disallow inheritance for BIND(C) types
-            Swig_error(input_file, line_number, "Struct '%s' has the 'bindc' "
-                       "feature set, so it cannot use inheritance\n",
-                       typestr);
-            return SWIG_NOWRAP;
-        }
-        else if (Len(baselist) > 1)
-        {
-            // Disallow if multiple base classes
-            Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
-                         "Multiple inheritance (class '%s') is not currently "
-                         "supported in Fortran\n",
-                         typestr);
-            return SWIG_NOWRAP;
-        }
-        else
-        {
-            // Warn even if inheriting from a single class
-            Swig_warning(WARN_LANG_NATIVE_UNIMPL, Getfile(n), Getline(n),
-                    "Inheritance (class '%s') support is under development and "
-                    "limited.\n",
-                    typestr);
-        }
-
-        Node* base = Getitem(baselist, 0);
-        basename = Getattr(base, "sym:name");
+        // Disallow inheritance for BIND(C) types
+        Swig_error(input_file, line_number, "Struct '%s' has the 'bindc' "
+                   "feature set, so it cannot use inheritance.\n",
+                   SwigType_namestr(symname));
+        return SWIG_NOWRAP;
     }
 
     // Make the class publicly accessible
@@ -2690,6 +2680,8 @@ void FORTRAN::replaceSpecialVariables(String* method, String* tm, Parm* parm)
 //---------------------------------------------------------------------------//
 /*!
  * \brief Add lowercase symbol since fortran is case insensitive
+ *
+ * Return SWIG_NOWRAP if the name conflicts.
  */
 int FORTRAN::add_fsymbol(String* s, Node *n)
 {
@@ -2721,7 +2713,7 @@ int FORTRAN::add_fsymbol(String* s, Node *n)
     int success = this->addSymbol(lower, n, scope);
     assert(success);
     Delete(lower);
-    return success;
+    return SWIG_OK;
 }
 
 //---------------------------------------------------------------------------//

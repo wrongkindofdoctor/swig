@@ -27,6 +27,7 @@ FAILING_CPP_TESTS += \
   li_attribute \
   li_boost_shared_ptr \
   member_pointer_const \
+  multiple_inheritance \
   multiple_inheritance_abstract \
   multiple_inheritance_interfaces \
   multiple_inheritance_nspace \
@@ -43,7 +44,6 @@ FAILING_CPP_TESTS += \
   overload_subtype \
   overload_template \
   overload_template_fast \
-  pure_virtual \
   refcount \
   smart_pointer_inherit \
   smart_pointer_template_defaults_overload \
@@ -52,9 +52,10 @@ FAILING_CPP_TESTS += \
   template_default_arg \
   template_enum \
   template_extend_overload \
-  template_inherit_abstract \
   template_methods \
   template_typedef_inherit \
+  using_composition \
+  using_extend \
   using_inherit \
   using_protected \
   valuewrapper_base \
