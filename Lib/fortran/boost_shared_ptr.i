@@ -127,7 +127,7 @@ ALL_SWIGSP__, CONST_ALL_SWIGSP__
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) SWIGSP__& ($*1_ltype tempnull)
 {
-    $1 = $input->ptr ? %static_cast($input->ptr, SWIGSP__*) : &tempnull;
+    $1 = $input->ptr ? %static_cast($input->ptr, $1_ltype) : &tempnull;
 }
 
 %typemap(out, noblock=1) SWIGSP__&
@@ -143,7 +143,7 @@ ALL_SWIGSP__, CONST_ALL_SWIGSP__
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1) SWIGSP__ * ($*1_ltype tempnull)
 {
-    $1 = $input->ptr ? %static_cast($input->ptr, SWIGSP__*) : &tempnull;
+    $1 = $input->ptr ? %static_cast($input->ptr, $1_ltype) : &tempnull;
 }
 
 %typemap(out, noblock=1, fragment="SWIG_null_deleter") SWIGSP__ *

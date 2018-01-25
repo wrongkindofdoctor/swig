@@ -226,36 +226,36 @@ struct AssignmentTraits
   template<class U>
   static T* copy_construct(const U* other)
   {
-    return copy_construct_impl<T,U>(other, bool_constant<Flags & IS_COPY_CONSTR>());
+    return copy_construct_impl<T,U>(other, bool_constant<bool(Flags & IS_COPY_CONSTR)>());
   }
 
   template<class U>
   static void copy_assign(T* self, const U* other)
   {
-    copy_assign_impl<T,U>(self, other, bool_constant<Flags & IS_COPY_ASSIGN>());
+    copy_assign_impl<T,U>(self, other, bool_constant<bool(Flags & IS_COPY_ASSIGN)>());
   }
 
 #if __cplusplus >= 201103L
   template<class U>
   static T* move_construct(U* other)
   {
-    return move_construct_impl<T,U>(other, bool_constant<Flags & IS_MOVE_CONSTR>());
+    return move_construct_impl<T,U>(other, bool_constant<bool(Flags & IS_MOVE_CONSTR)>());
   }
   template<class U>
   static void move_assign(T* self, U* other)
   {
-    move_assign_impl<T,U>(self, other, bool_constant<Flags & IS_MOVE_ASSIGN>());
+    move_assign_impl<T,U>(self, other, bool_constant<bool(Flags & IS_MOVE_ASSIGN)>());
   }
 #else
   template<class U>
   static T* move_construct(U* other)
   {
-    return copy_construct_impl<T,U>(other, bool_constant<Flags & IS_COPY_CONSTR>());
+    return copy_construct_impl<T,U>(other, bool_constant<bool(Flags & IS_COPY_CONSTR)>());
   }
   template<class U>
   static void move_assign(T* self, U* other)
   {
-    copy_assign_impl<T,U>(self, other, bool_constant<Flags & IS_COPY_ASSIGN>());
+    copy_assign_impl<T,U>(self, other, bool_constant<bool(Flags & IS_COPY_ASSIGN)>());
   }
 #endif
 };
