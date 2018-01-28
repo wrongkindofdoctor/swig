@@ -42,9 +42,11 @@ template<class T>
 void print_view(std::pair<const T*, size_t> view);
 
 //---------------------------------------------------------------------------//
-
 template<class T>
-const std::vector<T>& get_vec_ref();
+const std::vector<T>& get_vec(const std::vector<T>& inp)
+{
+    return inp;
+}
 
 //---------------------------------------------------------------------------//
 #endif // std_vector_stdvec_hh

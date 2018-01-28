@@ -22,7 +22,7 @@
 #endif
 
 // Prevent identifiers from having a leading underscore.
-// Since SWIG uses "__dummy_%d__" internrally for %template()-instantiated
+// Since SWIG uses "__dummy_%d__" internally for %template()-instantiated
 // classes, ignore identifiers that also end with _.
 %namewarn("Fortran identifiers may not begin with underscores or numerals; "
           "prepending 'f' to %s",

@@ -10,7 +10,7 @@ program main
     use ISO_FORTRAN_ENV
     use, intrinsic :: ISO_C_BINDING
     use stdvec, only : make_view => make_const_viewdbl, &
-        print_view => print_viewdbl, VecDbl, get_vec_ref => get_vec_refdbl
+        print_view => print_viewdbl, VecDbl, get_vec => get_vecdbl
     implicit none
     type(VecDbl) :: v
     integer :: i
@@ -45,12 +45,13 @@ program main
     call print_view(test_dbl)
 
     write(0, *) "Copying vector of data"
-    local_vec = get_vec_ref()
-    write(0, *) "Printing that data"
-    call print_view(local_vec)
-
+    local_vec = get_vec(v)
     write(0, *) "Destroying..."
     call v%release()
+
+    write(0, *) "Printing copied data"
+    call print_view(local_vec)
+
 end program
 
 !-----------------------------------------------------------------------------!

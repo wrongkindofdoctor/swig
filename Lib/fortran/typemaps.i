@@ -7,16 +7,15 @@
  */
 //---------------------------------------------------------------------------//
 
-%include <std_pair.i>
-
 //---------------------------------------------------------------------------//
-// ARRAY TYPES
+// ARRAY VIEWS
 //
 // This maps a return value of pair<T*,size_t> to a small struct (mirrored in
 // fortran) that defines the start and size of a contiguous array.
-//
 //---------------------------------------------------------------------------//
 %define FORT_VIEW_TYPEMAP_IMPL(FTYPE, CONST_CTYPE...)
+  %include <std_pair.i>
+
   #define SWIGPAIR__ ::std::pair< CONST_CTYPE*, std::size_t >
 
   // C wrapper type: pointer to templated array wrapper
@@ -26,21 +25,12 @@
            fragment="SwigfArrayWrapper_wrap") SWIGPAIR__
     {SwigfArrayWrapper*}
 
-  // C input initialization typemaps
-  %typemap(arginit, noblock=1) SWIGPAIR__
-    {$1 = SWIGPAIR__();}
-
   // C input translation typemaps: $1 is SWIGPAIR__, $input is SwigfArrayWrapper
   %typemap(in) SWIGPAIR__
     %{$1.first  = static_cast<CONST_CTYPE*>($input->data);
       $1.second = $input->size;%}
 
-  // C output initialization
-  %typemap(arginit) SwigfArrayWrapper
-    %{$1.data = NULL;
-      $1.size = 0;%}
-
-  // C output translation typemaps: $1 is SWIGPAIR__, $input is SwigfArrayWrapper
+  // C output translation typemaps
   %typemap(out) SWIGPAIR__
     %{$result.data = $1.first;
       $result.size = $1.second;%}
@@ -107,7 +97,10 @@
 // STRING VIEWS
 //
 // String views are treated almost exactly like array views, except the Fortran
-// wrapper code uses slightly different types. These
+// wrapper code uses slightly different types. (To be strictly compatible with
+// Fortran-C interoperability, only arrays of length-1 chars can be passed back
+// and forth between C; we use a fragment in `forfragments.swg` to perform the
+// remapping.
 //---------------------------------------------------------------------------//
 
 %define FORT_STRVIEW_TYPEMAP_IMPL(CHARTYPE, CONST_CTYPE...)
@@ -157,7 +150,6 @@
 //
 // Use:
 //     %apply const std::string& NATIVE { const std::string& key };
-//
 //---------------------------------------------------------------------------//
 
 namespace std {
