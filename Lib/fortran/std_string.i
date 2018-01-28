@@ -8,7 +8,6 @@
 //---------------------------------------------------------------------------//
 
 %include "std_common.i"
-%include "typemaps.i"
 
 %fragment("<string>");
 
@@ -39,20 +38,25 @@ class string
     size_type size() const;
     size_type length() const;
 
+    //
+
 %extend {
-    %apply const std::string& NATIVE { const std::string& };
+    // XXX: overload for fortran string assignment
+#if 0
     // Assignment from fortran string
     void operator=(const std::string& inp)
     {
         *$self = inp;
     }
+#endif
+
+    %apply const std::string& NATIVE { const std::string& str};
 
     // Access as a newly allocated fortran string
     const std::string& str()
     {
         return *$self;
     }
-    %clear const std::string&;
 } // end %extend
 
 };

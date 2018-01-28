@@ -152,20 +152,21 @@
 //     %apply const std::string& NATIVE { const std::string& key };
 //---------------------------------------------------------------------------//
 
-namespace std {
-class string;
-}
-
 // C wrapper type: pointer to templated array wrapper
 %typemap(ctype, noblock=1, out="SwigfArrayWrapper",
        null="SwigfArrayWrapper_uninitialized()",
        fragment="SwigfArrayWrapper_wrap") std::string NATIVE
 {SwigfArrayWrapper*}
 
-// C output initialization
-%typemap(arginit) std::string NATIVE
-%{$1.data = NULL;
-  $1.size = 0;%}
+// C input translation typemaps: $1 is std::string*, $input is SwigfArrayWrapper
+%typemap(in) std::string NATIVE (std::string tempstr)
+%{tempstr = std::string(static_cast<const char*>($input->data), $input->size);
+$1 = &tempstr;
+%}
+
+// C output translation typemaps: $1 is string*, $input is SwigfArrayWrapper
+%typemap(out) std::string NATIVE
+%{#error "Currently cannot return strings by value as NATIVE strings" %}
 
 %typemap(imtype, import="SwigfArrayWrapper") std::string NATIVE
  "type(SwigfArrayWrapper)"
@@ -175,22 +176,31 @@ class string;
     std::string NATIVE
   "character(kind=C_CHAR, len=*), target"
 
+%typemap(findecl) std::string NATIVE
+%{
+character(kind=C_CHAR), dimension(:), allocatable, target :: $1_chars
+%}
+%typemap(fin, fragment="SwigfStringToCharArray", noblock=1) std::string NATIVE
+%{
+  call swigf_string_to_chararray($input, $1_chars, $1)
+%}
+
+// Fortran proxy translation code: convert from char array to Fortran string
+%typemap(fout, fragment="SwigfCharArrayToString") std::string NATIVE
+%{
+  call swigf_chararray_to_string($1, $result)
+%}
+
 // RETURN BY CONST REFERENCE
 
-%apply std::string NATIVE { const std::string& NATIVE };
+%apply std::string NATIVE { const std::string* NATIVE,
+                            const std::string& NATIVE };
 
 // C output translation typemaps: $1 is string*, $input is SwigfArrayWrapper
 %typemap(out) const std::string& NATIVE
 %{$result.data = ($1->empty() ? NULL : &(*$1->begin()));
   $result.size = $1->size();
   %}
-
-// Fortran proxy translation code: convert from char array to Fortran string
-%typemap(fout, fragment="SwigfCharArrayToString")
-    const std::string& NATIVE
-%{
-  call swigf_chararray_to_string($1, $result)
-%}
 
 //---------------------------------------------------------------------------//
 // end of fortran/typemaps.i

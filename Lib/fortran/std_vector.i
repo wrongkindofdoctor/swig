@@ -13,56 +13,7 @@
 %}
 
 %include "std_common.i"
-
-//---------------------------------------------------------------------------//
-// Native typemaps for std::vector: to translate directly to and from Fortran
-// arrays. Returns an allocatable array copy of a std::vector reference.
-//
-// To use this "native" wrapper for std::vector,
-//
-// To avoid wrapping std::vector but still instantiate the typemaps that
-// allow native wrapping, use %template() std::vector<double>
-//---------------------------------------------------------------------------//
-%define %std_vector_native_typemaps(TYPE...)
-
-#define SWIGVEC__ const std::vector<TYPE >& NATIVE
-// C wrapper type: pointer to templated array wrapper
-%typemap(ctype, noblock=1, out="SwigfArrayWrapper",
-       null="SwigfArrayWrapper_uninitialized()",
-       fragment="SwigfArrayWrapper_wrap") std::vector<TYPE>
-{SwigfArrayWrapper*}
-
-%typemap(imtype, import="SwigfArrayWrapper") SWIGVEC__
-  "type(SwigfArrayWrapper)"
-
-// Fortran proxy code: return allocatable vector<TYPE>
-%typemap(ftype, out={$typemap(imtype, TYPE ), dimension(:), allocatable},
-noblock=1) SWIGVEC__
-  {$typemap(imtype,  TYPE ), dimension(:), target, intent(in)}
-
-// C output translation typemaps: $1 is vector<TYPE>*, $input is SwigfArrayWrapper
-%typemap(out) SWIGVEC__
-%{$result.data = ($1->empty() ? NULL : &(*$1->begin()));
-  $result.size = $1->size();
-  %}
-
-// Fortran proxy translation code: convert from ftype $input to imtype $1
-%typemap(findecl, noblock=1) SWIGVEC__
-  {$typemap(imtype, TYPE ), pointer :: $1_view}
-%typemap(fin) SWIGPAIR__
-%{$1_view => $input(1)
-  $1%data = c_loc($1_view)
-  $1%size = size($input)%}
-
-// Fortran proxy translation code: convert from imtype $1 to ftype $result
-%typemap(foutdecl, noblock=1) SWIGVEC__
-    {$typemap(imtype, TYPE), pointer :: $1_view(:)}
-%typemap(fout, noblock=1) SWIGVEC__
-{ call c_f_pointer($1%data, $1_view, [$1%size])
-  allocate($typemap(imtype, TYPE) :: $result(size($1_view)))
-  $result = $1_view}
-
-%enddef
+%include "std_container.i"
 
 namespace std
 {
@@ -119,9 +70,8 @@ class vector
 } // end extend
 
 // Declare typemaps for using 'NATIVE' wrapping
-%std_vector_native_typemaps(Tp)
+%std_native_container(std::vector<_Tp, _Alloc >)
 
-#undef SWIGVEC__
 };
 
 // Specialize on bool
