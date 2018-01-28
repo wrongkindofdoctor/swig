@@ -9,10 +9,13 @@
 
 #ifdef __cplusplus
 // Give special names to special operations
-%rename(__ptr__)    *::operator->;
-%rename(__deref__)  *::operator*();
+//%rename(__ptr__)    *::operator->;
+//%rename(__deref__)  *::operator*();
 //%rename(__assign__) *::operator=;
-%rename(__eq__) *::operator==;
+//%rename(__eq__) *::operator==;
+%ignore *::operator->;
+%ignore *::operator*();
+%ignore *::operator=;
 
 // By default SWIG gives these underscore prefix/suffix
 %keywordwarn("'create' is reserved for SWIG constructors",
@@ -26,7 +29,7 @@
 // classes, ignore identifiers that also end with _.
 %namewarn("Fortran identifiers may not begin with underscores or numerals; "
           "prepending 'f' to %s",
-          rename="f%s", regextarget=1) "^[_0-9]+[^_]+$";
+          rename="f%s", regextarget=1) "^[_0-9]+.*[^_]+$";
 
 #define FORTRANKW(x) %keywordwarn("'" `x` "' is a Fortran keyword")  `x`
 
