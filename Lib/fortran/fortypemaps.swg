@@ -82,6 +82,24 @@
   */
 
 //---------------------------------------------------------------------------//
+/*!
+ * \def FORT_COPY_TYPEMAPS
+ * \brief Assign our special typemaps to one or more types from an original.
+ *
+ * This is basically like %apply but doesn't touch anything else SWIG has
+ * set up, i.e. globalin
+ */
+%define FORT_COPY_TYPEMAPS(SRC_TYPE, DST_TYPE...)
+  %typemap(ctype)     DST_TYPE = SRC_TYPE;
+  %typemap(in)        DST_TYPE = SRC_TYPE;
+  %typemap(out)       DST_TYPE = SRC_TYPE;
+  %typemap(imtype)    DST_TYPE = SRC_TYPE;
+  %typemap(ftype)     DST_TYPE = SRC_TYPE;
+  %typemap(fin)       DST_TYPE = SRC_TYPE;
+  %typemap(fout)      DST_TYPE = SRC_TYPE;
+%enddef
+
+//---------------------------------------------------------------------------//
 // VOID TYPES
 //---------------------------------------------------------------------------//
 
@@ -102,24 +120,44 @@
   ""
 
 //---------------------------------------------------------------------------//
-// FUNDAMENTAL TYPES
+// OPAQUE POINTERS
 //---------------------------------------------------------------------------//
-/*!
- * \def FORT_COPY_TYPEMAPS
- * \brief Assign our special typemaps to one or more types from an original.
- *
- * This is basically like %apply but doesn't touch anything else SWIG has
- * set up, i.e. globalin
- */
-%define FORT_COPY_TYPEMAPS(SRC_TYPE, DST_TYPE...)
-  %typemap(ctype)     DST_TYPE = SRC_TYPE;
-  %typemap(in)        DST_TYPE = SRC_TYPE;
-  %typemap(out)       DST_TYPE = SRC_TYPE;
-  %typemap(imtype)    DST_TYPE = SRC_TYPE;
-  %typemap(ftype)     DST_TYPE = SRC_TYPE;
-  %typemap(fin)       DST_TYPE = SRC_TYPE;
-  %typemap(fout)      DST_TYPE = SRC_TYPE;
-%enddef
+
+%typemap(ctype) void*
+  "$1_ltype"
+%typemap(in, noblock=1) void*
+  {$1 = %reinterpret_cast($input, $1_ltype);}
+%typemap(out) void*
+  "$result = $1;"
+%typemap(imtype, in="type(C_PTR), value") void*
+  "type(C_PTR)"
+%typemap(ftype) void*
+  "type(C_PTR)"
+%typemap(fin)  void*
+  "$1 = $input"
+%typemap(fout)  void*
+  "$result = $1"
+
+// Void pointers are returned as opaque C pointers
+FORT_COPY_TYPEMAPS(void*,
+                   const void*, void* const, void&, void[], void[ANY]);
+// Handles are returned as opaque C pointers
+FORT_COPY_TYPEMAPS(void*,
+                   SWIGTYPE**, SWIGTYPE* [], SWIGTYPE* [ANY])
+
+// Use const-correct arguments/return values.
+%typemap(in, noblock=1) const void*
+{$1 = %const_cast($input, $1_ltype);}
+FORT_COPY_TYPEMAPS(const void*,
+                   const SWIGTYPE**, const SWIGTYPE* [], const SWIGTYPE* [ANY],
+                   SWIGTYPE* const *, SWIGTYPE* const [], SWIGTYPE* const [ANY]);
+
+
+// Generic pointers are treated as C pointers when binding
+%typemap(bindc) SWIGTYPE*
+  "type(C_PTR)"
+%typemap(imbindc, in="type(C_PTR), value") SWIGTYPE*
+  "type(C_PTR)"
 
 //---------------------------------------------------------------------------//
 // FUNDAMENTAL TYPES
@@ -349,18 +387,12 @@ FORT_FUND_TYPEMAP(sssize_t          , "integer(C_SIZE_T)");
  $1 = &tempbool;
 }
 
-// Disallow pointers to bools
-%typemap(in, noblock=1) bool*
-{#error "Pointers to boolean values are not implemented in SWIG fortran"}
-%typemap(out, noblock=1) bool*
-{#error "Pointers to boolean values are not implemented in SWIG fortran"}
-
-// Mutable references and arrays are treated just like pointers
-FORT_COPY_TYPEMAPS(bool*,
-                   bool&, bool*&, bool[], bool[ANY],
+// Mutable references and arrays are treated like opaque pointers
+%apply void* { bool[], bool[ANY],
                    const bool*&, const bool[], const bool[ANY],
                    bool const [], bool const [ANY],
-                   const bool*, const bool* const);
+                   bool&, bool*&,
+                   const bool*, const bool* const };
 
 //---------------------------------------------------------------------------//
 // ENUMS
@@ -589,46 +621,6 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
 %define %fortran_bindc_struct(CTYPE)
   %fortran_bindc_typedef_struct(CTYPE, CTYPE)
 %enddef
-
-//---------------------------------------------------------------------------//
-// OPAQUE POINTERS
-//---------------------------------------------------------------------------//
-
-%typemap(ctype) void*
-  "$1_ltype"
-%typemap(in, noblock=1) void*
-  {$1 = %reinterpret_cast($input, $1_ltype);}
-%typemap(out) void*
-  "$result = $1;"
-%typemap(imtype, in="type(C_PTR), value") void*
-  "type(C_PTR)"
-%typemap(ftype) void*
-  "type(C_PTR)"
-%typemap(fin)  void*
-  "$1 = $input"
-%typemap(fout)  void*
-  "$result = $1"
-
-// Void pointers are returned as opaque C pointers
-FORT_COPY_TYPEMAPS(void*,
-                   const void*, void* const, void&, void[], void[ANY]);
-// Handles are returned as opaque C pointers
-FORT_COPY_TYPEMAPS(void*,
-                   SWIGTYPE**, SWIGTYPE* [], SWIGTYPE* [ANY])
-
-// Use const-correct arguments/return values.
-%typemap(in, noblock=1) const void*
-{$1 = %const_cast($input, $1_ltype);}
-FORT_COPY_TYPEMAPS(const void*,
-                   const SWIGTYPE**, const SWIGTYPE* [], const SWIGTYPE* [ANY],
-                   SWIGTYPE* const *, SWIGTYPE* const [], SWIGTYPE* const [ANY]);
-
-
-// Generic pointers are treated as C pointers when binding
-%typemap(bindc) SWIGTYPE*
-  "type(C_PTR)"
-%typemap(imbindc, in="type(C_PTR), value") SWIGTYPE*
-  "type(C_PTR)"
 
 //---------------------------------------------------------------------------//
 // FUNCTION POINTERS
