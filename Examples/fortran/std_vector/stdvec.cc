@@ -42,11 +42,21 @@ void print_view(std::pair<const T*, size_t> view)
 }
 
 //---------------------------------------------------------------------------//
+
+template<class T>
+const std::vector<T>& get_vec_ref()
+{
+    static std::vector<T> derp(10);
+    return derp;
+}
+
+//---------------------------------------------------------------------------//
 // EXPLICIT INSTANTIATION
 //---------------------------------------------------------------------------//
 
 template void print_vec(const std::vector<double>&);
 template void print_view(std::pair<const double*, size_t>);
+template const std::vector<double>& get_vec_ref();
 
 //---------------------------------------------------------------------------//
 // end of std_vector/stdvec.cc

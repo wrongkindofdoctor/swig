@@ -10,17 +10,18 @@ program main
     use ISO_FORTRAN_ENV
     use, intrinsic :: ISO_C_BINDING
     use stdvec, only : make_view => make_const_viewdbl, &
-        print_view => print_viewdbl, VecDbl
+        print_view => print_viewdbl, VecDbl, get_vec_ref => get_vec_refdbl
     implicit none
     type(VecDbl) :: v
     integer :: i
     real(C_DOUBLE), pointer :: vview(:)
+    real(C_DOUBLE), allocatable :: local_vec(:)
     real(C_DOUBLE), dimension(4)  :: test_dbl = (/ 0.1, 1.9, -2.0, 4.0 /)
 
     ! This should be a null-op since the underlying pointer is initialized to
     ! null
     call v%release()
-    
+
     write(0, *) "Constructing..."
     call v%create()
     write(0, *) "Sizing..."
@@ -42,6 +43,11 @@ program main
 
     write(0, *) "Printing from test data"
     call print_view(test_dbl)
+
+    write(0, *) "Copying vector of data"
+    local_vec = get_vec_ref()
+    write(0, *) "Printing that data"
+    call print_view(local_vec)
 
     write(0, *) "Destroying..."
     call v%release()
