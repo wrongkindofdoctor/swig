@@ -107,7 +107,7 @@
 // STRING VIEWS
 //
 // String views are treated almost exactly like array views, except the Fortran
-// wrapper code uses slightly different types.
+// wrapper code uses slightly different types. These
 //---------------------------------------------------------------------------//
 
 %define FORT_STRVIEW_TYPEMAP_IMPL(CHARTYPE, CONST_CTYPE...)
@@ -149,6 +149,56 @@
     // This is only here to mirror %fortran_view
     FORT_STRVIEW_TYPEMAP("C_CHAR", CTYPE)
 %enddef
+
+//---------------------------------------------------------------------------//
+// Optional string typemaps for native fortran conversion.
+// Currently because we don't have the interface to free a std::string that's
+// returned with 'new' (or by value) we only support const references.
+//
+// Use:
+//     %apply const std::string& NATIVE { const std::string& key };
+//
+//---------------------------------------------------------------------------//
+
+namespace std {
+class string;
+}
+
+// C wrapper type: pointer to templated array wrapper
+%typemap(ctype, noblock=1, out="SwigfArrayWrapper",
+       null="SwigfArrayWrapper_uninitialized()",
+       fragment="SwigfArrayWrapper_wrap") std::string NATIVE
+{SwigfArrayWrapper*}
+
+// C output initialization
+%typemap(arginit) std::string NATIVE
+%{$1.data = NULL;
+  $1.size = 0;%}
+
+%typemap(imtype, import="SwigfArrayWrapper") std::string NATIVE
+ "type(SwigfArrayWrapper)"
+
+// Fortran proxy code: return allocatable string
+%typemap(ftype, out="character(kind=C_CHAR, len=:), allocatable")
+    std::string NATIVE
+  "character(kind=C_CHAR, len=*), target"
+
+// RETURN BY CONST REFERENCE
+
+%apply std::string NATIVE { const std::string& NATIVE };
+
+// C output translation typemaps: $1 is string*, $input is SwigfArrayWrapper
+%typemap(out) const std::string& NATIVE
+%{$result.data = ($1->empty() ? NULL : &(*$1->begin()));
+  $result.size = $1->size();
+  %}
+
+// Fortran proxy translation code: convert from char array to Fortran string
+%typemap(fout, fragment="SwigfCharArrayToString")
+    const std::string& NATIVE
+%{
+  call swigf_chararray_to_string($1, $result)
+%}
 
 //---------------------------------------------------------------------------//
 // end of fortran/typemaps.i

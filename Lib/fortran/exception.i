@@ -193,56 +193,21 @@ void swigf_store_exception(int code, const char * msg)
 
 //---------------------------------------------------------------------------//
 // Functional interface to swig error string
-//
-// Note: this is taken from some test code I wrote for std::string. Since it
-// only works with returning references, I'm only using it for exception
-// handling in the meantime.
 //---------------------------------------------------------------------------//
 
 #ifdef __cplusplus
+%include <typemaps.i>
+
 // Declare typedef for special string conversion typemaps
 %inline %{
-typedef const std::string& Swig_Err_String;
+typedef std::string Swig_Err_String;
 %}
 
-#define STRING_TYPES Swig_Err_String
-#define AW_TYPE SwigfArrayWrapper
-
-// C wrapper type: pointer to templated array wrapper
-%typemap(ctype, noblock=1, out="SwigfArrayWrapper",
-       fragment="SwigfArrayWrapper_wrap") STRING_TYPES
-{AW_TYPE*}
-
-// C output initialization
-%typemap(arginit) AW_TYPE
-%{$1.data = NULL;
-  $1.size = 0;%}
-
-// C output translation typemaps: $1 is string*, $input is AW_TYPE
-%typemap(out) const std::string&
-%{$result.data = ($1->empty() ? NULL : &(*$1->begin()));
-  $result.size = $1->size();
-  %}
-
-%typemap(imtype, import="SwigfArrayWrapper") STRING_TYPES
- "type(SwigfArrayWrapper)"
-
-// Fortran proxy code: return allocatable string
-%typemap(ftype, out="character(kind=C_CHAR, len=:), allocatable") STRING_TYPES
-"character(kind=C_CHAR, len=*), target"
-
-// Fortran proxy translation code: convert from char array to Fortran string
-%typemap(fout, fragment="SwigfCharArrayToString") STRING_TYPES
-%{
-  call swigf_chararray_to_string($1, $result)
-%}
-
-#undef STRING_TYPES
-#undef AW_TYPE
+%apply const std::string& NATIVE { const Swig_Err_String& };
 
 // Get a pointer to the error string
 %inline {
-Swig_Err_String SWIG_FORTRAN_ERROR_STR()
+const Swig_Err_String& SWIG_FORTRAN_ERROR_STR()
 {
     return swigf_last_exception_msg;
 }
