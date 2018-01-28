@@ -12,6 +12,7 @@ program main
     call test_bindc()
     call test_funcs()
     call test_enum()
+    call test_logical()
 
 contains
 
@@ -97,7 +98,7 @@ subroutine test_funcs()
     ! THIS PRINTS BAD DATA for columns since they're not contiguous
     ! (fortran is row-major)
     write(0,*) "---- Column access is OK ----"
-    
+
     do i = 1,3
         write(0, *) "Printing 2D array col ", i, " slice..."
         call print_array(mat(:,i))
@@ -106,7 +107,7 @@ subroutine test_funcs()
     ! THIS PRINTS BAD DATA for columns since they're not contiguous
     ! (fortran is row-major)
     write(0,*) "---- Row access is NOT ok ----"
-    
+
     do i = 1,3
         write(0, *) "Printing 2D array row ", i, " slice..."
         call print_array(mat(i,:))
@@ -116,15 +117,37 @@ subroutine test_funcs()
     allocate(alloc(3))
 
     write(0,*) "---- Correct row access ----"
-    
+
     ! Instead, do this since allocatable data is contiguous:
     do i = 1,3
         write(0, *) "Printing 2D array row ", i, " slice..."
         alloc(:) = mat(i,:)
         call print_array(alloc)
     enddo
-    
+
 end subroutine test_funcs
+
+subroutine test_logical()
+    use ISO_C_BINDING
+    use bare
+    implicit none
+
+    logical(C_BOOL) :: inp, outp
+    logical :: ninp, noutp
+    inp = .true.
+    outp = bound_negation(inp)
+    write(0, *) "Should be true:", inp, "; should be false: ", outp
+    inp = .false.
+    outp = bound_negation(inp)
+    write(0, *) "Should be false:", inp, "; should be true: ", outp
+
+    ninp = .true.
+    noutp = wrapped_negation(ninp)
+    write(0, *) "Should be true:", ninp, "; should be false: ", noutp
+    ninp = .false.
+    noutp = wrapped_negation(ninp)
+    write(0, *) "Should be false:", ninp, "; should be true: ", noutp
+end subroutine
 
 end program
 

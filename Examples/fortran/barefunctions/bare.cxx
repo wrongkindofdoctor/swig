@@ -129,6 +129,10 @@ void print_sphere(const double origin[3], const double* radius)
         << origin[1] << ','
         << origin[2] << "}\n";
 }
+bool bound_negation(bool v)
+{
+    return !v;
+}
 }
 //---------------------------------------------------------------------------//
 // end of bare_function/bare.cc

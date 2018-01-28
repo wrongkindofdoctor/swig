@@ -260,7 +260,7 @@ struct AssignmentTraits
 #endif
 };
 
-} // end namespace swigf    
+} // end namespace swigf
 %}
 
 %fragment("SwigfClassAssign_wrap", "header",
@@ -460,7 +460,7 @@ subroutine swigf_string_to_chararray(string, chars, wrap)
   use, intrinsic :: ISO_C_BINDING
   character(kind=C_CHAR, len=*), intent(IN) :: string
   character(kind=C_CHAR), dimension(:), target, allocatable, intent(OUT) :: chars
-  type(SwigfArrayWrapper), intent(OUT) :: wrap 
+  type(SwigfArrayWrapper), intent(OUT) :: wrap
   integer(kind=C_SIZE_T) :: i
 
   allocate(character(kind=C_CHAR) :: chars(len(string)))
@@ -478,7 +478,7 @@ end subroutine
           noblock="1") %{
 subroutine swigf_chararray_to_string(wrap, string)
   use, intrinsic :: ISO_C_BINDING
-  type(SwigfArrayWrapper), intent(IN) :: wrap 
+  type(SwigfArrayWrapper), intent(IN) :: wrap
   character(kind=C_CHAR, len=:), allocatable, intent(OUT) :: string
   character(kind=C_CHAR), dimension(:), pointer :: chars
   integer(kind=C_SIZE_T) :: i
@@ -488,6 +488,38 @@ subroutine swigf_chararray_to_string(wrap, string)
     string(i:i) = chars(i)
   enddo
 end subroutine
+%}
+
+// Add function to convert Fortran logical values to C-bound integers
+%fragment("SwigfLogicalToInt", "fwrapper",
+          noblock="1") %{
+function swigf_logical_to_int(inp) &
+    result(out)
+  use, intrinsic :: ISO_C_BINDING
+  logical, intent(IN) :: inp
+  integer(kind=C_INT) :: out
+  if (inp .eqv. .true.) then
+    out = 1
+  else
+    out = 0
+  end if
+end function
+%}
+
+// Add function to convert Fortran logical values to C-bound integers
+%fragment("SwigfIntToLogical", "fwrapper",
+          noblock="1") %{
+function swigf_int_to_logical(inp) &
+    result(out)
+  use, intrinsic :: ISO_C_BINDING
+  integer(kind=C_INT), intent(IN) :: inp
+  logical :: out
+  if (inp /= 0) then
+    out = .true.
+  else
+    out = .false.
+  end if
+end function
 %}
 
 //---------------------------------------------------------------------------//

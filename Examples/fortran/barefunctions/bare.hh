@@ -29,9 +29,12 @@ const double& get_something_rcref(int x);
 void print_array(std::pair<const double*, size_t> arr);
 
 extern "C" {
-// This function is simply bound, not wrapped.
+// These functions are simply bound, not wrapped.
 void print_sphere(const double origin[3], const double* radius);
+bool bound_negation(bool v);
 }
+
+inline bool wrapped_negation(bool v) { return !v; }
 
 //---------------------------------------------------------------------------//
 

@@ -120,7 +120,7 @@
   %typemap(fin)       DST_TYPE = SRC_TYPE;
   %typemap(fout)      DST_TYPE = SRC_TYPE;
 %enddef
-  
+
 //---------------------------------------------------------------------------//
 // FUNDAMENTAL TYPES
 //---------------------------------------------------------------------------//
@@ -315,6 +315,54 @@ FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)");
 FORT_FUND_TYPEMAP(sssize_t          , "integer(C_SIZE_T)");
 
 //---------------------------------------------------------------------------//
+// LOGICAL (BOOLEAN) TYPE
+//
+// Due to differences in how Fortran and C treat logical values, it's not always
+// safe to treat C_BOOL and bool as compatible. Yay. So we pass integers
+// between the language and have the wrapper convert them. This also lets us
+// use the native fortran logical type instead of requiring users cast to
+// the special C_BOOL type.
+//
+// https://software.intel.com/en-us/forums/intel-fortran-compiler-for-linux-and-mac-os-x/topic/594856
+// http://www.fortran90.org/src/gotchas.html
+//---------------------------------------------------------------------------//
+%typemap(ctype, out="int") bool
+"const int*"
+%typemap(in) bool
+"$1 = (*$input ? true : false);"
+%typemap(out) bool
+"$result = ($1 ? 1 : 0);"
+%typemap(imtype, in="integer(C_INT), intent(in)") bool
+"integer(C_INT)"
+%typemap(ftype, out="logical") bool
+"logical, intent(in)"
+%typemap(fin, fragment="SwigfLogicalToInt")  bool
+"$1 = swigf_logical_to_int($input)"
+%typemap(fout, fragment="SwigfIntToLogical") bool
+"$result = swigf_int_to_logical($1)"
+
+// Treat const references like values
+%apply bool { const bool& };
+// ... except our 'in' typemap has to create a temporary
+%typemap(in) const bool& (bool tempbool)
+{tempbool = (*$input ? true : false);
+ $1 = &tempbool;
+}
+
+// Disallow pointers to bools
+%typemap(in, noblock=1) bool*
+{#error "Pointers to boolean values are not implemented in SWIG fortran"}
+%typemap(out, noblock=1) bool*
+{#error "Pointers to boolean values are not implemented in SWIG fortran"}
+
+// Mutable references and arrays are treated just like pointers
+FORT_COPY_TYPEMAPS(bool*,
+                   bool&, bool*&, bool[], bool[ANY],
+                   const bool*&, const bool[], const bool[ANY],
+                   bool const [], bool const [ANY],
+                   const bool*, const bool* const);
+
+//---------------------------------------------------------------------------//
 // ENUMS
 //---------------------------------------------------------------------------//
 
@@ -337,7 +385,7 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
 %typemap(out, noblock=1) const enum SWIGTYPE&
     {$result = %static_cast(*$1, int);}
 %typemap(ftype) const enum SWIGTYPE& = enum SWIGTYPE;
-   
+
 #if 0
 // NOTE: GCC generates lots of warnings when you try to bind to an enum type,
 // even if that enum is C-bound. Instead, just use integer bindings.
@@ -394,7 +442,7 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
 //   correct constness
 // - Const pointers/references must be const_cast to the temporary variable $1
 //   because of how SWIG wraps the argument variables
-//   
+//
 //---------------------------------------------------------------------------//
 
 // Classes accepted by value are passed as const reference.
@@ -437,7 +485,7 @@ SWIGTYPE
   "class($fclassname), intent(inout)"
 %typemap(fin)    SWIGTYPE* = SWIGTYPE;
 %typemap(fout)   SWIGTYPE* = SWIGTYPE;
-  
+
 // Raw pointers act mostly like value types (with overrides below)
 %typemap(ctype)  const SWIGTYPE* = SWIGTYPE*;
 %typemap(in, noblock=1) const SWIGTYPE*
