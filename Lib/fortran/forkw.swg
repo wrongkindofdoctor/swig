@@ -8,24 +8,36 @@
 //---------------------------------------------------------------------------//
 
 #ifdef __cplusplus
-// Give valid names to pointer-like operations
-%rename(deref) *::operator->;
-%rename(ref)   *::operator*();
+// Give special names to special operations
+//%rename(__ptr__)    *::operator->;
+//%rename(__deref__)  *::operator*();
+//%rename(__assign__) *::operator=;
+//%rename(__eq__) *::operator==;
+%ignore *::operator->;
+%ignore *::operator*();
+%ignore *::operator=;
 
 // By default SWIG gives these underscore prefix/suffix
 %keywordwarn("'create' is reserved for SWIG constructors",
-             rename="create_") "*::create";
+             rename="create_", %$ismember) "create";
 %keywordwarn("'release' is reserved for SWIG destructors",
              rename="release_") "*::release";
 #endif
 
-// Prevent identifiers from having a leading underscore
-// %rename("%(regex:/^_(.*)/\\1_/)s") "";
+// Prevent identifiers from having a leading underscore.
+// Since SWIG uses "__dummy_%d__" internally for %template()-instantiated
+// classes, ignore identifiers that also end with _.
+%namewarn("Fortran identifiers may not begin with underscores or numerals; "
+          "prepending 'f' to %s",
+          rename="f%s", regextarget=1) "^[_0-9]+.*[^_]+$";
 
 #define FORTRANKW(x) %keywordwarn("'" `x` "' is a Fortran keyword")  `x`
 
+#define FORTRANFN(x) %keywordwarn("'" `x` "' is a Fortran built-in function" `x` "'",sourcefmt="%(lower)s",%$isfunction,%$not %$ismember) `x`
+
+
 // FORTRAN 77
-FORTRANKW(assign);
+//FORTRANKW(assign);
 FORTRANKW(backspace);
 FORTRANKW(block data);
 FORTRANKW(call);
@@ -40,7 +52,7 @@ FORTRANKW(else if);
 FORTRANKW(end);
 FORTRANKW(endfile);
 FORTRANKW(endif);
-FORTRANKW(entry);
+//FORTRANKW(entry);
 FORTRANKW(equivalence);
 FORTRANKW(external);
 FORTRANKW(format);
@@ -52,7 +64,7 @@ FORTRANKW(inquire);
 FORTRANKW(intrinsic);
 FORTRANKW(open);
 FORTRANKW(parameter);
-FORTRANKW(pause);
+//FORTRANKW(pause);
 FORTRANKW(print);
 FORTRANKW(program);
 FORTRANKW(read);

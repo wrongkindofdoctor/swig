@@ -13,6 +13,7 @@
 %}
 
 %include "std_common.i"
+%include "std_container.i"
 
 namespace std
 {
@@ -67,6 +68,9 @@ class vector
         return (*$self)[index];
     }
 } // end extend
+
+// Declare typemaps for using 'NATIVE' wrapping
+%std_native_container(std::vector<_Tp, _Alloc >)
 
 };
 

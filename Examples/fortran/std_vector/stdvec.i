@@ -15,7 +15,7 @@
 %}
 
 //---------------------------------------------------------------------------//
-// EXTEND DOUBLE TO HAVE VIEWS
+// EXTEND VECTOR TO HAVE VIEWS
 //---------------------------------------------------------------------------//
 
 %include <typemaps.i>
@@ -46,25 +46,31 @@
 %enddef
 
 //---------------------------------------------------------------------------//
-// Include double
+// Instantiate the vector-double
 //---------------------------------------------------------------------------//
 
 %include <std_vector.i>
 
 ADD_VIEW(double)
+
 %template(VecDbl) std::vector<double>;
 
 //---------------------------------------------------------------------------//
-// Instantiate a view template and add a "view" method.
+// Parse and instantiate the templated functions
 //---------------------------------------------------------------------------//
+
+// Make the single "get_vec_ref" function return a native allocated fortran array
+// (This is enabled by the instantiation of std::vector.).
+// Note that the signature as written only causes the *out* typemaps to apply --
+// the input typemaps still correspond to the std::vector class.
+%apply const std::vector<double>& NATIVE { const std::vector<double>& get_vec<double> };
 
 %include "stdvec.hh"
-
-//---------------------------------------------------------------------------//
 
 %template(make_viewdbl) make_view<double>;
 %template(make_const_viewdbl) make_const_view<double>;
 %template(print_viewdbl) print_view<double>;
+%template(get_vecdbl) get_vec<double>;
 
 //---------------------------------------------------------------------------//
 // end of std_vector/stdvec.i

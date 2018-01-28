@@ -13,7 +13,7 @@
 %include <std_except.i>
 
 %exception {
-    swig::fortran_check_unhandled_exception();
+    swigf_check_unhandled_exception();
     try
     {
         $action

@@ -29,21 +29,24 @@
  */
 #define %fortranbegin         %insert("fbegin")
 
+#define %fortranprepend       %feature("fortran:prepend")
+#define %clearfortranprepend  %feature("fortran:prepend","")
 
-#define %fortranprepend       %feature("fortranprepend")
-#define %clearfortranprepend  %feature("fortranprepend","")
-
-#define %fortranappend        %feature("fortranappend")
-#define %clearfortranappend   %feature("fortranappend","")
+#define %fortranappend        %feature("fortran:append")
+#define %clearfortranappend   %feature("fortran:append","")
 
 
-#define %parameter      %feature("parameter")
-#define %noparameter    %feature("parameter","0")
-#define %clearparameter %feature("parameter","")
+#define %parameter      %feature("fortran:parameter")
+#define %noparameter    %feature("fortran:parameter","0")
+#define %clearparameter %feature("fortran:parameter","")
 
-#define %enumerator      %feature("enumerator")
-#define %noenumerator    %feature("enumerator","0")
-#define %clearenumerator %feature("enumerator","")
+#define %enumerator      %feature("fortran:enumerator")
+#define %noenumerator    %feature("fortran:enumerator","0")
+#define %clearenumerator %feature("fortran:enumerator","")
+
+#define %bindc      %feature("fortran:bindc")
+#define %nobindc    %feature("fortran:bindc", "0")
+#define %clearbindc %feature("fortran:bindc", "")
 
 //---------------------------------------------------------------------------//
 // STANDARD TYPE DEFINITIONS
@@ -66,10 +69,6 @@ using std::ptrdiff_t;
 
 //---------------------------------------------------------------------------//
 // CUSTOM TYPEMAP DESCRIPTIONS.
-%include "fortypemaps.swg"
-
-//---------------------------------------------------------------------------//
-// ENUMERATOR OVERRIDES
 %include "fortypemaps.swg"
 
 //---------------------------------------------------------------------------//

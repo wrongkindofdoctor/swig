@@ -121,6 +121,19 @@ void print_cmyk(CmykEnum c)
     cout << str << endl;
 }
 
+extern "C" {
+void print_sphere(const double origin[3], const double* radius)
+{
+    cout << "Sphere: r=" << *radius << ", origin={"
+        << origin[0] << ','
+        << origin[1] << ','
+        << origin[2] << "}\n";
+}
+bool bound_negation(bool v)
+{
+    return !v;
+}
+}
 //---------------------------------------------------------------------------//
 // end of bare_function/bare.cc
 //---------------------------------------------------------------------------//

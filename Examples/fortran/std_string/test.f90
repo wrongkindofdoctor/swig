@@ -12,7 +12,7 @@ program main
     use stdstr, only : print_str, halve_str, string
     implicit none
     character(len=*), parameter :: paramstr = "short string   "
-    character(len=:), allocatable :: varlen
+    character(len=:), allocatable :: varlen, tostr
     character(kind=C_CHAR), dimension(:), pointer :: ptrstr
     character(len=16) :: fixedlen
     integer :: i
@@ -42,7 +42,7 @@ program main
     call halve_str(s)
     ptrstr => s%view()
 
-    ! NOTE: putting the size call inside the allocate call crashes fortran.
+    ! NOTE: putting the size call inside the allocate call causes a crash
     write(0, *) "Allocating and copying to varlen"
     i = size(ptrstr)
     allocate(character(len=i) :: varlen)
@@ -52,7 +52,11 @@ program main
 
     write(0, *) "Quarter-length string: '"//varlen//"'"
 
-    ! Copy string to fix-length array (alternate way of extracting)
+    ! Get using native string output operator
+    tostr = s%str()
+    write(0, *) "As native allocated string: '"//varlen//"'"
+
+    ! Copy string to fixed-length array (alternate way of extracting)
     fixedlen = "XXXXXXXXXXXXXXXX"
     call s%copy_to(fixedlen)
     write(0, *) "Fixed-length string: '"//fixedlen//"'"

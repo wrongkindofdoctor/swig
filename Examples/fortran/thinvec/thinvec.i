@@ -36,10 +36,13 @@
 // macros, we must use {} rather than %{ %} for the typemap. To prevent those
 // enclosing braces from being inserted in the wrapper code, we add the
 // noblock=1 argument to the typemap.
+//
+// The typemap applies to type pattern THINVEC_T, and it uses a temporary
+// variable (called tempvec) in the parentheses.
 %typemap(in, noblock=1) THINVEC_T (ThinVec<int> tempvec)
 {
-    // Original typemap: convert void* to thinvec reference
-    $1 = %static_cast(%const_cast($input, void*), $1_ltype);
+    // Original typemap: convert const ThinVec<int>* to thinvec reference
+    $1 = %static_cast($input->ptr, $1_ltype);
     // Resize temporary vec
     tempvec.resize($1->size());
     // Copy input vector incremented by one

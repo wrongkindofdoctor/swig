@@ -7,70 +7,93 @@
 !-----------------------------------------------------------------------------!
 
 program main
-    use ISO_FORTRAN_ENV
-
-    call test_class()
-
+    implicit none
+    call test_simple_class_memory()
+    call test_simple_class_actions()
+    call test_basic_struct()
 contains
 
-subroutine test_class()
+subroutine test_simple_class_actions()
     use simple_class
+    use ISO_C_BINDING
+    implicit none
+    type(SimpleClass) :: sc
+    integer(C_INT) :: example
+
+    write(0, *) "Null-op to release..."
+    call sc%release()
+
+    write(0, *) "Constructing..."
+    call sc%create()
+    call sc%set(9)
+
+    example = 7
+    call sc%action(example)
+    write(0, *) "Should be 63:", example
+    call sc%release()
+
+    write(0, *) "Null-op to release..."
+    call sc%release()
+end subroutine
+
+subroutine test_simple_class_memory()
+    use simple_class
+    use ISO_C_BINDING
     implicit none
     type(SimpleClass) :: orig
-    type(SimpleClass) :: made
-    type(SimpleClass) :: ref
-    type(BasicStruct) :: s
+    type(SimpleClass) :: copied
+    type(SimpleClass) :: assigned
+    type(SimpleClass) :: constref
+    type(SimpleClass) :: unassigned
 
     write(0, *) "Constructing..."
     call orig%create()
-    ! write(0, "(a, z16)") "Orig:", orig%swigptr, "Copy:", copy%swigptr
-    write(0, *) "Setting..."
-    call orig%set(1)
-    write(0, *) "Current value ", orig%get()
-    call orig%double_it()
-    write(0, *) "Current value ", orig%get()
-    write(0, *) "Quadrupled: ", orig%get_multiplied(4)
-    call print_value(orig)
     call orig%set(1)
 
-    ! Pass a class by value
-    write(0, *) "Setting by copy"
-    call set_class_by_copy(orig)
-    write(0, *) "Getting by reference"
-    ref = get_class()
-    write(0, *) "Got", ref%get()
+    ! Copy construct ideally
+    write(0, *) "Copying class "
+    copied = orig
+    write(0, *) "Orig/copied: should be 12/1"
+    write(0,*) "is", copied%id(), "/", orig%id()
 
-    ! Create
-    write(0, *) "Making class "
-    made = make_class(2)
-    write(0, *) "printing value"
-    call print_value(made)
-    ! ! TODO: this should release 'orig'; maybe transfer ownership??
+    ! Assign to an already-created instance
     write(0, *) "Assigning"
-    orig = made
-    ! TODO: this should release existing 'made'
-    write(0, *) "Returning by value"
-    made = make_class(3)
+    call assigned%create()
+    call assigned%set(3)
+    assigned = orig
+    call orig%set(4)
+    write(0, *) "Orig/assigned: should be 4/3"
+    call print_value(orig)
+    call print_value(assigned)
 
-    ! TODO Should be able to call ref%release (a reference to the global
-    ! variable g_globalclass) without consequence.
-    !! write(0, *) "Releasing ref"
-    !! call ref%release()
+    ! Get a class by const reference; it should fail if you try to modify it
+    constref = get_class()
+    ! call constref%double_it()
 
-    ! TODO: the class pointed to by 'orig' is already deleted because of 
-    ! Release orig 
-    ! write(0, *) "Releasing orig"
-    ! call orig%release()
-    
     ! Release created
-    write(0, *) "Releasing ret-by-val"
-    call made%release()
-    write(0, *) "Done!"
+    write(0, *) "Releasing orig"
+    call orig%release()
+    ! Release copy constructed
+    write(0, *) "Releasing copied"
+    call copied%release()
+    ! Release assigned
+    write(0, *) "Releasing assigned"
+    call assigned%release()
+    ! Release global const reference
+    write(0, *) "Releasing const reference"
+    call constref%release()
+    ! Release a pointer in its null state
+    write(0, *) "Releasing unassigned"
+    call unassigned%release()
+end subroutine
 
-    write(0, *) "Building struct..."
-    s%foo = 4
-    s%bar = 9.11d0
-    call print_struct(s)
+subroutine test_basic_struct()
+    use simple_class
+    implicit none
+    type(BasicStruct) :: bs
+    bs%foo = 4321
+    bs%bar = 1.234d0
+    call print_struct(bs)
 end subroutine
 
 end program

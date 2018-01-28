@@ -9,10 +9,12 @@
 
 %include "std_common.i"
 
-%{
-#include <string>
-%}
+%include <typemaps.i>
+%fragment("<string>");
 
+//---------------------------------------------------------------------------//
+// Standard string class
+//---------------------------------------------------------------------------//
 namespace std
 {
 class string
@@ -37,20 +39,24 @@ class string
     size_type size() const;
     size_type length() const;
 
+    //
+
 %extend {
-
-    // C indexing used here!
-    void set(size_type pos, value_type v)
+    // XXX: overload for fortran string assignment
+#if 0
+    // Assignment from fortran string
+    void operator=(const std::string& inp)
     {
-        // TODO: check range
-        (*$self)[pos] = v;
+        *$self = inp;
     }
+#endif
 
-    // C indexing used here!
-    value_type get(size_type pos)
+    %apply const std::string& NATIVE { const std::string& str};
+
+    // Access as a newly allocated fortran string
+    const std::string& str()
     {
-        // TODO: check range
-        return (*$self)[pos];
+        return *$self;
     }
 } // end %extend
 

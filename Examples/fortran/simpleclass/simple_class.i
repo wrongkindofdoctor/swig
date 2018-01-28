@@ -8,14 +8,11 @@
 //---------------------------------------------------------------------------//
 %module(docstring="A simple example module") simple_class
 
-
 %include "docstring.i"
 
 %{
 #include "SimpleClass.hh"
 %}
-
-#ifdef SWIGFORTRAN
 
 %{
 #include <iostream>
@@ -28,7 +25,7 @@ using std::endl;
 %}
 
 %inline %{
-void print_pointer(int msg, SimpleClass* ptr)
+void print_pointer(int msg, const SimpleClass* ptr)
 {
     cout << "F " << (msg == 0 ? "Constructed"
                    : msg == 1 ? "Releasing"
@@ -56,13 +53,8 @@ void print_pointer(int msg, SimpleClass* ptr)
     call print_pointer(1, self)
 %}
 
-#endif
-
 // %ignore make_class;
 // %ignore get_class;
-
-%parameter approx_pi;
-
 
 %feature("docstring") SimpleClass %{
 Simple test class.
@@ -76,41 +68,35 @@ void SimpleClass::double_it()
 Multiply the value by 2.
 %};
 
+%ignore SimpleClass::operator=;
+
+#if 0
+// Insert assignment implementation
+%fragment("SwigfClassAssign");
+
+%feature("fortran:generic", "assignment(=)") SimpleClass::swigf_assignment;
+
 %extend SimpleClass {
 
-%insert("ftypes") %{
-  procedure, private :: assign_simpleclass_impl
-  generic :: assignment(=) => assign_simpleclass_impl
-%}
-
-%insert("fwrapper") %{
-subroutine assign_simpleclass_impl(self, other)
-    use, intrinsic :: ISO_C_BINDING
-    class(SimpleClass), intent(inout) :: self
-    type(SimpleClass), intent(in) :: other
-    call print_pointer(2, other)
-    call print_pointer(3, self)
-    if (c_associated(self%swigptr)) then
-      !call self%release()
-      write(*,*) "Leaking", self%id()
-    endif
-    self%swigptr = other%swigptr
-end subroutine
-%}
+void swigf_assignment(const SimpleClass* other)
+{
+    SWIGF_assign(SimpleClass, $self, SimpleClass, other,
+                 swigf::IS_COPY_CONSTR | swigf::IS_COPY_ASSIGN);
+}
 
 };
+#endif
 
 %feature("new") emit_class;
 
 // Make BasicStruct a fortran-accessible struct.
 %fortran_bindc_struct(BasicStruct);
 
-// %rename(SimpleClassDerp) SimpleClass;
 %include "SimpleClass.hh"
 
 // Overloaded instantiation
-// %template(action) SimpleClass::action<double>;
-// %template(action) SimpleClass::action<int>;
+%template(action) SimpleClass::action<double>;
+%template(action) SimpleClass::action<int>;
 
 //---------------------------------------------------------------------------//
 // end of simple_class/simple.i
