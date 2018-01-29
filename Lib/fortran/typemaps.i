@@ -136,6 +136,14 @@
   %typemap(out) ::std::pair< const CTYPE*, std::size_t >
     %{$result.data = const_cast<CTYPE*>($1.first);
       $result.size = $1.second;%}
+
+  // Fortran proxy translation code for mutable char arrays: copy back to original
+  // fortran string
+  %typemap(ffreearg, fragment="SwigfRestoreCharArray", noblock=1)
+    ::std::pair< CTYPE*, std::size_t >
+  %{
+    call swigf_restore_chararray($1_chars, $input)
+  %}
 %enddef
 
 %define %fortran_string_view(CTYPE)

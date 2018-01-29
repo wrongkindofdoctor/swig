@@ -24,8 +24,16 @@
  * imtype:import : Import this fortran type into the interface declaration
  * ftype      : Fortran proxy type
  * fin        : Fortran proxy code used to translate a Fortran argument to a
- *              wrapper argument
- * fout       : Fortran proxy code to translate return value
+ *              C argument ($input -> $1)
+ * fout       : Fortran proxy code to translate return value ($1 -> $result)
+ *
+ * UNUSUAL TYPEMAPS:
+ *
+ * findecl    : declare any variables used in converting an input value
+ *              ($1_temp)
+ * ffreearg   : clean up any variables used to convert an input value
+ *              ($1, $result)
+ * foutdecl   : declare any temporary variables used to convert output values
  */
 
 /*! SPECIAL TYPEMAP VARIABLES.

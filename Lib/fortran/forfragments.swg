@@ -490,6 +490,21 @@ subroutine swigf_chararray_to_string(wrap, string)
 end subroutine
 %}
 
+// Add function to return allocatable string from char array
+%fragment("SwigfRestoreCharArray", "fwrapper",
+          fragment="SwigfArrayWrapper",
+          noblock="1") %{
+subroutine swigf_restore_chararray(chars, string)
+  use, intrinsic :: ISO_C_BINDING
+  character(kind=C_CHAR), dimension(:), intent(IN) :: chars
+  character(kind=C_CHAR, len=*), intent(OUT) :: string
+  integer(kind=C_SIZE_T) :: i
+  do i=1, len(string)
+    string(i:i) = chars(i)
+  enddo
+end subroutine
+%}
+
 // Add function to convert Fortran logical values to C-bound integers
 %fragment("SwigfLogicalToInt", "fwrapper",
           noblock="1") %{
