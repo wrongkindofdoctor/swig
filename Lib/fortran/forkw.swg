@@ -11,6 +11,7 @@
 // Give special names to special operations
 //%rename(__ptr__)    *::operator->;
 //%rename(__deref__)  *::operator*();
+//%ignore *::operator*() const;
 //%rename(__assign__) *::operator=;
 //%rename(__eq__) *::operator==;
 %ignore *::operator->;

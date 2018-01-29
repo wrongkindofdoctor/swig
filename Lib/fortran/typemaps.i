@@ -165,8 +165,10 @@ $1 = &tempstr;
 %}
 
 // C output translation typemaps: $1 is string*, $input is SwigfArrayWrapper
-%typemap(out) std::string NATIVE
-%{#error "Currently cannot return strings by value as NATIVE strings" %}
+%typemap(out, fragment="SwigfStdStringValue") std::string NATIVE
+%{
+  $result = swigf::store_string($1);
+%}
 
 %typemap(imtype, import="SwigfArrayWrapper") std::string NATIVE
  "type(SwigfArrayWrapper)"
@@ -178,7 +180,7 @@ $1 = &tempstr;
 
 %typemap(findecl) std::string NATIVE
 %{
-character(kind=C_CHAR), dimension(:), allocatable, target :: $1_chars
+  character(kind=C_CHAR), dimension(:), allocatable, target :: $1_chars
 %}
 %typemap(fin, fragment="SwigfStringToCharArray", noblock=1) std::string NATIVE
 %{
@@ -193,14 +195,15 @@ character(kind=C_CHAR), dimension(:), allocatable, target :: $1_chars
 
 // RETURN BY CONST REFERENCE
 
-%apply std::string NATIVE { const std::string* NATIVE,
-                            const std::string& NATIVE };
+%apply std::string NATIVE { const std::string& NATIVE };
 
 // C output translation typemaps: $1 is string*, $input is SwigfArrayWrapper
 %typemap(out) const std::string& NATIVE
 %{$result.data = ($1->empty() ? NULL : &(*$1->begin()));
   $result.size = $1->size();
   %}
+
+%apply const std::string& NATIVE { const std::string* NATIVE };
 
 //---------------------------------------------------------------------------//
 // end of fortran/typemaps.i

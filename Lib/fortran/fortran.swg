@@ -26,6 +26,7 @@
            (value MUST be interpretable by Fortran)
    %enumerator : Force an enum to be treated as a compile-time Fortran enum
            (enum values MUST be interpretable by Fortran)
+   %bindc : Generate *interfaces only*, no wrapper code, for a function
  */
 #define %fortranbegin         %insert("fbegin")
 

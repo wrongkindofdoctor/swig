@@ -58,6 +58,11 @@
 
 
 %include <std_string.i>
+
+// Use native fortran string conversion for one particular function
+%apply std::string NATIVE { std::string get_reversed_native_string };
+%apply const std::string& NATIVE { const std::string& input };
+
 %include "stdstr.hh"
 
 //---------------------------------------------------------------------------//

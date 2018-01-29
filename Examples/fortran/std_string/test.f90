@@ -9,7 +9,7 @@
 program main
     use ISO_FORTRAN_ENV
     use, intrinsic :: ISO_C_BINDING
-    use stdstr, only : print_str, halve_str, string
+    use stdstr, only : print_str, halve_str, string, get_reversed_native_string
     implicit none
     character(len=*), parameter :: paramstr = "short string   "
     character(len=:), allocatable :: varlen, tostr
@@ -54,7 +54,7 @@ program main
 
     ! Get using native string output operator
     tostr = s%str()
-    write(0, *) "As native allocated string: '"//varlen//"'"
+    write(0, *) "As native allocated string: '"//tostr//"'"
 
     ! Copy string to fixed-length array (alternate way of extracting)
     fixedlen = "XXXXXXXXXXXXXXXX"
@@ -63,8 +63,17 @@ program main
 
     write(0, *) "Destroying..."
     call s%release()
-    deallocate(varlen)
 
+    write(0, *) "Calling deallocate"
+    deallocate(varlen)
+    write(0, *) "Calling deallocate"
+    deallocate(tostr)
+
+    write(0, *) "Reversing"
+    varlen = "Through the looking glass"
+    tostr = get_reversed_native_string(varlen)
+
+    write(0, *) "'"//varlen//"' -> '"//tostr//"'"
 end program
 
 

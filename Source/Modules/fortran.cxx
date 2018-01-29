@@ -887,7 +887,7 @@ int FORTRAN::functionWrapper(Node *n)
                          symname);
         }
         // Simply binding a function for Fortran
-        
+
         // Emit all of the local variables for holding arguments.
         ParmList* parmlist = Getattr(n, "parms");
         Swig_typemap_attach_parms("imbindc", parmlist, NULL);
@@ -899,7 +899,7 @@ int FORTRAN::functionWrapper(Node *n)
         int i = 0;
         for (Parm* p = parmlist; p; p = nextSibling(p), ++i)
         {
-            // Use C arguments 
+            // Use C arguments
             String* imname = this->makeParameterName(n, p, i);
             Setattr(p, "imname", imname);
             Append(cparmlist, p);
@@ -1072,7 +1072,7 @@ void FORTRAN::cfuncWrapper(Node *n)
             if (!parsed_tm)
             {
                 Swig_error(input_file, line_number, "Failed to parse 'ctype' "
-                           "typemap for argument %s of %s\n", 
+                           "typemap for argument %s of %s\n",
                            SwigType_str(Getattr(p, "type"), Getattr(p, "name")),
                            SwigType_namestr(symname));
                 return;
@@ -1099,7 +1099,7 @@ void FORTRAN::cfuncWrapper(Node *n)
 
     String* cleanup = NewStringEmpty();
     String* outarg = NewStringEmpty();
-    
+
     // Insert input conversion, constraint checking, and cleanup code
     for (Iterator it = First(cparmlist); it.item; it = Next(it))
     {
@@ -1195,7 +1195,7 @@ void FORTRAN::cfuncWrapper(Node *n)
             Replaceall(cfunc->code, "$decl", decl);
             Delete(decl);
         }
-        
+
         // Get 'null' return type if specified
         String* null_return_type = Getattr(n, "tmap:ctype:null");
         Replaceall(cfunc->code, "$null",
@@ -1613,7 +1613,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
         if (String* tm = Getattr(p, "tmap:ffreearg"))
         {
             Chop(tm);
-            Replaceall(tm, "$input", Getattr(p, "emit:input"));
+            Replaceall(tm, "$input", Getattr(p, "fname"));
             Printv(fcleanup, tm, "\n", NULL);
         }
     }
@@ -1912,7 +1912,7 @@ int FORTRAN::classHandler(Node *n)
             if (!fdata)
             {
                 Swig_error(input_file, line_number, "Class '%s' has no "
-                           "'%s' typemap defined\n", 
+                           "'%s' typemap defined\n",
                            SwigType_namestr(symname), "fdata");
                 return SWIG_NOWRAP;
             }
@@ -2035,7 +2035,7 @@ int FORTRAN::destructorHandler(Node* n)
     if (!fdis)
     {
         Swig_error(input_file, line_number, "Class '%s' has no "
-                   "'%s' typemap defined\n", 
+                   "'%s' typemap defined\n",
                    SwigType_namestr(Getattr(classnode, "sym:name")),
                    "fdestructor");
         return SWIG_NOWRAP;
@@ -2774,4 +2774,3 @@ swig_fortran(void)
 {
     return new FORTRAN();
 }
-

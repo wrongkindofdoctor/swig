@@ -597,7 +597,8 @@ using swig::brute_cast;
 //---------------------------------------------------------------------------//
 // MEMBER FUNCTION POINTERS
 //
-// We memcpy the member function pointer
+// We memcpy the member function pointer to an opaque data class using
+// brute_cast.
 //---------------------------------------------------------------------------//
 
 // Add array wrapper to C++ code when used by Fortran fragment
@@ -621,15 +622,54 @@ SwigfOpaqueMemFunPtr SwigfOpaqueMemFunPtr_uninitialized()
 %}
 
 // This fragment is inserted by the fortran.cxx code when an unknown class is
-// encountered. Note for this to compile and not crash, MEMPTR_SIZE should
-// be the same size as in SwigfOpaqueMemFunPtr. This can be accomplished by
-// generating a config.h file and including it in Fortran using the C
-// preprocessor.
+// encountered. Note for this to compile and not crash, the size of 'data' should
+// be the same size as in SwigfOpaqueMemFunPtr. This can be accomplished more
+// elegantly by  generating a config.h file and including it in Fortran using
+// the C preprocessor.
 %fragment("SwigfOpaqueMemFunPtr", "fpublic", noblock=1,
           fragment="SwigfOpaqueMemFunPtr_wrap") %{
 type, public, bind(C) :: SwigfOpaqueMemFunPtr
   integer(C_SIGNED_CHAR), dimension(32), public :: data
 end type
+%}
+
+//---------------------------------------------------------------------------//
+// STRING CONVERSION
+//---------------------------------------------------------------------------//
+
+// When returning a std::string by value, store it in this temporary memory
+// space so that it's still allocated when the Fortran wrapper code converts it.
+%fragment("SwigfStdStringValue", "header", fragment="SwigfArrayWrapper_wrap") %{
+
+namespace swigf {
+SwigfArrayWrapper store_string(const std::string& str)
+{
+    static std::string* temp = NULL;
+    SwigfArrayWrapper result;
+    if (str.empty())
+    {
+        // Result is empty
+        result.data = NULL;
+        result.size = 0;
+    }
+    else
+    {
+        if (!temp)
+        {
+            // Allocate a new temporary string
+            temp = new std::string(str);
+        }
+        else
+        {
+            // Assign the string
+            *temp = str;
+        }
+        result.data = &(*(temp->begin()));
+        result.size = temp->size();
+    }
+    return result;
+}
+} // end namespace swigf
 %}
 
 //---------------------------------------------------------------------------//
