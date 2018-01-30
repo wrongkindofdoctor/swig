@@ -30,6 +30,9 @@ subroutine test_simple_class_actions()
     example = 7
     call sc%action(example)
     write(0, *) "Should be 63:", example
+
+    sc%create_dbl(1.23d0)
+    write(0, *) "Reallocated:", sc%get()
     call sc%release()
 
     write(0, *) "Null-op to release..."

@@ -2013,6 +2013,7 @@ int FORTRAN::constructorHandler(Node* n)
     {
         Setattr(n, "feature:fortran:append", update_flag);
     }
+    Swig_print_node(n);
 
     // NOTE: return type has not yet been assigned at this point
     Language::constructorHandler(n);

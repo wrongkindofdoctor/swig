@@ -39,6 +39,9 @@ class SimpleClass
 
   public:
 
+    // Static constructor
+    static SimpleClass* EmitSimpleClass();
+
     //! Constructor
     SimpleClass();
 
