@@ -7,7 +7,8 @@
  */
 //---------------------------------------------------------------------------//
 
-// Define SWIGEXTERN for global variables: 'extern' if C++, nothing if C
+// Define SWIGEXTERN for const global data variables: 'extern' if C++,
+// nothing if C.
 %insert("runtime") %{
 #ifndef SWIGEXTERN
 #ifdef __cplusplus
@@ -35,7 +36,6 @@ enum SwigfMemState {
 
 const char* const swigf_mem_state_strings[]
   = {"NULL", "OWN", "MOVE", "REF", "CREF"};
-
 %}
 
 %fragment("SwigfMemState", "fpublic") %{
@@ -61,7 +61,7 @@ struct SwigfClassWrapper
     SwigfMemState mem;
 };
 
-SwigfClassWrapper SwigfClassWrapper_uninitialized()
+SWIGINTERN SwigfClassWrapper SwigfClassWrapper_uninitialized()
 {
     SwigfClassWrapper result;
     result.ptr = NULL;
@@ -143,11 +143,11 @@ typedef bool_constant<false> false_type;
 
 // Deletion
 template<class T>
-void destruct_impl(T* self, true_type) {
+SWIGINTERN void destruct_impl(T* self, true_type) {
   delete self;
 }
 template<class T>
-T* destruct_impl(T* , false_type) {
+SWIGINTERN T* destruct_impl(T* , false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no destructor",
                       return NULL);
@@ -155,23 +155,23 @@ T* destruct_impl(T* , false_type) {
 
 // Copy construction and assignment
 template<class T, class U>
-T* copy_construct_impl(const U* other, true_type) {
+SWIGINTERN T* copy_construct_impl(const U* other, true_type) {
   return new T(*other);
 }
 template<class T, class U>
-void copy_assign_impl(T* self, const U* other, true_type) {
+SWIGINTERN void copy_assign_impl(T* self, const U* other, true_type) {
   *self = *other;
 }
 
 // Disabled construction and assignment
 template<class T, class U>
-T* copy_construct_impl(const U* , false_type) {
+SWIGINTERN T* copy_construct_impl(const U* , false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no copy constructor",
                       return NULL);
 }
 template<class T, class U>
-void copy_assign_impl(T* , const U* , false_type) {
+SWIGINTERN void copy_assign_impl(T* , const U* , false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no copy assignment",
                       return);
@@ -183,23 +183,23 @@ void copy_assign_impl(T* , const U* , false_type) {
 
 // Move construction and assignment
 template<class T, class U>
-T* move_construct_impl(U* other, true_type) {
+SWIGINTERN T* move_construct_impl(U* other, true_type) {
   return new T(std::move(*other));
 }
 template<class T, class U>
-void move_assign_impl(T* self, U* other, true_type) {
+SWIGINTERN void move_assign_impl(T* self, U* other, true_type) {
   *self = std::move(*other);
 }
 
 // Disabled move construction and assignment
 template<class T, class U>
-T* move_construct_impl(U*, false_type) {
+SWIGINTERN T* move_construct_impl(U*, false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no move constructor",
                       return NULL);
 }
 template<class T, class U>
-void move_assign_impl(T*, U*, false_type) {
+SWIGINTERN void move_assign_impl(T*, U*, false_type) {
   SWIG_exception_impl(SWIG_TypeError,
                       "Invalid assignment: class type has no move assignment",
                       return);
@@ -267,7 +267,7 @@ struct AssignmentTraits
           fragment="SwigfClassWrapper_wrap", fragment="SwigfStdMove") %{
 
 template<class T1, class T2, int AFlags>
-void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
+SWIGINTERN void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
   typedef swigf::AssignmentTraits<T1, AFlags> Traits_t;
   T1* pself  = static_cast<T1*>(self->ptr);
   T2* pother = static_cast<T2*>(other->ptr);
@@ -383,7 +383,7 @@ void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other) {
 
 %fragment("SwigfClassAssign_wrap", "header",
           fragment="SwigfClassWrapper_wrap", "<stddef.h>") %{
-void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other,
+SWIGINTERN void SwigfAssign(SwigfClassWrapper* self, SwigfClassWrapper* other,
                  size_t size)
 {
     // XXX TODO: memcpy
@@ -434,7 +434,7 @@ struct SwigfArrayWrapper
     std::size_t size;
 };
 
-SwigfArrayWrapper SwigfArrayWrapper_uninitialized()
+SWIGINTERN SwigfArrayWrapper SwigfArrayWrapper_uninitialized()
 {
     SwigfArrayWrapper result;
     result.data = NULL;
@@ -548,7 +548,7 @@ end function
 %fragment("SwigfBruteCast", "runtime",
           fragment="<cstring>") %{
 template<typename Dst, typename Src>
-void swigf_opaque_memcpy(Dst* dst, const Src* src)
+SWIGINTERN void swigf_opaque_memcpy(Dst* dst, const Src* src)
 {
     const size_t MINSIZE
         = (sizeof(dst) < sizeof(src) ? sizeof(dst) : sizeof(src));
@@ -600,7 +600,7 @@ class brute_cast_impl<Target&>
 };
 
 template<class Target, class Source>
-Target brute_cast(const Source& src)
+SWIGINTERN Target brute_cast(const Source& src)
 {
     return brute_cast_impl<Target>(src)();
 }
@@ -628,7 +628,7 @@ struct SwigfOpaqueMemFunPtr
 #endif
 };
 
-SwigfOpaqueMemFunPtr SwigfOpaqueMemFunPtr_uninitialized()
+SWIGINTERN SwigfOpaqueMemFunPtr SwigfOpaqueMemFunPtr_uninitialized()
 {
     SwigfOpaqueMemFunPtr result;
     std::memset(result.data, sizeof(result.data), 0);
@@ -657,7 +657,7 @@ end type
 %fragment("SwigfStdStringValue", "header", fragment="SwigfArrayWrapper_wrap") %{
 
 namespace swigf {
-SwigfArrayWrapper store_string(const std::string& str)
+SWIGINTERN SwigfArrayWrapper store_string(const std::string& str)
 {
     static std::string* temp = NULL;
     SwigfArrayWrapper result;

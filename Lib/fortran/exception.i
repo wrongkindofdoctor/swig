@@ -42,23 +42,6 @@
 #endif
 
 //---------------------------------------------------------------------------//
-// DEPRECATED fragments
-//---------------------------------------------------------------------------//
-%fragment("SwigfExceptionDeprecated", "header") {
-// DEPRECATED: use swigf_check_unhandled_exception instead
-namespace swig
-{
-%#ifdef __GNUC__
-__attribute__((deprecated))
-%#endif
-inline void fortran_check_unhandled_exception()
-{
-    swigf_check_unhandled_exception();
-}
-} // end namespace swig
-}
-
-//---------------------------------------------------------------------------//
 // Fortran variable definitions: used only if %included, not %imported
 //---------------------------------------------------------------------------//
 #ifndef SWIGIMPORTED
@@ -78,8 +61,8 @@ inline void fortran_check_unhandled_exception()
 //---------------------------------------------------------------------------//
 
 %fragment("SwigfExceptionDeclaration", "runtime") {
-void swigf_check_unhandled_exception();
-void swigf_store_exception(int code, const char *msg);
+SWIGEXPORT void swigf_check_unhandled_exception();
+SWIGEXPORT void swigf_store_exception(int code, const char *msg);
 }
 
 //---------------------------------------------------------------------------//
@@ -90,7 +73,7 @@ void swigf_store_exception(int code, const char *msg);
 %fragment("SwigfErrorVars_wrap", "header",
           fragment="SwigfErrorPub", fragment="SwigfErrorParams") {
 extern "C" {
-int SWIG_FORTRAN_ERROR_INT = 0;
+SWIGEXPORT SWIGEXTERN int SWIG_FORTRAN_ERROR_INT = 0;
 }
 }
 
@@ -138,13 +121,13 @@ extern int SWIG_FORTRAN_ERROR_INT;
           fragment="SwigfErrorVars_wrap_c")
 {
 // Call this function before any new action
-void swigf_check_unhandled_exception()
+SWIGEXPORT void swigf_check_unhandled_exception()
 {
     assert(SWIG_FORTRAN_ERROR_INT == 0);
 }
 
 // Save an exception to the fortran error code and string
-void swigf_store_exception(int code, const char * msg)
+SWIGEXPORT void swigf_store_exception(int code, const char * msg)
 {
     // Store exception code
     SWIG_FORTRAN_ERROR_INT = code;
