@@ -93,9 +93,7 @@ void swigf_assignment(const SimpleClass* other)
 %fortran_bindc_struct(BasicStruct);
 
 // Rename one constructor
-%rename(create_dbl) SimpleClass::SimpleClass(double);
-// Rename the extended constructor
-%rename(create_dbldbl) SimpleClass::SimpleClass(double, double);
+%rename(create_SimpleClass_dbl) SimpleClass::SimpleClass(double);
 
 %extend SimpleClass {
 SimpleClass(double a, double b)

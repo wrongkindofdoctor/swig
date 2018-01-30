@@ -385,7 +385,7 @@ class FORTRAN : public Language
     String* f_finterfaces;  //!< Fortran interface declarations to SWIG functions
     String* f_fwrapper;     //!< Fortran subroutine wrapper functions
 
-    // Temporary mappings
+    // Module-wide procedure interfaces
     Hash* d_overloads; //!< Overloaded subroutine -> overload names
 
     // Current class parameters
@@ -449,6 +449,8 @@ class FORTRAN : public Language
     int add_fsymbol(String *s, Node *n);
     // Make a unique symbolic name
     String* make_unique_symname(Node* n);
+    // Get overloads of the given named method
+    List* get_method_overloads(String* generic);
     // Whether the current class is a BIND(C) struct
     bool is_basic_struct() const { return d_method_overloads == NULL; }
 };
@@ -687,20 +689,16 @@ void FORTRAN::write_module(String* filename)
                     f_fpublic, NULL);
     }
 
-    // Write overloads
+    // Write overloads and renamed module procedures
     for (Iterator kv = First(d_overloads); kv.key; kv = Next(kv))
     {
-        const char* prepend_comma = "";
         Printv(out, " public :: ", kv.key, "\n"
                     " interface ", kv.key, "\n"
                     "  module procedure ", NULL);
 
         // Write overloaded procedure names
-        for (Iterator it = First(kv.item); it.item; it = Next(it))
-        {
-            Printv(out, prepend_comma, it.item, NULL);
-            prepend_comma = ", ";
-        }
+        int line_length = 19;
+        line_length = print_wrapped_list(out, First(kv.item), line_length);
         Printv(out, "\n"
                     " end interface\n", NULL);
     }
@@ -782,8 +780,6 @@ int FORTRAN::moduleDirective(Node *n)
                       " use, intrinsic :: ISO_C_BINDING\n",
                       NULL);
 
-    // Prevent other fortran symbols from clashing
-
     return SWIG_OK;
 }
 
@@ -791,12 +787,16 @@ int FORTRAN::moduleDirective(Node *n)
 /*!
  * \brief Wrap basic functions.
  *
- * This is also passed class methods via memberfunctionHandler.
+ * This is called from many different handlers, including:
+ *  - member functions
+ *  - member variables (once each for get&set)
+ *  - global variables (once each for get&set)
+ *  - static functions
  */
 int FORTRAN::functionWrapper(Node *n)
 {
     const bool is_cbound = is_bindc(n);
-    const bool ismember_function = GetFlag(n, "fortran:ismember");
+    const bool is_member_function = GetFlag(n, "fortran:ismember");
 
     // >>> SET UP WRAPPER NAME
 
@@ -816,12 +816,12 @@ int FORTRAN::functionWrapper(Node *n)
         wname = Copy(symname);
     }
 
-    if (ismember_function)
+    if (String* private_fname = Getattr(n, "fortran:fname"))
     {
         // Create "private" fortran wrapper function class name that will
         // be bound to a class
         assert(!is_cbound);
-        fname = NewStringf("swigf_%s", symname);
+        fname = Copy(private_fname);
     }
     else
     {
@@ -830,7 +830,7 @@ int FORTRAN::functionWrapper(Node *n)
     }
 
     // Add suffix if the function is overloaded
-    const bool is_overloaded = Getattr(n, "sym:overloaded");
+    bool is_overloaded = Getattr(n, "sym:overloaded");
     if (is_overloaded)
     {
         String* overload_ext = Getattr(n, "sym:overname");
@@ -921,7 +921,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     // >>> GENERATE CODE FOR MODULE INTERFACE
 
-    if (ismember_function)
+    if (is_member_function)
     {
         assert(!is_basic_struct());
         String* qualifiers = NewStringEmpty();
@@ -935,12 +935,7 @@ int FORTRAN::functionWrapper(Node *n)
             Append(fsymname, Getattr(n, "sym:overname"));
 
             // Add name to method overload list
-            List* overloads = Getattr(d_method_overloads, generic);
-            if (!overloads)
-            {
-                overloads = NewList();
-                Setattr(d_method_overloads, generic, overloads);
-            }
+            List* overloads = this->get_method_overloads(generic);
             Append(overloads, fsymname);
 
             // Make the procedure private
@@ -958,27 +953,25 @@ int FORTRAN::functionWrapper(Node *n)
                NULL);
         Delete(qualifiers);
     }
+    else if (Strcmp(fsymname, fname) != 0)
+    {
+        // The function name is aliased, either by 'fortran:fname' or an
+        // overload. Append this function name to the list of overloaded names
+        // for the symbol. 'public' access specification gets added later.
+        List* overloads = Getattr(d_overloads, fsymname);
+        if (!overloads)
+        {
+            overloads = NewList();
+            Setattr(d_overloads, fsymname, overloads);
+        }
+        Append(overloads, Copy(fname));
+    }
     else
     {
-        // Not a class member: make the function public (and alias the name)
-        if (is_overloaded)
-        {
-            // Append this function name to the list of overloaded names for the
-            // symbol. 'public' access specification gets added later.
-            List* overloads = Getattr(d_overloads, fsymname);
-            if (!overloads)
-            {
-                overloads = NewList();
-                Setattr(d_overloads, fsymname, overloads);
-            }
-            Append(overloads, Copy(fname));
-        }
-        else
-        {
-            Printv(f_fpublic,
-                   " public :: ", fsymname, "\n",
-                   NULL);
-        }
+        //
+        Printv(f_fpublic,
+            " public :: ", fsymname, "\n",
+            NULL);
     }
 
     Delete(fname);
@@ -1663,12 +1656,7 @@ void FORTRAN::assignmentWrapper(Node* n)
                                   Getattr(n, "sym:name"));
 
     // Add self-assignment to method overload list
-    List* overloads = Getattr(d_method_overloads, generic);
-    if (!overloads)
-    {
-        overloads = NewList();
-        Setattr(d_method_overloads, generic, overloads);
-    }
+    List* overloads = this->get_method_overloads(generic);
     Append(overloads, fname);
 
     // Define the method
@@ -1991,8 +1979,6 @@ int FORTRAN::constructorHandler(Node* n)
     // Override the result variable name
     Setattr(n, "wrap:fresult", "self");
 
-    Swig_print_node(n);
-
     // NOTE: return type has not yet been assigned at this point
     Language::constructorHandler(n);
 
@@ -2084,16 +2070,13 @@ int FORTRAN::memberfunctionHandler(Node *n)
     }
     Setattr(n, "fortran:name", fsymname);
 
+    // Create a private procedure name that gets bound to the Fortan TYPE
+    String* fwrapname = NewStringf("swigf_%s", fsymname);
+    Setattr(n, "fortran:fname", fwrapname);
+
     if (String* generic_name = Getattr(n, "feature:fortran:generic"))
     {
-        // Add the function generics, even if only one instance is created.
-        assert(d_method_overloads);
-        overloads = Getattr(d_method_overloads, generic_name);
-        if (!overloads)
-        {
-            overloads = NewList();
-            Setattr(d_method_overloads, generic_name, overloads);
-        }
+        overloads = this->get_method_overloads(generic_name);
     }
 
     // Set as a member variable unless it's a constructor
@@ -2114,6 +2097,7 @@ int FORTRAN::memberfunctionHandler(Node *n)
         Append(overloads, fname);
     }
 
+    Delete(fwrapname);
     Delete(fsymname);
     return SWIG_OK;
 }
@@ -2155,9 +2139,9 @@ int FORTRAN::membervariableHandler(Node *n)
         // the original member variable name
         String* fsymname = Copy(Getattr(n, "sym:name"));
         Setattr(n, "fortran:variable", fsymname);
-        Delete(fsymname);
-
+        SetFlag(n, "fortran:ismember");
         Language::membervariableHandler(n);
+        Delete(fsymname);
     }
     return SWIG_OK;
 }
@@ -2206,6 +2190,8 @@ int FORTRAN::staticmembervariableHandler(Node *n)
 {
     // Preserve variable name
     Setattr(n, "fortran:variable", Getattr(n, "sym:name"));
+
+    SetFlag(n, "fortran:ismember");
 
     // Add 'nopass' procedure qualifier for getters and setters
     Setattr(n, "fortran:procedure", "nopass");
@@ -2753,6 +2739,24 @@ String* FORTRAN::make_unique_symname(Node* n)
     Delete(lower);
 
     return symname;
+}
+
+//---------------------------------------------------------------------------//
+/*!
+ * Get the list of overloaded methods for the current 'generic' name.
+ *
+ * This only applies while a class is being wrapped to methods in that particular class.
+ */
+List* FORTRAN::get_method_overloads(String* generic)
+{
+    assert(d_method_overloads);
+    List* overloads = Getattr(d_method_overloads, generic);
+    if (!overloads)
+    {
+        overloads = NewList();
+        Setattr(d_method_overloads, generic, overloads);
+    }
+    return overloads;
 }
 
 //---------------------------------------------------------------------------//

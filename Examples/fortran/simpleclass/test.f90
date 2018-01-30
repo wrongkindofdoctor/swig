@@ -27,6 +27,9 @@ subroutine test_simple_class_actions()
     sc = create_SimpleClass()
     call sc%set(9)
 
+    write(0, *) "Alternate constructor..."
+    sc = create_SimpleClass(1.0d0, 2.0d0)
+
     example = 7
     call sc%action(example)
     write(0, *) "Should be 63:", example
@@ -58,7 +61,7 @@ subroutine test_simple_class_memory()
 
     ! Assign to an already-created instance
     write(0, *) "Assigning"
-    orig = create_SimpleClass(3)
+    orig = create_SimpleClass_dbl(3.0d0)
     assigned = orig
     call orig%set(4)
     write(0, *) "Orig/assigned: should be 4/3"
