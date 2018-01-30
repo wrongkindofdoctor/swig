@@ -17,8 +17,8 @@
 %fortran_view(double)
 
 // Handle constructor overloading
-%rename(create_count)  ThinVec::ThinVec(size_type);
-%rename(create_fill)   ThinVec::ThinVec(size_type, value_type);
+%rename(create_ThinVec_count)  ThinVec::ThinVec(size_type);
+%rename(create_ThinVec_fill)   ThinVec::ThinVec(size_type, value_type);
 
 // Rename a function that's the same as a Fortran keyword
 %rename(assign_from) ThinVec::assign;

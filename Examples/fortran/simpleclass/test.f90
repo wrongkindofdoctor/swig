@@ -24,15 +24,12 @@ subroutine test_simple_class_actions()
     call sc%release()
 
     write(0, *) "Constructing..."
-    call sc%create()
+    sc = create_SimpleClass()
     call sc%set(9)
 
     example = 7
     call sc%action(example)
     write(0, *) "Should be 63:", example
-
-    sc%create_dbl(1.23d0)
-    write(0, *) "Reallocated:", sc%get()
     call sc%release()
 
     write(0, *) "Null-op to release..."
@@ -50,7 +47,7 @@ subroutine test_simple_class_memory()
     type(SimpleClass) :: unassigned
 
     write(0, *) "Constructing..."
-    call orig%create()
+    orig = create_SimpleClass()
     call orig%set(1)
 
     ! Copy construct ideally
@@ -61,8 +58,7 @@ subroutine test_simple_class_memory()
 
     ! Assign to an already-created instance
     write(0, *) "Assigning"
-    call assigned%create()
-    call assigned%set(3)
+    orig = create_SimpleClass(3)
     assigned = orig
     call orig%set(4)
     write(0, *) "Orig/assigned: should be 4/3"

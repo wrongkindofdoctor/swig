@@ -30,10 +30,10 @@ const char fortran_end_statement[] = "\n";
  *
  * Node should be a function
  */
-bool node_is_constructor(Node* n)
+bool is_node_constructor(Node* n)
 {
     return (Cmp(Getattr(n, "nodeType"), "constructor") == 0
-            || Getattr(n, "handled_as_constructor"));
+        || Getattr(n, "handled_as_constructor"));
 }
 
 //---------------------------------------------------------------------------//
@@ -796,7 +796,7 @@ int FORTRAN::moduleDirective(Node *n)
 int FORTRAN::functionWrapper(Node *n)
 {
     const bool is_cbound = is_bindc(n);
-    const bool is_overloaded = Getattr(n, "sym:overloaded");
+    const bool ismember_function = GetFlag(n, "fortran:ismember");
 
     // >>> SET UP WRAPPER NAME
 
@@ -807,41 +807,30 @@ int FORTRAN::functionWrapper(Node *n)
 
     if (!is_cbound)
     {
-        // Create name for C wrapper function
+        // Usual case: generate a unique wrapper name
         wname = Swig_name_wrapper(symname);
-        // Create name for private fortran wrapper function
-        if (is_wrapping_class())
-        {
-            // Create "private" fortran class name
-            fname = NewStringf("swigf_%s", symname);
-        }
-        else
-        {
-            // Use actual symbolic function name
-            fname = Copy(symname);
-        }
-
-        // Get modified Fortran member name, defaulting to sym:name
-        if (String* varname = Getattr(n, "fortran:variable"))
-        {
-            if (Getattr(n, "varset") || Getattr(n, "memberset"))
-            {
-                alias = Swig_name_set(getNSpace(), varname);
-            }
-            else if (Getattr(n, "varget") || Getattr(n, "memberget"))
-            {
-                alias = Swig_name_get(getNSpace(), varname);
-            }
-        }
     }
     else
     {
-        // Bind(C): wrapper name is raw function name
+        // BIND(C): name is preserved
         wname = Copy(symname);
+    }
+
+    if (ismember_function)
+    {
+        // Create "private" fortran wrapper function class name that will
+        // be bound to a class
+        assert(!is_cbound);
+        fname = NewStringf("swigf_%s", symname);
+    }
+    else
+    {
+        // Use actual symbolic function name
         fname = Copy(symname);
     }
 
     // Add suffix if the function is overloaded
+    const bool is_overloaded = Getattr(n, "sym:overloaded");
     if (is_overloaded)
     {
         String* overload_ext = Getattr(n, "sym:overname");
@@ -852,10 +841,29 @@ int FORTRAN::functionWrapper(Node *n)
     Setattr(n, "wrap:name",  wname);
     Setattr(n, "wrap:fname", fname);
 
+    // Add the fortran subroutine name to the current scope
     if (add_fsymbol(fname, n) == SWIG_NOWRAP)
         return SWIG_NOWRAP;
 
-    if (!alias)
+    if (String* varname = Getattr(n, "fortran:variable"))
+    {
+        // We're wrapping a variable or member variable: construct a custom
+        // name.
+        if (Getattr(n, "varset") || Getattr(n, "memberset"))
+        {
+            alias = Swig_name_set(getNSpace(), varname);
+        }
+        else if (Getattr(n, "varget") || Getattr(n, "memberget"))
+        {
+            alias = Swig_name_get(getNSpace(), varname);
+        }
+        else
+        {
+            Swig_print_node(n);
+            assert(0);
+        }
+    }
+    else
     {
         // Get manually-set alias and make a copy
         alias = Getattr(n, "fortran:alias");
@@ -913,7 +921,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     // >>> GENERATE CODE FOR MODULE INTERFACE
 
-    if (is_wrapping_class())
+    if (ismember_function)
     {
         assert(!is_basic_struct());
         String* qualifiers = NewStringEmpty();
@@ -952,7 +960,7 @@ int FORTRAN::functionWrapper(Node *n)
     }
     else
     {
-        // Not a class: make the function public (and alias the name)
+        // Not a class member: make the function public (and alias the name)
         if (is_overloaded)
         {
             // Append this function name to the list of overloaded names for the
@@ -1349,16 +1357,9 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
     // >>> FUNCTION RETURN VALUES
 
-    const char* swigf_result_name = "";
     String* fargs = NewStringEmpty();
 
     String* f_return_str = NULL;
-    if (node_is_constructor(n))
-    {
-        // ftype is overridden by constructor
-        swigf_result_name = "self";
-        f_return_str = NewStringEmpty();
-    }
     if (!f_return_str)
     {
         f_return_str = Getattr(n, "feature:ftype");
@@ -1376,8 +1377,6 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
     // Check whether the Fortran proxy routine returns a variable, and whether
     // the actual C function does
-    const bool is_fsubroutine = (Len(f_return_str) == 0);
-    const bool is_imsubroutine = (Len(im_return_str) == 0);
 
     // Replace any instance of $fclassname in return type
     String* cpp_return_type = Getattr(n, "type");
@@ -1387,6 +1386,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     // String for calling the im wrapper on the fortran side (the "action")
     String* fcall  = NewStringEmpty();
 
+    const bool is_imsubroutine = (Len(im_return_str) == 0);
     if (!is_imsubroutine)
     {
         Wrapper_add_localv(ffunc,  "fresult",
@@ -1400,10 +1400,19 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     }
     Printv(fcall, Getattr(n, "wrap:name"), "(", NULL);
 
+    const char* swigf_result_name = "";
+    const bool is_fsubroutine = (Len(f_return_str) == 0);
     if (!is_fsubroutine)
     {
+        if (String* fresult_override = Getattr(n, "wrap:fresult"))
+        {
+            swigf_result_name = Char(fresult_override);
+        }
+        else
+        {
+            swigf_result_name = "swigf_result";
+        }
         // Add dummy variable for Fortran proxy return
-        swigf_result_name = "swigf_result";
         Printv(fargs, f_return_str, " :: ", swigf_result_name, "\n", NULL);
     }
 
@@ -1419,19 +1428,6 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     // removed)
     List* cparmlist = Getattr(n, "wrap:cparms");
     assert(cparmlist);
-
-    if (node_is_constructor(n))
-    {
-        // Prepend "self" to the parameter list (with trailing comma if
-        // necessary)
-        Printv(ffunc->def, "self", (Len(cparmlist) > 0 ? ", " : ""), NULL);
-
-        // Add dummy argument to wrapper body
-        String* ftype = attach_typemap("ftype", n,
-                                       WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF);
-        this->replace_fclassname(cpp_return_type, ftype);
-        Printv(fargs, "   ", ftype, " :: self\n", NULL);
-    }
 
     for (Iterator it = First(cparmlist); it.item; it = Next(it))
     {
@@ -1960,7 +1956,6 @@ int FORTRAN::classHandler(Node *n)
     return SWIG_OK;
 }
 
-
 //---------------------------------------------------------------------------//
 /*!
  * \brief Extra stuff for constructors.
@@ -1970,49 +1965,32 @@ int FORTRAN::constructorHandler(Node* n)
     Node *classn = getCurrentClass();
     assert(classn);
 
-    // Possibly renamed constructor (default: name of the class)
+    // Get the constructor's name. This will usually be the unscoped C++ class
+    // name: for std::vector<int> will be "vector", but the user can possibly
+    // %rename a constructor as well, i.e.
     String* symname = Getattr(n, "sym:name");
+    // The class's symbolic name (e.g. VecInt)
     String* classname = Getattr(classn, "sym:name");
 
-    const_String_or_char_ptr alias = "create";
-    if (Cmp(symname, classname))
+    if (Strcmp(symname, classname) != 0)
     {
-        // User provided a custom name (it differs from the class name)
-        alias = symname;
+        // The constructor has been %rename'd: use it
+        Setattr(n, "fortran:alias", symname);
 
-        // To avoid conflicts with templated functions, modify the
-        // constructor's symname
-        String* mrename = NewStringf("%s_%s", classname, symname);
-        Setattr(n, "sym:name", mrename);
-        Delete(mrename);
-    }
-    Setattr(n, "fortran:alias", alias);
-
-    // XXX: make free function, so we don't have to call release but instead
-    // just rely on our assignment semantics. This also fixes the need to mark
-    // as SWIGF_OWN
-    String* releasestr = NewStringf("call self%%release()\n");
-    if (String* prependstr = Getattr(n, "feature:fortran:prepend"))
-    {
-        Printv(prependstr, "\n", releasestr, NULL);
+        // TODO: Warn the user if the name doesn't contain 'create'?
+        // or if it doesn't have the class name?
     }
     else
     {
-        Setattr(n, "feature:fortran:prepend", releasestr);
+        // Rename the proxy function to "create_$fclassname"
+        String* constructor_name = NewStringf("create_%s", classname);
+        Setattr(n, "fortran:alias", constructor_name);
+        Delete(constructor_name);
     }
-    Delete(releasestr);
 
-    // The 'new' C function returns memory marked as MOVE; the constructor
-    // method must capture it.
-    const char update_flag[] = "self%swigdata%mem = SWIGF_OWN";
-    if (String* appendstr = Getattr(n, "feature:fortran:append"))
-    {
-        Printv(appendstr, "\n", update_flag, NULL);
-    }
-    else
-    {
-        Setattr(n, "feature:fortran:append", update_flag);
-    }
+    // Override the result variable name
+    Setattr(n, "wrap:fresult", "self");
+
     Swig_print_node(n);
 
     // NOTE: return type has not yet been assigned at this point
@@ -2031,7 +2009,7 @@ int FORTRAN::destructorHandler(Node* n)
 
     Node* classnode = getCurrentClass();
 
-    // Hanlde ownership semantics by wrapping the destructor action
+    // Handle ownership semantics by wrapping the destructor action
     String* fdis = this->attach_class_typemap("fdestructor", WARN_NONE);
     if (!fdis)
     {
@@ -2043,6 +2021,8 @@ int FORTRAN::destructorHandler(Node* n)
     }
     Replaceall(fdis, "$input", "self");
     Setattr(n, "feature:shadow", fdis);
+
+    SetFlag(n, "fortran:ismember");
 
     Language::destructorHandler(n);
 
@@ -2115,6 +2095,13 @@ int FORTRAN::memberfunctionHandler(Node *n)
             Setattr(d_method_overloads, generic_name, overloads);
         }
     }
+    Setattr(n, "fortran:alias", alias);
+
+    // Set as a member variable unless it's a constructor
+    if (!is_node_constructor(n))
+    {
+        SetFlag(n, "fortran:ismember");
+    }
 
     Language::memberfunctionHandler(n);
 
@@ -2165,7 +2152,7 @@ int FORTRAN::membervariableHandler(Node *n)
     }
     else
     {
-        // Create getter/setter functions, first preserving
+        // Create getter and/or setter functions, first preserving
         // the original member variable name
         String* alias = Copy(Getattr(n, "sym:name"));
         Setattr(n, "fortran:variable", alias);
@@ -2204,6 +2191,9 @@ int FORTRAN::staticmemberfunctionHandler(Node *n)
 
     // Add 'nopass' procedure qualifier
     Setattr(n, "fortran:procedure", "nopass");
+
+    // Mark as a member function
+    SetFlag(n, "fortran:ismember");
 
     Language::staticmemberfunctionHandler(n);
     return SWIG_OK;
