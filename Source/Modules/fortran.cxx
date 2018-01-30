@@ -801,7 +801,7 @@ int FORTRAN::functionWrapper(Node *n)
     // >>> SET UP WRAPPER NAME
 
     String* symname = Getattr(n, "sym:name");
-    String* alias = NULL; // Fortran public function name alias
+    String* fsymname = NULL; // Fortran public function name alias
     String* fname = NULL; // Fortran proxy function name
     String* wname = NULL; // SWIG wrapper function name
 
@@ -851,11 +851,11 @@ int FORTRAN::functionWrapper(Node *n)
         // name.
         if (Getattr(n, "varset") || Getattr(n, "memberset"))
         {
-            alias = Swig_name_set(getNSpace(), varname);
+            fsymname = Swig_name_set(getNSpace(), varname);
         }
         else if (Getattr(n, "varget") || Getattr(n, "memberget"))
         {
-            alias = Swig_name_get(getNSpace(), varname);
+            fsymname = Swig_name_get(getNSpace(), varname);
         }
         else
         {
@@ -865,14 +865,14 @@ int FORTRAN::functionWrapper(Node *n)
     }
     else
     {
-        // Get manually-set alias and make a copy
-        alias = Getattr(n, "fortran:alias");
-        if (!alias)
+        // Get manually-set fsymname and make a copy
+        fsymname = Getattr(n, "fortran:name");
+        if (!fsymname)
         {
             // Alias defaults to symname
-            alias = symname;
+            fsymname = symname;
         }
-        alias = Copy(alias);
+        fsymname = Copy(fsymname);
     }
 
     if (!is_cbound)
@@ -928,11 +928,11 @@ int FORTRAN::functionWrapper(Node *n)
 
         if (is_overloaded)
         {
-            // Overload the procedure name; save the original name as the
-            // 'generic'
-            String* generic = alias;
-            alias = Copy(alias);
-            Append(alias, Getattr(n, "sym:overname"));
+            // Overload the procedure name; the name exposed by the module is
+            // the "generic"
+            String* generic = fsymname;
+            fsymname = Copy(fsymname);
+            Append(fsymname, Getattr(n, "sym:overname"));
 
             // Add name to method overload list
             List* overloads = Getattr(d_method_overloads, generic);
@@ -941,7 +941,7 @@ int FORTRAN::functionWrapper(Node *n)
                 overloads = NewList();
                 Setattr(d_method_overloads, generic, overloads);
             }
-            Append(overloads, alias);
+            Append(overloads, fsymname);
 
             // Make the procedure private
             Append(qualifiers, ", private");
@@ -954,7 +954,7 @@ int FORTRAN::functionWrapper(Node *n)
         }
 
         Printv(f_ftypes,
-               "  procedure", qualifiers, " :: ", alias, " => ", fname, "\n",
+               "  procedure", qualifiers, " :: ", fsymname, " => ", fname, "\n",
                NULL);
         Delete(qualifiers);
     }
@@ -965,25 +965,25 @@ int FORTRAN::functionWrapper(Node *n)
         {
             // Append this function name to the list of overloaded names for the
             // symbol. 'public' access specification gets added later.
-            List* overloads = Getattr(d_overloads, alias);
+            List* overloads = Getattr(d_overloads, fsymname);
             if (!overloads)
             {
                 overloads = NewList();
-                Setattr(d_overloads, alias, overloads);
+                Setattr(d_overloads, fsymname, overloads);
             }
             Append(overloads, Copy(fname));
         }
         else
         {
             Printv(f_fpublic,
-                   " public :: ", alias, "\n",
+                   " public :: ", fsymname, "\n",
                    NULL);
         }
     }
 
     Delete(fname);
     Delete(wname);
-    Delete(alias);
+    Delete(fsymname);
     return SWIG_OK;
 }
 
@@ -1975,7 +1975,7 @@ int FORTRAN::constructorHandler(Node* n)
     if (Strcmp(symname, classname) != 0)
     {
         // The constructor has been %rename'd: use it
-        Setattr(n, "fortran:alias", symname);
+        Setattr(n, "fortran:name", symname);
 
         // TODO: Warn the user if the name doesn't contain 'create'?
         // or if it doesn't have the class name?
@@ -1984,7 +1984,7 @@ int FORTRAN::constructorHandler(Node* n)
     {
         // Rename the proxy function to "create_$fclassname"
         String* constructor_name = NewStringf("create_%s", classname);
-        Setattr(n, "fortran:alias", constructor_name);
+        Setattr(n, "fortran:name", constructor_name);
         Delete(constructor_name);
     }
 
@@ -2005,7 +2005,7 @@ int FORTRAN::constructorHandler(Node* n)
  */
 int FORTRAN::destructorHandler(Node* n)
 {
-    Setattr(n, "fortran:alias", "release");
+    Setattr(n, "fortran:name", "release");
 
     Node* classnode = getCurrentClass();
 
@@ -2069,20 +2069,20 @@ int FORTRAN::memberfunctionHandler(Node *n)
 
     // If the function name starts with two underscores, modify it
     String* symname = Getattr(n, "sym:name");
-    String* alias = NULL;
+    String* fsymname = NULL;
     List* overloads = NULL;
 
     if (strncmp(Char(symname), "__", 2) == 0)
     {
         // For now, just delete the leading underscores
-        alias = NewString(Char(symname) + 2);
+        fsymname = NewString(Char(symname) + 2);
     }
     else
     {
         // Preserve original member name
-        alias = Copy(symname);
+        fsymname = Copy(symname);
     }
-    Setattr(n, "fortran:alias", alias);
+    Setattr(n, "fortran:name", fsymname);
 
     if (String* generic_name = Getattr(n, "feature:fortran:generic"))
     {
@@ -2095,7 +2095,6 @@ int FORTRAN::memberfunctionHandler(Node *n)
             Setattr(d_method_overloads, generic_name, overloads);
         }
     }
-    Setattr(n, "fortran:alias", alias);
 
     // Set as a member variable unless it's a constructor
     if (!is_node_constructor(n))
@@ -2110,12 +2109,12 @@ int FORTRAN::memberfunctionHandler(Node *n)
         // We need to add the newly constructed function name to the list of
         // overloads, *after* the member function handler has passed the node
         // through functionWrapper etc.
-        String* fname = Getattr(n, "fortran:alias");
+        String* fname = Getattr(n, "fortran:name");
         assert(fname);
         Append(overloads, fname);
     }
 
-    Delete(alias);
+    Delete(fsymname);
     return SWIG_OK;
 }
 
@@ -2154,9 +2153,9 @@ int FORTRAN::membervariableHandler(Node *n)
     {
         // Create getter and/or setter functions, first preserving
         // the original member variable name
-        String* alias = Copy(Getattr(n, "sym:name"));
-        Setattr(n, "fortran:variable", alias);
-        Delete(alias);
+        String* fsymname = Copy(Getattr(n, "sym:name"));
+        Setattr(n, "fortran:variable", fsymname);
+        Delete(fsymname);
 
         Language::membervariableHandler(n);
     }
@@ -2187,7 +2186,7 @@ int FORTRAN::globalvariableHandler(Node *n)
 int FORTRAN::staticmemberfunctionHandler(Node *n)
 {
     // Preserve original function name
-    Setattr(n, "fortran:alias", Getattr(n, "sym:name"));
+    Setattr(n, "fortran:name", Getattr(n, "sym:name"));
 
     // Add 'nopass' procedure qualifier
     Setattr(n, "fortran:procedure", "nopass");
@@ -2248,7 +2247,7 @@ int FORTRAN::enumDeclaration(Node *n)
         enum_name = NewStringf("%s_%s", Getattr(classnode, "sym:name"),
                                symname);
         // Save the alias name
-        Setattr(n, "fortran:alias", enum_name);
+        Setattr(n, "fortran:name", enum_name);
     }
     else
     {
@@ -2621,8 +2620,8 @@ void FORTRAN::replace_fspecial_impl(SwigType* basetype, String* tm,
 
     if (lookup)
     {
-        // Check first to see if there's a fortran alias on the node
-        replacementname = Getattr(lookup, "fortran:alias");
+        // Check first to see if there's a fortran symbolic name on the node
+        replacementname = Getattr(lookup, "fortran:name");
         if (!replacementname)
         {
             // If not, use the symbolic name
