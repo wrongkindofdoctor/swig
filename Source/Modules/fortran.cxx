@@ -1680,9 +1680,9 @@ void FORTRAN::assignmentWrapper(Node* n)
            "  subroutine ", wrapname, "(self, other) &\n"
            "     bind(C, name=\"", wrapname, "\")\n"
            "   use, intrinsic :: ISO_C_BINDING\n"
-           "   import :: SwigfClassWrapper\n"
-           "   type(SwigfClassWrapper), intent(inout) :: self\n"
-           "   type(SwigfClassWrapper), intent(in) :: other\n"
+           "   import :: SwigClassWrapper\n"
+           "   type(SwigClassWrapper), intent(inout) :: self\n"
+           "   type(SwigClassWrapper), intent(in) :: other\n"
            "  end subroutine\n",
            NULL);
 
@@ -1705,20 +1705,20 @@ void FORTRAN::assignmentWrapper(Node* n)
     // Add C code
     Wrapper* cfunc = NewWrapper();
     Printv(cfunc->def, "SWIGEXPORT void ", wrapname, "("
-           "SwigfClassWrapper * self, "
-           "SwigfClassWrapper const * other) {\n",
+           "SwigClassWrapper * self, "
+           "SwigClassWrapper const * other) {\n",
            NULL);
     Printv(cfunc->code,
         "typedef ", classtype, " swigf_lhs_classtype;\n"
-        "SWIGF_assign(swigf_lhs_classtype, self,\n"
-        "             swigf_lhs_classtype, const_cast<SwigfClassWrapper*>(other),\n"
+        "SWIG_assign(swigf_lhs_classtype, self,\n"
+        "             swigf_lhs_classtype, const_cast<SwigClassWrapper*>(other),\n"
         "             ", flags, ");\n"
         "}\n", NULL);
     Wrapper_print(cfunc, f_wrapper);
 
 
     // Insert assignment fragment
-    String* fragname = NewString("SwigfClassAssign");
+    String* fragname = NewString("SWIG_assign");
     Swig_fragment_emit(fragname);
 
     Delete(fragname);
@@ -2617,27 +2617,22 @@ void FORTRAN::replace_fspecial_impl(SwigType* basetype, String* tm,
 
     if (!replacementname)
     {
-        // No class/enum type or symname was found:
-        // use raw C pointer since  SWIG does not know anything about this
-        // type.
+        // No class/enum type or symname was found
         Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF,
                      input_file, line_number,
                      "No '$fclassname' replacement (wrapped %s) "
                      "found for %s\n",
                      is_enum ? "enum" : "class",
                      SwigType_str(basetype, 0));
-
-        // Emit fragments for the unknown type, and use that type for
-        // replacement
-        if (is_enum)
-        {
-            alloc_string = NewString("SwigfUnknownEnum");
-        }
-        else
-        {
-            alloc_string = NewString("SwigfUnknownClass");
-        }
-        Swig_fragment_emit(alloc_string);
+        // Replace with a placeholder class
+        alloc_string = NewString(is_enum ? "SwigUnknownEnum"
+                                         : "SwigUnknownClass");
+        // Emit the fragment that defines the class (forfragments.swg)
+        String* fragment_string = NewStringf("%s_f", alloc_string);
+        Swig_fragment_emit(fragment_string);
+        Delete(fragment_string);
+        
+        // Return the replacement name
         replacementname = alloc_string;
     }
     Replaceall(tm, classnamespecialvariable, replacementname);

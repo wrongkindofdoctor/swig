@@ -13,7 +13,7 @@
 %include <std_except.i>
 
 %exception {
-    swigf_check_unhandled_exception();
+    SWIG_check_unhandled_exception();
     try
     {
         $action

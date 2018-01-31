@@ -18,27 +18,27 @@
 #define VTYPE ARRTYPE::value_type
 
 // C wrapper type: pointer to templated array wrapper
-%typemap(ctype, noblock=1, out="SwigfArrayWrapper",
-       null="SwigfArrayWrapper_uninitialized()",
-       fragment="SwigfArrayWrapper_wrap") const ARRTYPE& NATIVE
-{SwigfArrayWrapper*}
+%typemap(ctype, noblock=1, out="SwigArrayWrapper",
+       null="SwigArrayWrapper_uninitialized()",
+       fragment="SwigArrayWrapper") const ARRTYPE& NATIVE
+{SwigArrayWrapper*}
 
-%typemap(imtype, import="SwigfArrayWrapper") const ARRTYPE& NATIVE
-  "type(SwigfArrayWrapper)"
+%typemap(imtype, import="SwigArrayWrapper") const ARRTYPE& NATIVE
+  "type(SwigArrayWrapper)"
 
 // Fortran proxy code: return allocatable vector<VTYPE>
 %typemap(ftype, out={$typemap(imtype, VTYPE ), dimension(:), allocatable},
 noblock=1) const ARRTYPE& NATIVE
   {$typemap(imtype,  VTYPE ), dimension(:), target, intent(in)}
 
-  // C input translation typemaps: $1 is SWIGPAIR__, $input is SwigfArrayWrapper
+  // C input translation typemaps: $1 is SWIGPAIR__, $input is SwigArrayWrapper
 %typemap(in, noblock=1) const ARRTYPE& NATIVE (ARRTYPE temparr, VTYPE* tempbegin)
   {tempbegin = static_cast<VTYPE*>($input->data);
    temparr.assign(tempbegin, tempbegin + $input->size);
    $1 = &temparr;
    }
 
-// C output translation typemaps: $1 is vector<VTYPE>*, $input is SwigfArrayWrapper
+// C output translation typemaps: $1 is vector<VTYPE>*, $input is SwigArrayWrapper
 %typemap(out) const ARRTYPE& NATIVE
 %{$result.data = ($1->empty() ? NULL : &(*$1->begin()));
   $result.size = $1->size();
