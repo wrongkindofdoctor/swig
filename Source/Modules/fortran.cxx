@@ -2082,8 +2082,11 @@ int FORTRAN::memberfunctionHandler(Node *n)
     }
     Setattr(n, "fortran:name", fsymname);
 
+    String* class_symname = Getattr(getCurrentClass(), "sym:name");
+    assert(class_symname);
+    
     // Create a private procedure name that gets bound to the Fortan TYPE
-    String* fwrapname = NewStringf("swigf_%s", fsymname);
+    String* fwrapname = NewStringf("swigf_%s_%s", class_symname, fsymname);
     Setattr(n, "fortran:fname", fwrapname);
 
     if (String* generic_name = Getattr(n, "feature:fortran:generic"))
