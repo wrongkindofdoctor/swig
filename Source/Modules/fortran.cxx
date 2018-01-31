@@ -1976,7 +1976,7 @@ int FORTRAN::constructorHandler(Node* n)
     // The class's symbolic name (e.g. VecInt)
     String* classname = Getattr(classn, "sym:name");
 
-        // Rename the proxy function to "create_$fclassname"
+    // Rename the proxy function to "create_$fclassname"
     String* constructor_name = NULL;
     if (Strcmp(symname, classname) != 0)
     {
@@ -2025,32 +2025,32 @@ int FORTRAN::destructorHandler(Node* n)
 
     SetFlag(n, "fortran:ismember");
 
-    Language::destructorHandler(n);
-
     if (Getattr(classnode, "feature:final"))
     {
         // Create 'final' name wrapper
         String* classname = Getattr(classnode, "sym:name");
         String* fname = NewStringf("swigf_final_%s", classname);
+        if (add_fsymbol(fname, n) != SWIG_NOWRAP)
+        {
+            // Add the 'final' subroutine to the methods
+            Printv(f_ftypes, "  final :: ", fname, "\n",
+                   NULL);
 
-        // Add the 'final' subroutine to the methods
-        Printv(f_ftypes, "  final :: ", fname, "\n",
+            // Add the 'final' implementation
+            Printv(f_fwrapper,
+               "  subroutine ", fname, "(self)\n"
+               "   use, intrinsic :: ISO_C_BINDING\n"
+               "   type(", classname, ") :: self\n",
+               fdis,
+               "  end subroutine\n",
                NULL);
 
-        // Add the 'final' implementation
-        Printv(f_fwrapper,
-           "  subroutine ", fname, "(self)\n"
-           "   use, intrinsic :: ISO_C_BINDING\n"
-           "   type(", classname, ") :: self\n"
-           "   call ", Getattr(n, "sym:name"), "(self%swigdata%ptr)\n"
-           "  end subroutine\n",
-           NULL);
-
-        // Add implementation
+            // Add implementation
+        }
         Delete(fname);
     }
 
-    return SWIG_OK;
+    return Language::destructorHandler(n);
 }
 
 //---------------------------------------------------------------------------//
@@ -2070,20 +2070,26 @@ int FORTRAN::memberfunctionHandler(Node *n)
 
     // If the function name starts with two underscores, modify it
     String* symname = Getattr(n, "sym:name");
-    String* fsymname = NULL;
-    List* overloads = NULL;
+    String* fsymname = Getattr(n, "fortran:name");
 
-    if (strncmp(Char(symname), "__", 2) == 0)
+    if (!fsymname)
     {
-        // For now, just delete the leading underscores
-        fsymname = NewString(Char(symname) + 2);
+        if (strncmp(Char(symname), "__", 2) == 0)
+        {
+            // For now, just delete the leading underscores
+            fsymname = NewString(Char(symname) + 2);
+        }
+        else
+        {
+            // Preserve original member name
+            fsymname = Copy(symname);
+        }
+        Setattr(n, "fortran:name", fsymname);
     }
     else
     {
-        // Preserve original member name
-        fsymname = Copy(symname);
+        fsymname = Copy(fsymname);
     }
-    Setattr(n, "fortran:name", fsymname);
 
     String* class_symname = Getattr(getCurrentClass(), "sym:name");
     assert(class_symname);
@@ -2094,7 +2100,8 @@ int FORTRAN::memberfunctionHandler(Node *n)
 
     if (String* generic_name = Getattr(n, "feature:fortran:generic"))
     {
-        overloads = this->get_method_overloads(generic_name);
+        List* overloads = this->get_method_overloads(generic_name);
+        Append(overloads, fsymname);
     }
 
     // Set as a member variable unless it's a constructor
@@ -2103,20 +2110,11 @@ int FORTRAN::memberfunctionHandler(Node *n)
         SetFlag(n, "fortran:ismember");
     }
 
-    Language::memberfunctionHandler(n);
-
-    if (overloads)
-    {
-        // We need to add the newly constructed function name to the list of
-        // overloads, *after* the member function handler has passed the node
-        // through functionWrapper etc.
-        String* fname = Getattr(n, "fortran:name");
-        assert(fname);
-        Append(overloads, fname);
-    }
-
     Delete(fwrapname);
     Delete(fsymname);
+    
+    Language::memberfunctionHandler(n);
+
     return SWIG_OK;
 }
 
