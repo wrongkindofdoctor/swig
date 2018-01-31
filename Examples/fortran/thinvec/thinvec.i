@@ -30,16 +30,14 @@
 %ignore ThinVec::data() const;
 
 //---------------------------------------------------------------------------//
-#define THINVEC_T const ThinVec<int>& INDICES
-
 // Note: since we use %const_cast and %static_cast, which are SWIG-defined
 // macros, we must use {} rather than %{ %} for the typemap. To prevent those
 // enclosing braces from being inserted in the wrapper code, we add the
 // noblock=1 argument to the typemap.
 //
-// The typemap applies to type pattern THINVEC_T, and it uses a temporary
-// variable (called tempvec) in the parentheses.
-%typemap(in, noblock=1) THINVEC_T (ThinVec<int> tempvec)
+// The typemap applies to input values with the name "INDICES", and it uses a
+// temporary variable (called tempvec) declared in the parentheses.
+%typemap(in, noblock=1) const ThinVec<int>& INDICES (ThinVec<int> tempvec)
 {
     // Original typemap: convert const ThinVec<int>* to thinvec reference
     $1 = %static_cast($input->ptr, $1_ltype);
@@ -56,7 +54,6 @@
     // Make the input argument point to our temporary vector
     $1 = &tempvec;
 }
-#undef THINVEC_T
 
 // Load the thinvec class definition
 %include "ThinVec.hh"

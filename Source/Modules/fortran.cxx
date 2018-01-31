@@ -212,6 +212,22 @@ bool needs_typedef(String* s)
 
 //---------------------------------------------------------------------------//
 /*!
+ * \brief Get some name attached to the node.
+ *
+ * This is for user feedback only.
+ */
+String* get_symname_or_name(Node* n)
+{
+    String* s = Getattr(n, "sym:name");
+    if (!s)
+    {
+        s = Getattr(n, "name");
+    }
+    return s;
+}
+
+//---------------------------------------------------------------------------//
+/*!
  * \brief Get/attach and return a typemap to the given node.
  *
  * If 'ext' is non-null, then after binding/searchinbg, a search will be made
@@ -1960,29 +1976,25 @@ int FORTRAN::constructorHandler(Node* n)
     // The class's symbolic name (e.g. VecInt)
     String* classname = Getattr(classn, "sym:name");
 
-    if (Strcmp(symname, classname) != 0)
-    {
-        // The constructor has been %rename'd: use it
-        Setattr(n, "fortran:name", symname);
-
-        // TODO: Warn the user if the name doesn't contain 'create'?
-        // or if it doesn't have the class name?
-    }
-    else
-    {
         // Rename the proxy function to "create_$fclassname"
         String* constructor_name = NewStringf("create_%s", classname);
         Setattr(n, "fortran:name", constructor_name);
-        Delete(constructor_name);
+    if (Strcmp(symname, classname) != 0)
+    {
+        // The constructor has been %rename'd: currently we don't support
+        // this due to conflicting names. See https://github.com/swig/swig/issues/844
+        Swig_warning(WARN_LANG_IDENTIFIER, Getfile(n), Getline(n),
+                "User-specified rename '%s' for class constructor '%s' will be ignored\n",
+                symname, classname);
     }
 
     // Override the result variable name
     Setattr(n, "wrap:fresult", "self");
 
-    // NOTE: return type has not yet been assigned at this point
-    Language::constructorHandler(n);
+    Delete(constructor_name);
 
-    return SWIG_OK;
+    // NOTE: return type has not yet been assigned at this point
+    return Language::constructorHandler(n);
 }
 
 //---------------------------------------------------------------------------//
@@ -2663,16 +2675,8 @@ int FORTRAN::add_fsymbol(String* s, Node *n)
 
     if (existing)
     {
-        String* n1 = Getattr(n, "sym:name");
-        if (!n1)
-        {
-            n1 = Getattr(n, "name");
-        }
-        String* n2 = Getattr(existing, "sym:name");
-        if (!n2)
-        {
-            n2 = Getattr(existing, "name");
-        }
+        String* n1 = get_symname_or_name(n);
+        String* n2 = get_symname_or_name(existing);
         Swig_warning(WARN_FORTRAN_NAME_CONFLICT, input_file, line_number,
                      "Ignoring '%s' due to Fortran name ('%s') conflict "
                      "with '%s'\n",
