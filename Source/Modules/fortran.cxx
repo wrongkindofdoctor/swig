@@ -1409,20 +1409,20 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     }
     Printv(fcall, Getattr(n, "wrap:name"), "(", NULL);
 
-    const char* swigf_result_name = "";
+    const char* swig_result_name = "";
     const bool is_fsubroutine = (Len(f_return_str) == 0);
     if (!is_fsubroutine)
     {
         if (String* fresult_override = Getattr(n, "wrap:fresult"))
         {
-            swigf_result_name = Char(fresult_override);
+            swig_result_name = Char(fresult_override);
         }
         else
         {
-            swigf_result_name = "swigf_result";
+            swig_result_name = "swig_result";
         }
         // Add dummy variable for Fortran proxy return
-        Printv(fargs, f_return_str, " :: ", swigf_result_name, "\n", NULL);
+        Printv(fargs, f_return_str, " :: ", swig_result_name, "\n", NULL);
     }
 
     // >>> FUNCTION NAME
@@ -1542,8 +1542,8 @@ void FORTRAN::proxyfuncWrapper(Node *n)
 
     if (!is_fsubroutine)
     {
-        Setattr(n, "fname", swigf_result_name);
-        Printv(ffunc->def, " &\n     result(", swigf_result_name, ")", NULL);
+        Setattr(n, "fname", swig_result_name);
+        Printv(ffunc->def, " &\n     result(", swig_result_name, ")", NULL);
     }
 
     // Append dummy variables to the proxy function definition
@@ -1596,7 +1596,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     // conversion code
     if (Len(fbody) > 0)
     {
-        Replaceall(fbody, "$result", swigf_result_name);
+        Replaceall(fbody, "$result", swig_result_name);
         Replaceall(fbody, "$owner", (GetFlag(n, "feature:new") ? "1" : "0"));
         this->replace_fclassname(cpp_return_type, fbody);
         Printv(ffunc->code, fbody, "\n", NULL);
@@ -1707,15 +1707,15 @@ void FORTRAN::assignmentWrapper(Node* n)
     String* flags = NewString("0");
     if (GetFlag(n, "allocate:allocate:default_destructor"))
     {
-        Printv(flags, " | swigf::IS_DESTR", NULL);
+        Printv(flags, " | swig::IS_DESTR", NULL);
     }
     if (!Abstract && GetFlag(n, "allocate:copy_constructor"))
     {
-        Printv(flags, " | swigf::IS_COPY_CONSTR", NULL);
+        Printv(flags, " | swig::IS_COPY_CONSTR", NULL);
     }
     if (GetFlag(n, "allocate:has_assign") && !GetFlag(n, "allocate:noassign"))
     {
-        Printv(flags, " | swigf::IS_COPY_ASSIGN", NULL);
+        Printv(flags, " | swig::IS_COPY_ASSIGN", NULL);
     }
 
     // Add C code
@@ -1725,9 +1725,9 @@ void FORTRAN::assignmentWrapper(Node* n)
            "SwigClassWrapper const * other) {\n",
            NULL);
     Printv(cfunc->code,
-        "typedef ", classtype, " swigf_lhs_classtype;\n"
-        "SWIG_assign(swigf_lhs_classtype, self,\n"
-        "             swigf_lhs_classtype, const_cast<SwigClassWrapper*>(other),\n"
+        "typedef ", classtype, " swig_lhs_classtype;\n"
+        "SWIG_assign(swig_lhs_classtype, self,\n"
+        "             swig_lhs_classtype, const_cast<SwigClassWrapper*>(other),\n"
         "             ", flags, ");\n"
         "}\n", NULL);
     Wrapper_print(cfunc, f_wrapper);
