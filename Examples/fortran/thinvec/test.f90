@@ -9,7 +9,8 @@
 program main
     use ISO_FORTRAN_ENV
     use, intrinsic :: ISO_C_BINDING
-    use thinvec, only : print_vec, print_offbyone, Vec => ThinVecInt
+    use thinvec, only : print_vec, print_offbyone, Vec => ThinVecInt, &
+        create_vec => create_ThinVecInt
     implicit none
     integer :: i
     type(Vec) :: v
@@ -21,7 +22,7 @@ program main
     call v%release()
 
     write(0, *) "Constructing..."
-    call v%create()
+    v = create_vec()
     write(0, *) "Sizing..."
     call v%resize(4)
     call print_vec(v)
@@ -45,7 +46,7 @@ program main
         dummy_data(i) = i + 23
     end do
     write(0, *) "Assigning vector", dummy_data
-    call v%assign_from(dummy_data)
+    call v%assign(dummy_data)
     call print_vec(v)
 
     write(0, *) "Destroying..."
