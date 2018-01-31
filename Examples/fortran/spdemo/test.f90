@@ -18,26 +18,26 @@ contains
 
 subroutine test_class()
     use ISO_FORTRAN_ENV
-    use spdemo, only : Foo, printfoo => print_crsp
+    use spdemo, only : Foo, create_foo, print_foo => print_crsp
     implicit none
     type(Foo) :: f, f2, f3
 
     write(0, *) "Constructing..."
-    call f%create()
+    f = create_foo()
     write(0, *) "Setting..."
     call f%set(123.0d0)
     write(0, *) "Clone..."
     f2 = f%clone()
-    call printfoo(f2)
+    call print_foo(f2)
     call f%set(234.0d0)
     write(0, *) "Original value should be 234: ", f%get()
     write(0, *) "Cloned value should be 123: ",   f2%get()
     f3 = f2%ref()
     write(0, *) "Reference to f2: ", f3%get()
-    call printfoo(f3)
+    call print_foo(f3)
     call f3%set(1.0d0)
     write(0, *) "f2 should be 1: ", f2%get()
-    call printfoo(f)
+    call print_foo(f)
 
     write(0, *) "Release f"
     call f%release()
@@ -49,13 +49,13 @@ end subroutine
 
 subroutine test_spcopy()
     use ISO_FORTRAN_ENV
-    use spdemo, only : Foo, printfoo => print_crsp, use_count
+    use spdemo, only : Foo, create_foo, print_foo => print_crsp, use_count
     implicit none
     type(Foo) :: f1, f2
 
     write(0, *) "Use count should be 0:", use_count(f1)
     write(0, *) "Constructing..."
-    call f1%create(1.0d0)
+    f1 = create_foo(1.0d0)
     write(0, *) "Use count should be 1:", use_count(f1)
 
     write(0, *) "Assigning..."

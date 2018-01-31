@@ -10,7 +10,8 @@ program main
     use ISO_FORTRAN_ENV
     use, intrinsic :: ISO_C_BINDING
     use stdvec, only : make_view => make_const_viewdbl, &
-        print_view => print_viewdbl, VecDbl, get_vec => get_vecdbl
+        print_view => print_viewdbl, VecDbl, get_vec => get_vecdbl, &
+        create_vecdbl
     implicit none
     type(VecDbl) :: v
     integer :: i
@@ -23,7 +24,7 @@ program main
     call v%release()
 
     write(0, *) "Constructing..."
-    call v%create()
+    v = create_vecdbl()
     write(0, *) "Sizing..."
     call v%resize(4)
     write(0, *) "Resizing with fill..."

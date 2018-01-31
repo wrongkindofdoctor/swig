@@ -23,13 +23,13 @@ class(BaseClass), pointer :: base_p => null()
 
 
 ! Derived A
-call derived_a%create(4, 3.14)
+derived_a = create_deriveda(4, 3.14)
 ASSERT(derived_a%foo() == 4*3.14)
 ASSERT(use_base(derived_a) == 4*3.14)
 call derived_a%print()
 
 ! Derived B
-call derived_b%create(7, 5)
+derived_b = create_derivedb(7, 5)
 ASSERT(derived_b%foo() == 7*5*2)
 ASSERT(use_base(derived_b) == 7*5*2)
 
@@ -46,7 +46,7 @@ ASSERT(base_p%foo() == 7*5*2)
 base_p => NULL()
 allocate(DerivedA :: base_p)
 select type(base_p); type is(DerivedA)
-  call base_p%create(3, 1.26)
+  base_p = create_deriveda(3, 1.26)
 end select
 ASSERT(base_p%foo() == 3*1.26)
 ASSERT(use_base(base_p) == 3*1.26)
@@ -56,7 +56,6 @@ call derived_a%release()
 call derived_b%release()
 call base_p%release()
 deallocate(base_p)
-
 
 contains
 
