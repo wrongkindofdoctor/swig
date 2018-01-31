@@ -5,7 +5,8 @@
  * \date   Fri Apr 28 18:33:31 2017
  * \note   Copyright (c) 2017 Oak Ridge National Laboratory, UT-Battelle, LLC.
  *
- * This file is automatically included when the user loads <std_except.i>.
+ * This file is automatically included when the user loads <std_except.i>. It
+ * assumes C++.
  *
  * Example use: \code
 
@@ -68,9 +69,8 @@ void SWIG_store_exception(int code, const char *msg);
 }
 
 //---------------------------------------------------------------------------//
-// C++ Variable definitions: used only if %included, not %imported
+// Variable definitions: used only if %included, not %imported
 //---------------------------------------------------------------------------//
-#ifdef __cplusplus
 %fragment("SWIG_exception", "header",
           fragment="SWIG_fortran_error_int",
           fragment="<string>",
@@ -104,40 +104,10 @@ SWIGEXPORT void SWIG_store_exception(int code, const char *msg)
 }
 
 }
-//---------------------------------------------------------------------------//
-// C variable definitions: used only if %included, not %imported
-//---------------------------------------------------------------------------//
-#else
-// Insert C declaration of fortran data
-%fragment("SwigErrorVars_wrap_c", "header",
-          fragment="SwigErrorPub", fragment="SwigErrorParams") {
-extern int SWIG_FORTRAN_ERROR_INT;
-}
-
-// Exception handling code
-%fragment("SWIG_exception", "header",
-          fragment="SwigErrorVars_wrap_c") {
-// Call this function before any new action
-SWIGEXPORT void SWIG_check_unhandled_exception()
-{
-    assert(SWIG_FORTRAN_ERROR_INT == 0);
-}
-
-// Save an exception to the fortran error code and string
-SWIGEXPORT void SWIG_store_exception(int code, const char * msg)
-{
-    // Store exception code
-    SWIG_FORTRAN_ERROR_INT = code;
-    // Print the message immediately
-    printf(stderr, "An error of type %d occurred: %s\n", code, msg, NULL);
-}
-}
-#endif
 
 //---------------------------------------------------------------------------//
 // Runtime code (always added)
 //---------------------------------------------------------------------------//
-#if defined(__cplusplus)
 // Override the default exception handler from fortranruntime.swg
 // Note that SWIG_exception_impl is used by SWIG_contract_assert, so the
 // *_impl* is the one that changes.
@@ -146,13 +116,6 @@ SWIGEXPORT void SWIG_store_exception(int code, const char * msg)
 #define SWIG_exception_impl(CODE, MSG, RETURNNULL) \
     SWIG_store_exception(CODE, MSG); RETURNNULL;
 %}
-#else
-%fragment("SWIG_exception_impl", "runtime") %{
-#undef SWIG_exception_impl
-#define SWIG_exception_impl(CODE, MSG, RETURNNULL) \
-    SWIG_store_exception(CODE, MSG); RETURNNULL;
-%}
-#endif
 
 // Note that this replaces wrapper code: the phrase "SWIG_exception" never
 // shows up in the .cxx file
@@ -171,8 +134,6 @@ SWIGEXPORT void SWIG_store_exception(int code, const char * msg)
 //---------------------------------------------------------------------------//
 // Functional interface to swig error string
 //---------------------------------------------------------------------------//
-
-#ifdef __cplusplus
 %include <typemaps.i>
 
 // Declare typedef for special string conversion typemaps
@@ -189,7 +150,6 @@ const Swig_Err_String& SWIG_FORTRAN_ERROR_STR()
     return swig_last_exception_msg;
 }
 }
-#endif
 
 //---------------------------------------------------------------------------//
 // end of fortran/exception.i
