@@ -1977,21 +1977,24 @@ int FORTRAN::constructorHandler(Node* n)
     String* classname = Getattr(classn, "sym:name");
 
         // Rename the proxy function to "create_$fclassname"
-        String* constructor_name = NewStringf("create_%s", classname);
-        Setattr(n, "fortran:name", constructor_name);
+    String* constructor_name = NULL;
     if (Strcmp(symname, classname) != 0)
     {
-        // The constructor has been %rename'd: currently we don't support
-        // this due to conflicting names. See https://github.com/swig/swig/issues/844
-        Swig_warning(WARN_LANG_IDENTIFIER, Getfile(n), Getline(n),
-                "User-specified rename '%s' for class constructor '%s' will be ignored\n",
-                symname, classname);
+        // The constructor has been %rename'd. Note that this may cause
+        // problems if the class is templated and being instantiated more than
+        // once: https://github.com/swig/swig/issues/844
+        constructor_name = Copy(symname);
     }
+    else
+    {
+        constructor_name = NewStringf("create_%s", classname);
+    }
+    Setattr(n, "fortran:name", constructor_name);
+    Delete(constructor_name);
 
     // Override the result variable name
     Setattr(n, "wrap:fresult", "self");
 
-    Delete(constructor_name);
 
     // NOTE: return type has not yet been assigned at this point
     return Language::constructorHandler(n);
