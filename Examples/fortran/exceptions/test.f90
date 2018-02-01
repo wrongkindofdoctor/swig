@@ -14,6 +14,10 @@ program main
     integer, dimension(:), pointer :: arrptr
     integer :: val = 123
 
+    ! Setting bad error flag should throw an exception next, not crash the
+    ! program
+    !ierr = 1
+
     write(*,*) "Making bad subroutine call"
     call alpha(-4)
 
@@ -25,12 +29,17 @@ program main
         ierr = 0
     endif
 
+    ! Setting bad error flag ideally should throw an exception about an unknown
+    ! error, but since the exception message itself isn't cleared, the error
+    ! message from the last (recovered) error will remain.
+    ! ierr = 1
+    
     write(*,*) "Making bad function call"
     val = bravo()
     write(*,*) "Result of bad function call:", val
 
-!    write(*,*) "Making another bad function call will terminate the app"
-!    val = bravo()
+    ! write(*,*) "Making a bad function call will terminate the app:"
+    ! call throw_error()
 
     ! Clear the error
     ierr = 0
@@ -38,7 +47,7 @@ program main
     val = bravo()
     write(*,*) "Result of good function call:", val
 
-    ! Throw a downstream error
+    ! Throw an error in a downstream module
     call throw_error()
 
     if (ierr /= 0) then

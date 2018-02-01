@@ -86,9 +86,9 @@ end type
 %{
 #define SWIG_check_mutable(SWIG_CLASS_WRAPPER, TYPENAME, FNAME, FUNCNAME, RETURNNULL) \
     if ((SWIG_CLASS_WRAPPER).mem == SWIG_CREF) { \
-        SWIG_exception_impl(SWIG_TypeError, \
+        SWIG_exception_impl(FUNCNAME, SWIG_TypeError, \
             "Cannot pass const " TYPENAME " (class " FNAME ") " \
-            "to a function (" FUNCNAME ") that requires a mutable reference", \
+            "as a mutable reference", \
             RETURNNULL); \
     }
 %}
@@ -98,9 +98,9 @@ end type
 %{
 #define SWIG_check_nonnull(SWIG_CLASS_WRAPPER, TYPENAME, FNAME, FUNCNAME, RETURNNULL) \
     if ((SWIG_CLASS_WRAPPER).mem == SWIG_NULL) { \
-        SWIG_exception_impl(SWIG_TypeError, \
+        SWIG_exception_impl(FUNCNAME, SWIG_TypeError, \
             "Cannot pass null " TYPENAME " (class " FNAME ") " \
-            "to function (" FUNCNAME ")", RETURNNULL); \
+            "as a reference", RETURNNULL); \
     }
 %}
 
@@ -144,7 +144,7 @@ SWIGINTERN void destruct_impl(T* self, true_type) {
 }
 template<class T>
 SWIGINTERN T* destruct_impl(T* , false_type) {
-  SWIG_exception_impl(SWIG_TypeError,
+  SWIG_exception_impl("assignment", SWIG_TypeError,
                       "Invalid assignment: class type has no destructor",
                       return NULL);
 }
@@ -162,13 +162,13 @@ SWIGINTERN void copy_assign_impl(T* self, const U* other, true_type) {
 // Disabled construction and assignment
 template<class T, class U>
 SWIGINTERN T* copy_construct_impl(const U* , false_type) {
-  SWIG_exception_impl(SWIG_TypeError,
+  SWIG_exception_impl("assignment", SWIG_TypeError,
                       "Invalid assignment: class type has no copy constructor",
                       return NULL);
 }
 template<class T, class U>
 SWIGINTERN void copy_assign_impl(T* , const U* , false_type) {
-  SWIG_exception_impl(SWIG_TypeError,
+  SWIG_exception_impl("assignment", SWIG_TypeError,
                       "Invalid assignment: class type has no copy assignment",
                       return);
 }
@@ -190,13 +190,13 @@ SWIGINTERN void move_assign_impl(T* self, U* other, true_type) {
 // Disabled move construction and assignment
 template<class T, class U>
 SWIGINTERN T* move_construct_impl(U*, false_type) {
-  SWIG_exception_impl(SWIG_TypeError,
+  SWIG_exception_impl("assignment", SWIG_TypeError,
                       "Invalid assignment: class type has no move constructor",
                       return NULL);
 }
 template<class T, class U>
 SWIGINTERN void move_assign_impl(T*, U*, false_type) {
-  SWIG_exception_impl(SWIG_TypeError,
+  SWIG_exception_impl("assignment", SWIG_TypeError,
                       "Invalid assignment: class type has no move assignment",
                       return);
 }
@@ -315,7 +315,7 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
       }
       break;
     case SWIG_MOVE:
-      SWIG_exception_impl(SWIG_RuntimeError,
+      SWIG_exception_impl("assignment", SWIG_RuntimeError,
         "Left-hand side of assignment should never be in a 'MOVE' state",
         return);
       break;
@@ -349,7 +349,7 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
           self->ptr = NULL;
           self->mem = SWIG_NULL;
         default:
-          SWIG_exception_impl(SWIG_RuntimeError,
+          SWIG_exception_impl("assignment", SWIG_RuntimeError,
               "Cannot assign to a const reference", return);
           break;
       }
