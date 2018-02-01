@@ -12,7 +12,6 @@
 #include <vector>
 %}
 
-%include "std_common.i"
 %include "std_container.i"
 
 namespace std
