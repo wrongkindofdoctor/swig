@@ -8,8 +8,8 @@ program class_runme
 
   ! Create objects
   write(*,*) "Creating some objects"
-  call c%create(10.0_8)
-  call s%create(10.0_8)
+  c = create_circle(10.0_8)
+  s = create_square(10.0_8)
 
   ! Access static member
   write(*,'(a,i2,a)')"A total of", s%get_nshapes(), " shapes were created"
@@ -36,17 +36,15 @@ program class_runme
   write(*,*)" Circle P/A  = ", surface_to_volume(c)
   write(*,*)" Square P/A  = ", surface_to_volume(s)
 
-
-  ! Clean up
-  call c%release()
-  call s%release()
-
   ! Example of exception handling
-  call c%create(-2.0d0)
+  c = create_circle(-2.0d0)
   if (ierr /= 0) then
       write(*,*) "Caught the following error: ", get_serr()
       ierr = 0
   endif
+
+  call c%release()
+  call s%release()
 
   ! Check n shapes by calling a static method
   write(*,*)c%get_nshapes(), "shapes remain"

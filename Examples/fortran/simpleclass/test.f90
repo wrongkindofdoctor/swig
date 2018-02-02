@@ -24,8 +24,11 @@ subroutine test_simple_class_actions()
     call sc%release()
 
     write(0, *) "Constructing..."
-    call sc%create()
+    sc = create_SimpleClass()
     call sc%set(9)
+
+    write(0, *) "Alternate constructor..."
+    sc = create_SimpleClass(1.0d0, 2.0d0)
 
     example = 7
     call sc%action(example)
@@ -47,7 +50,7 @@ subroutine test_simple_class_memory()
     type(SimpleClass) :: unassigned
 
     write(0, *) "Constructing..."
-    call orig%create()
+    orig = create_SimpleClass()
     call orig%set(1)
 
     ! Copy construct ideally
@@ -58,8 +61,7 @@ subroutine test_simple_class_memory()
 
     ! Assign to an already-created instance
     write(0, *) "Assigning"
-    call assigned%create()
-    call assigned%set(3)
+    orig = create_SimpleClass_dbl(3.0d0)
     assigned = orig
     call orig%set(4)
     write(0, *) "Orig/assigned: should be 4/3"

@@ -23,6 +23,13 @@ SimpleClass g_globalclass(0);
 }
 
 //---------------------------------------------------------------------------//
+// Static "constructor"
+SimpleClass* SimpleClass::EmitSimpleClass()
+{
+    return new SimpleClass;
+}
+
+//---------------------------------------------------------------------------//
 SimpleClass::SimpleClass()
     : d_id(g_next_id++)
     , d_storage(0)

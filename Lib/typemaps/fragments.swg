@@ -169,6 +169,10 @@
 #include <utility>
 %}
 
+%fragment("<cctype>", "header") %{
+#include <cctype>
+%}
+
 %fragment("SWIG_isfinite","header",fragment="<math.h>,<float.h>") %{
 /* Getting isfinite working pre C99 across multiple platforms is non-trivial. Users can provide SWIG_isfinite on older platforms. */
 #ifndef SWIG_isfinite

@@ -5,22 +5,14 @@ FAILING_CPP_TESTS += \
   arrays_scope \
   bloody_hell \
   char_strings \
-  constructor_copy \
   contract \
-  cpp_basic \
-  default_constructor \
-  director_basic \
   director_classes \
   director_default \
   director_detect \
-  director_enum \
-  director_ignore \
   director_keywords \
   director_overload2 \
-  director_property \
   enum_scope_template \
   enum_thorough \
-  extend \
   extend_default \
   fvirtual \
   inherit_target_language \
@@ -33,23 +25,15 @@ FAILING_CPP_TESTS += \
   multiple_inheritance_nspace \
   multiple_inheritance_shared_ptr \
   namespace_class \
-  namespace_nested \
   nested_scope \
   nested_workaround \
-  operator_overload \
   overload_arrays \
   overload_method \
   overload_return_type \
   overload_simple \
   overload_subtype \
-  overload_template \
-  overload_template_fast \
   refcount \
-  smart_pointer_inherit \
   smart_pointer_template_defaults_overload \
-  special_variables \
-  template_arg_typename \
-  template_default_arg \
   template_enum \
   template_extend_overload \
   template_methods \
@@ -57,7 +41,5 @@ FAILING_CPP_TESTS += \
   using_composition \
   using_extend \
   using_inherit \
-  using_protected \
-  valuewrapper_base \
   variable_replacement \
   virtual_poly

@@ -8,7 +8,7 @@
 //---------------------------------------------------------------------------//
 %module(docstring="A simple example module") simple_class
 
-%include "docstring.i"
+//%include "docstring.i"
 
 %{
 #include "SimpleClass.hh"
@@ -91,6 +91,16 @@ void swigf_assignment(const SimpleClass* other)
 
 // Make BasicStruct a fortran-accessible struct.
 %fortran_bindc_struct(BasicStruct);
+
+// Rename one constructor
+%rename(create_SimpleClass_dbl) SimpleClass::SimpleClass(double);
+
+%extend SimpleClass {
+SimpleClass(double a, double b)
+{
+        return new SimpleClass(a + b);
+}
+}
 
 %include "SimpleClass.hh"
 

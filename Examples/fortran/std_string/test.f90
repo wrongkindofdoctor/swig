@@ -9,7 +9,8 @@
 program main
     use ISO_FORTRAN_ENV
     use, intrinsic :: ISO_C_BINDING
-    use stdstr, only : print_str, halve_str, string, get_reversed_native_string
+    use stdstr, only : print_str, halve_str, string, create_string, &
+        get_reversed_native_string
     implicit none
     character(len=*), parameter :: paramstr = "short string   "
     character(len=:), allocatable :: varlen, tostr
@@ -19,7 +20,7 @@ program main
     type(string) :: s
 
     write(0, *) "Constructing..."
-    call s%create()
+    s = create_string()
     write(0, *) "Size:", s%size()
 
     call s%assign_from(trim(paramstr))

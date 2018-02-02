@@ -382,10 +382,10 @@ FORT_FUND_TYPEMAP(sssize_t          , "integer(C_SIZE_T)");
 "integer(C_INT)"
 %typemap(ftype, out="logical") bool
 "logical, intent(in)"
-%typemap(fin, fragment="SwigfLogicalToInt")  bool
-"$1 = swigf_logical_to_int($input)"
-%typemap(fout, fragment="SwigfIntToLogical") bool
-"$result = swigf_int_to_logical($1)"
+%typemap(fin, fragment="SWIG_logical_to_int_f")  bool
+"$1 = SWIG_logical_to_int($input)"
+%typemap(fout, fragment="SWIG_int_to_logical_f") bool
+"$result = SWIG_int_to_logical($1)"
 
 // Treat const references like values
 %apply bool { const bool& };
@@ -455,16 +455,16 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
 //---------------------------------------------------------------------------//
 
 // Data owned by the base class instance
-%typemap(fdata, fragment="SwigfClassWrapper") SWIGTYPE
-  "type(SwigfClassWrapper), public :: swigdata"
+%typemap(fdata, fragment="SwigClassWrapper_f") SWIGTYPE
+  "type(SwigClassWrapper), public :: swigdata"
 
 // Call destructor if the data is owned; then clear the pointer
 %typemap(fdestructor) SWIGTYPE
-%{if ($input%swigdata%mem == SWIGF_OWN) then
+%{if ($input%swigdata%mem == SWIG_OWN) then
     $action
   end if
   $input%swigdata%ptr = C_NULL_PTR
-  $input%swigdata%mem = SWIGF_NULL%}
+  $input%swigdata%mem = SWIG_NULL%}
 
 //---------------------------------------------------------------------------//
 // CLASS TYPEMAPS
@@ -488,23 +488,23 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
 // Classes accepted by value are passed as const reference.
 // They're copy-assigned when they're passed
 // Returning a class by value is copy-constructed as a new'd pointer
-%typemap(ctype, out="SwigfClassWrapper",
-         null="SwigfClassWrapper_uninitialized()", noblock=1,
-         fragment="SwigfClassWrapper_wrap")
+%typemap(ctype, out="SwigClassWrapper",
+         null="SwigClassWrapper_uninitialized()", noblock=1,
+         fragment="SwigClassWrapper")
 SWIGTYPE
-  {const SwigfClassWrapper *}
+  {const SwigClassWrapper *}
 %typemap(in, noblock=1,
-         fragment="SwigfCheckNonnull") SWIGTYPE
-  {SWIGF_check_nonnull(*$input, "$1_ltype", "$fclassname", "$decl", return $null);
+         fragment="SWIG_check_nonnull") SWIGTYPE
+  {SWIG_check_nonnull(*$input, "$1_ltype", "$fclassname", "$decl", return $null);
    $1 = *%static_cast($input->ptr, $&1_ltype);}
 %typemap(out, noblock=1) SWIGTYPE
   {$result.ptr = %new_copy($1, $1_ltype);
-   $result.mem = SWIGF_MOVE;}
+   $result.mem = SWIG_MOVE;}
 
 // These remaining types apply to ALL generic class pointers.
-%typemap(imtype, import="SwigfClassWrapper", fragment="SwigfClassWrapper")
+%typemap(imtype, import="SwigClassWrapper", fragment="SwigClassWrapper_f")
     SWIGTYPE
-  "type(SwigfClassWrapper)"
+  "type(SwigClassWrapper)"
 %typemap(ftype) SWIGTYPE
   "type($fclassname)"
 %typemap(fin) SWIGTYPE
@@ -514,12 +514,12 @@ SWIGTYPE
 
 // Raw pointers act mostly like value types (with overrides below)
 %typemap(ctype)  SWIGTYPE* = SWIGTYPE;
-%typemap(in, noblock=1, fragment="SwigfCheckMutable") SWIGTYPE*
-  {SWIGF_check_mutable(*$input, "$1_ltype", "$fclassname", "$decl", return $null);
+%typemap(in, noblock=1, fragment="SWIG_check_mutable") SWIGTYPE*
+  {SWIG_check_mutable(*$input, "$1_ltype", "$fclassname", "$decl", return $null);
   $1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(out, noblock=1) SWIGTYPE*
   {$result.ptr = $1;
-   $result.mem = ($owner ? SWIGF_MOVE : SWIGF_REF);}
+   $result.mem = ($owner ? SWIG_MOVE : SWIG_REF);}
 %typemap(imtype) SWIGTYPE* = SWIGTYPE;
 %typemap(ftype, out="type($fclassname)") SWIGTYPE*
   "class($fclassname), intent(inout)"
@@ -532,7 +532,7 @@ SWIGTYPE
   {$1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(out, noblock=1) const SWIGTYPE*
   {$result.ptr = (void*)$1;
-   $result.mem = SWIGF_CREF;}
+   $result.mem = SWIG_CREF;}
 %typemap(imtype) const SWIGTYPE* = SWIGTYPE*;
 %typemap(ftype, out="type($fclassname)") const SWIGTYPE*
   "class($fclassname), intent(in)"
@@ -548,23 +548,23 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
 
 // Check for non-null reference inputs
 %typemap(in, noblock=1,
-         fragment="SwigfCheckMutableNonnull") SWIGTYPE&
-  {SWIGF_check_mutable_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
+         fragment="SWIG_check_mutable_nonnull") SWIGTYPE&
+  {SWIG_check_mutable_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
   $1 = %static_cast($input->ptr, $1_ltype);}
 %typemap(in, noblock=1,
-         fragment="SwigfCheckNonnull") const SWIGTYPE&
-  {SWIGF_check_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
+         fragment="SWIG_check_nonnull") const SWIGTYPE&
+  {SWIG_check_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
   $1 = %static_cast($input->ptr, $1_ltype);}
 
 // Check for non-null, mutable class input "self"
 %typemap(in, noblock=1,
-         fragment="SwigfCheckMutableNonnull") SWIGTYPE* self
-  {SWIGF_check_mutable_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
+         fragment="SWIG_check_mutable_nonnull") SWIGTYPE* self
+  {SWIG_check_mutable_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
   $1 = %static_cast($input->ptr, $1_ltype);}
 // Check for non-null class input "self"
 %typemap(in, noblock=1,
-         fragment="SwigfCheckNonnull") const SWIGTYPE* self
-  {SWIGF_check_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
+         fragment="SWIG_check_nonnull") const SWIGTYPE* self
+  {SWIG_check_nonnull(*$input, "$1_type", "$fclassname", "$decl", return $null);
   $1 = %static_cast($input->ptr, $1_ltype);}
 
 // Structs will generate free/malloc usage via the %free typemap, but SWIG
@@ -579,16 +579,16 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
 #endif
 
 // C binding for opaque classes
-%typemap(bindc, fragment="SwigfClassWrapper") SwigfClassWrapper
-  "type(SwigfClassWrapper)"
+%typemap(bindc, fragment="SwigClassWrapper_f") SwigClassWrapper
+  "type(SwigClassWrapper)"
 
-%typemap(imbindc, in="type(SwigfClassWrapper), value",
-         import="SwigfClassWrapper", fragment="SwigfClassWrapper")
-    SwigfClassWrapper
-  "type(SwigfClassWrapper)"
-%typemap(imbindc, in="type(SwigfClassWrapper)",
-         import="SwigfClassWrapper", fragment="SwigfClassWrapper")
-    SwigfClassWrapper*
+%typemap(imbindc, in="type(SwigClassWrapper), value",
+         import="SwigClassWrapper", fragment="SwigClassWrapper_f")
+    SwigClassWrapper
+  "type(SwigClassWrapper)"
+%typemap(imbindc, in="type(SwigClassWrapper)",
+         import="SwigClassWrapper", fragment="SwigClassWrapper_f")
+    SwigClassWrapper*
   "type(C_PTR)"
 
 //---------------------------------------------------------------------------//
@@ -663,20 +663,20 @@ FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY),
 //---------------------------------------------------------------------------//
 #ifdef __cplusplus
 
-%typemap(ctype, fragment="SwigfOpaqueMemFunPtr_wrap",
-         null="SwigfOpaqueMemFunPtr_uninitialized()") SWIGTYPE (CLASS::*)
-    %{SwigfOpaqueMemFunPtr%}
-%typemap(in, fragment="SwigfBruteCast") SWIGTYPE (CLASS::*)
+%typemap(ctype, fragment="SwigOpaqueMemFunPtr",
+         null="SwigOpaqueMemFunPtr_uninitialized()") SWIGTYPE (CLASS::*)
+    %{SwigOpaqueMemFunPtr%}
+%typemap(in, fragment="swig::brute_cast") SWIGTYPE (CLASS::*)
     %{$1 = brute_cast<$1_ltype>($input);%}
-%typemap(out, fragment="SwigfBruteCast") SWIGTYPE (CLASS::*)
-    %{$result = brute_cast<SwigfOpaqueMemFunPtr>($1);%}
-%typemap(imtype, in="type(SwigfOpaqueMemFunPtr), intent(in), value",
-         import="SwigfOpaqueMemFunPtr",
-         fragment="SwigfOpaqueMemFunPtr") SWIGTYPE (CLASS::*)
-    "type(SwigfOpaqueMemFunPtr)"
-%typemap(ftype, out="type(SwigfOpaqueMemFunPtr)",
-         fragment="SwigfOpaqueMemFunPtr") SWIGTYPE (CLASS::*)
-    "type(SwigfOpaqueMemFunPtr), intent(in), value"
+%typemap(out, fragment="swig::brute_cast") SWIGTYPE (CLASS::*)
+    %{$result = brute_cast<SwigOpaqueMemFunPtr>($1);%}
+%typemap(imtype, in="type(SwigOpaqueMemFunPtr), intent(in), value",
+         import="SwigOpaqueMemFunPtr",
+         fragment="SwigOpaqueMemFunPtr_f") SWIGTYPE (CLASS::*)
+    "type(SwigOpaqueMemFunPtr)"
+%typemap(ftype, out="type(SwigOpaqueMemFunPtr)",
+         fragment="SwigOpaqueMemFunPtr_f") SWIGTYPE (CLASS::*)
+    "type(SwigOpaqueMemFunPtr), intent(in), value"
 %typemap(fin) SWIGTYPE (CLASS::*)
     "$1 = $input"
 %typemap(fout) SWIGTYPE (CLASS::*)

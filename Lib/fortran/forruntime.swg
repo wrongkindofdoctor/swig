@@ -17,15 +17,15 @@
 %fragment("<stdexcept>");
 %insert(runtime) %{
 // Default exception handler
-#define SWIG_exception_impl(CODE, MSG, RETURNNULL) \
-    throw std::logic_error(MSG); RETURNNULL;
+#define SWIG_exception_impl(DECL, CODE, MSG, RETURNNULL) \
+    throw std::logic_error("In " DECL ": " MSG); RETURNNULL;
 %}
 #else
 %insert(runtime) %{
 #include <assert.h>
 /* Default C exception handler */
-#define SWIG_exception_impl(CODE, MSG, RETURNNULL) \
-    printf(stderr, MSG, NULL); assert(0); RETURNNULL;
+#define SWIG_exception_impl(DECL, CODE, MSG, RETURNNULL) \
+    printf(stderr, "In " DECL ": " MSG, NULL); assert(0); RETURNNULL;
 %}
 #endif
 
@@ -34,7 +34,7 @@
 %insert(runtime) %{
 /* Contract support */
 #define SWIG_contract_assert(RETURNNULL, EXPR, MSG) \
-    if (!(EXPR)) { SWIG_exception_impl(SWIG_ValueError, MSG, RETURNNULL); }
+    if (!(EXPR)) { SWIG_exception_impl("$decl", SWIG_ValueError, MSG, RETURNNULL); }
 %}
 
 //---------------------------------------------------------------------------//

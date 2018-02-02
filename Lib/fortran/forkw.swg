@@ -18,11 +18,11 @@
 %ignore *::operator*();
 %ignore *::operator=;
 
-// By default SWIG gives these underscore prefix/suffix
-%keywordwarn("'create' is reserved for SWIG constructors",
-             rename="create_", %$ismember) "create";
+// Add suffix
 %keywordwarn("'release' is reserved for SWIG destructors",
              rename="release_") "*::release";
+%keywordwarn("'final' is reserved for SWIG finalization routines",
+             rename="final_") "*::release";
 #endif
 
 // Prevent identifiers from having a leading underscore.
