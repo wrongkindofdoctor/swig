@@ -608,22 +608,21 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
 %define %fortran_bindc_typedef_struct(CTYPE, TD_CTYPE)
   // Mark the class as being C-bound
   %bindc TD_CTYPE;
-  // Bound structs act just like simple types
-  FORT_SIMPLE_TYPEMAP(CTYPE, CTYPE, "type($fclassname)")
+  // Bound structs act just like fundamental types
+  FORT_FUND_TYPEMAP(CTYPE, "type($fclassname)")
 
   // Interface code has to "import' the class type.
-  %typemap(imtype, import="$fclassname") CTYPE
+  %typemap(imtype, import="$fclassname") CTYPE, const CTYPE
     "type($fclassname)"
-  %typemap(imtype) const CTYPE, const CTYPE& = CTYPE;
-
-  // interface code has to "import' the class type.
-  %typemap(bindc, import="$fclassname") CTYPE
+  // 
+  %typemap(bindc, import="$fclassname") CTYPE, const CTYPE 
     "type($fclassname)"
-
-  // Interface code has to "import' the class type.
-  %typemap(imbindc, import="$fclassname") CTYPE
+  %typemap(imbindc, in="type($fclassname), value",
+           import="$fclassname") CTYPE, const CTYPE
     "type($fclassname)"
-  %typemap(imbindc) const CTYPE, const CTYPE& = CTYPE;
+  %typemap(imbindc, in="type($fclassname)",
+           import="$fclassname") CTYPE*, const CTYPE*
+    "type(C_PTR)"
 %enddef
 
 %define %fortran_bindc_struct(CTYPE)
