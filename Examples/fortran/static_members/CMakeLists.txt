@@ -1,5 +1,5 @@
 ##---------------------------------------------------------------------------##
-## File  : inheritance/CMakeLists.txt
+## File  : static_members/CMakeLists.txt
 ## Author: Andrey Prokopenko
 ## Date  : Mon Jan 21 2017
 ## Brief : static members example
@@ -17,7 +17,7 @@ MAKE_SWIG(MODULE static_members
   DEPLIBS staticmemberslib)
 
 # Create test executable
-ADD_EXECUTABLE(static_members_test.exe test.f90)
+ADD_EXECUTABLE(static_members_test.exe runme.f90)
 # It depends on the compiled fortran module
 TARGET_LINK_LIBRARIES(static_members_test.exe ${SWIG_MODULE_static_members_REAL_NAME})
 

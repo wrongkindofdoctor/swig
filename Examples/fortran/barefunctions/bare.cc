@@ -75,22 +75,6 @@ void get_something_ptr(int x, double* y)
 }
 
 //---------------------------------------------------------------------------//
-void print_array(std::pair<const double*, size_t> view)
-{
-    const double* data = view.first;
-    const double* end_data = data + view.second;
-
-    cout << "{";
-    const char* sep = "";
-    for (; data != end_data; ++data)
-    {
-        cout << sep << *data;
-        sep = ", ";
-    }
-    cout << "}\n";
-}
-
-//---------------------------------------------------------------------------//
 
 void print_rgb(RgbEnum c)
 {
@@ -119,20 +103,6 @@ void print_cmyk(CmykEnum c)
         case BLACK:  str = "BLACK";   break;
     }
     cout << str << endl;
-}
-
-extern "C" {
-void print_sphere(const double origin[3], const double* radius)
-{
-    cout << "Sphere: r=" << *radius << ", origin={"
-        << origin[0] << ','
-        << origin[1] << ','
-        << origin[2] << "}\n";
-}
-bool bound_negation(bool v)
-{
-    return !v;
-}
 }
 //---------------------------------------------------------------------------//
 // end of bare_function/bare.cc

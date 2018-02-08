@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------------!
-! \file   simple_class/test.f90
+! \file   simpleclass/runme.f90
 ! \author Seth R Johnson
 ! \date   Thu Dec 01 15:07:28 2016
 ! \brief  test module
@@ -93,13 +93,17 @@ subroutine test_basic_struct()
     use simple_class
     implicit none
     type(BasicStruct) :: bs
-    bs%foo = 4321
-    bs%bar = 1.234d0
+
+    bs = create_BasicStruct()
+    call bs%set_foo(4321)
+    call bs%set_bar(1.234d0)
     call print_struct(bs)
+
+    call bs%release()
 end subroutine
 
 end program
 
 !-----------------------------------------------------------------------------!
-! end of simple_class/test.f90
+! end of simpleclass/runme.f90
 !-----------------------------------------------------------------------------!

@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   simple_class/SimpleClass.cc
+ * \file   simpleclass/SimpleClass.cc
  * \author Seth R Johnson
  * \date   Thu Dec 01 15:07:23 2016
  * \brief  SimpleClass class definitions.
@@ -20,13 +20,6 @@ namespace
 int g_counter = 0;
 int g_next_id = 0;
 SimpleClass g_globalclass(0);
-}
-
-//---------------------------------------------------------------------------//
-// Static "constructor"
-SimpleClass* SimpleClass::EmitSimpleClass()
-{
-    return new SimpleClass;
 }
 
 //---------------------------------------------------------------------------//

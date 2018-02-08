@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------------!
-! \file   spdemo/test.f90
+! \file   spdemo/test-copy-elision.f90
 ! \author Seth R Johnson
 ! \date   Sat Jan 13 15:54:44 2018
 ! \brief  Test showing that you can't avoid assignment when returning a class via a function. There is no copy elision/RVO in
@@ -80,5 +80,5 @@ contains
 end program
 
 !-----------------------------------------------------------------------------!
-! end of spdemo/test.f90
+! end of spdemo/test-copy-elision.f90
 !-----------------------------------------------------------------------------!

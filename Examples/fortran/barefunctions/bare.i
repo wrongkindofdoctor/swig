@@ -1,6 +1,6 @@
 //---------------------------------*-SWIG-*----------------------------------//
 /*!
- * \file   swig-dev/bare_function/bare.i
+ * \file   barefunctions/bare.i
  * \author Seth R Johnson
  * \date   Fri Jan 16 23:51:44 2015
  * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.

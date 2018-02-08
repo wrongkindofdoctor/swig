@@ -16,7 +16,7 @@ MAKE_SWIG(MODULE stdvec
   DEPLIBS stdveclib)
 
 # Create test executable
-add_executable(std_vector_test.exe test.f90)
+add_executable(std_vector_test.exe runme.f90)
 # It depends on the compiled fortran module
 target_link_libraries(std_vector_test.exe ${SWIG_MODULE_stdvec_REAL_NAME})
 

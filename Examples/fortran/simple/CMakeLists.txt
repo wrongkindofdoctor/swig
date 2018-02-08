@@ -7,11 +7,10 @@
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(simplelib simple.cc)
 
 # Generate SWIG module
 MAKE_SWIG(MODULE simple
-  DEPLIBS simplelib)
+  EXTRASRC simple.cc)
 
 # Create test executable
 add_executable(simple_test.exe runme.f90)

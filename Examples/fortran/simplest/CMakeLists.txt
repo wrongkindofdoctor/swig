@@ -1,24 +1,24 @@
 ##---------------------------------------------------------------------------##
-## File  : thinvec/CMakeLists.txt
+## File  : simplest/CMakeLists.txt
 ## Author: Seth R Johnson
-## Date  : Fri Dec 02 15:53:28 2016
-## Brief : TriBITS package file for thinvec/
+## Date  : Thu Dec 01 13:18:51 2016
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
 ##---------------------------------------------------------------------------##
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(thinveclib ThinVec.cc)
 
 # Generate SWIG module
-MAKE_SWIG(MODULE thinvec
-  DEPLIBS thinveclib)
+MAKE_SWIG(C MODULE simplest)
 
 # Create test executable
-ADD_EXECUTABLE(thinvec_test.exe runme.f90)
+ADD_EXECUTABLE(simplest_test.exe runme.f90)
 # It depends on the compiled fortran module
-TARGET_LINK_LIBRARIES(thinvec_test.exe ${SWIG_MODULE_thinvec_REAL_NAME})
+TARGET_LINK_LIBRARIES(simplest_test.exe ${SWIG_MODULE_simplest_REAL_NAME})
+
+# Create test
+ADD_TEST(NAME simplest_test COMMAND simplest_test.exe)
 
 ##---------------------------------------------------------------------------##
-## end of thinvec/CMakeLists.txt
+## end of simplest/CMakeLists.txt
 ##---------------------------------------------------------------------------##

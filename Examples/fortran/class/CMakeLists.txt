@@ -1,5 +1,5 @@
 ##---------------------------------------------------------------------------##
-## File  : cppexample/CMakeLists.txt
+## File  : class/CMakeLists.txt
 ## Author: Seth R Johnson
 ## Date  : Tue Dec 06 14:55:04 2016
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
@@ -22,5 +22,5 @@ TARGET_LINK_LIBRARIES(cppexample_test.exe  ${SWIG_MODULE_example_REAL_NAME})
 ADD_TEST(NAME cppexample_test COMMAND cppexample_test.exe)
 
 ##---------------------------------------------------------------------------##
-## end of cppexample/CMakeLists.txt
+## end of class/CMakeLists.txt
 ##---------------------------------------------------------------------------##

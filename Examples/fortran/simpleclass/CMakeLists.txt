@@ -1,5 +1,5 @@
 ##---------------------------------------------------------------------------##
-## File  : simple_class/CMakeLists.txt
+## File  : simpleclass/CMakeLists.txt
 ## Author: Seth R Johnson
 ## Date  : Thu Dec  1 15:13:04 2016
 ## Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
@@ -16,7 +16,7 @@ MAKE_SWIG(MODULE simple_class
   DEPLIBS simpleclasslib)
 
 # Create test executable
-ADD_EXECUTABLE(simpleclass_test.exe test.f90)
+ADD_EXECUTABLE(simpleclass_test.exe runme.f90)
 # It depends on the compiled fortran module
 TARGET_LINK_LIBRARIES(simpleclass_test.exe  ${SWIG_MODULE_simple_class_REAL_NAME})
 
@@ -24,5 +24,5 @@ TARGET_LINK_LIBRARIES(simpleclass_test.exe  ${SWIG_MODULE_simple_class_REAL_NAME
 ADD_TEST(NAME simpleclass_test COMMAND simpleclass_test.exe)
 
 ##---------------------------------------------------------------------------##
-## end of simple_class/CMakeLists.txt
+## end of simpleclass/CMakeLists.txt
 ##---------------------------------------------------------------------------##

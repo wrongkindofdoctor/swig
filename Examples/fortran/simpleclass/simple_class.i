@@ -1,6 +1,6 @@
 //---------------------------------*-SWIG-*----------------------------------//
 /*!
- * \file   simple_class/simple.i
+ * \file   simpleclass/simple_class.i
  * \author Seth R Johnson
  * \date   Thu Dec 01 15:07:35 2016
  * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
@@ -53,9 +53,6 @@ void print_pointer(int msg, const SimpleClass* ptr)
     call print_pointer(1, self)
 %}
 
-// %ignore make_class;
-// %ignore get_class;
-
 %feature("docstring") SimpleClass %{
 Simple test class.
 
@@ -70,27 +67,8 @@ Multiply the value by 2.
 
 %ignore SimpleClass::operator=;
 
-#if 0
-// Insert assignment implementation
-%fragment("SwigfClassAssign");
-
-%feature("fortran:generic", "assignment(=)") SimpleClass::swigf_assignment;
-
-%extend SimpleClass {
-
-void swigf_assignment(const SimpleClass* other)
-{
-    SWIGF_assign(SimpleClass, $self, SimpleClass, other,
-                 swigf::IS_COPY_CONSTR | swigf::IS_COPY_ASSIGN);
-}
-
-};
-#endif
-
 %feature("new") emit_class;
-
-// Make BasicStruct a fortran-accessible struct.
-%fortran_bindc_struct(BasicStruct);
+%feature("new") SimpleClass::EmitSimpleClass;
 
 // Rename one constructor
 %rename(create_SimpleClass_dbl) SimpleClass::SimpleClass(double);
@@ -98,13 +76,13 @@ void swigf_assignment(const SimpleClass* other)
 %extend SimpleClass {
 SimpleClass(double a, double b)
 {
-        return new SimpleClass(a + b);
+    return new SimpleClass(a + b);
 }
 }
 
 %include "SimpleClass.hh"
 
-// Overloaded instantiation
+// Overloaded templated function instantiation
 %template(action) SimpleClass::action<double>;
 %template(action) SimpleClass::action<int>;
 

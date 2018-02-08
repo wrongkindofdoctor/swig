@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------------!
-! \file   std_vector/test.f90
+! \file   std_vector/runme.f90
 ! \author Seth R Johnson
 ! \date   Mon Dec 05 09:05:31 2016
 ! \brief  test module
@@ -56,5 +56,5 @@ program main
 end program
 
 !-----------------------------------------------------------------------------!
-! end of std_vector/test.f90
+! end of std_vector/runme.f90
 !-----------------------------------------------------------------------------!

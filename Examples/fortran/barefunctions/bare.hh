@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   swig-dev/bare_function/bare.hh
+ * \file   barefunctions/bare.hh
  * \author Seth R Johnson
  * \date   Fri Jan 16 21:19:07 2015
  * \brief  bare declaration
@@ -8,12 +8,14 @@
  */
 //---------------------------------------------------------------------------//
 
-#ifndef swig_dev_bare_function_foo_hh
-#define swig_dev_bare_function_foo_hh
+#ifndef barefunctions_bare_hh
+#define barefunctions_bare_hh
 
 #include <cstddef>
 #include <utility>
 
+//---------------------------------------------------------------------------//
+// Bare functions
 //---------------------------------------------------------------------------//
 
 void set_something(int x, double y);
@@ -26,16 +28,8 @@ const double* get_something_rcptr(int x);
 double& get_something_rref(int x);
 const double& get_something_rcref(int x);
 
-void print_array(std::pair<const double*, size_t> arr);
-
-extern "C" {
-// These functions are simply bound, not wrapped.
-void print_sphere(const double origin[3], const double* radius);
-bool bound_negation(bool v);
-}
-
-inline bool wrapped_negation(bool v) { return !v; }
-
+//---------------------------------------------------------------------------//
+// Enums
 //---------------------------------------------------------------------------//
 
 //! An enumeration declared using external C variables
@@ -53,6 +47,14 @@ enum CmykEnum {
     YELLOW,
     BLACK = -1
 };
+
+// Get a color name
+void print_rgb(RgbEnum color);
+void print_cmyk(CmykEnum color);
+
+//---------------------------------------------------------------------------//
+// Global variables
+//---------------------------------------------------------------------------//
 
 //! An integer that is only known at link time
 extern const int linked_const_int;
@@ -75,12 +77,8 @@ namespace foo
 extern int global_counter;
 }
 
-// Get a color name
-void print_rgb(RgbEnum color);
-void print_cmyk(CmykEnum color);
-
 //---------------------------------------------------------------------------//
-#endif // swig_dev_bare_function_foo_hh
+#endif // barefunctions_bare_hh
 
 //---------------------------------------------------------------------------//
 // end of swig-dev/bare_function/bare.hh

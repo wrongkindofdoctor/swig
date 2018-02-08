@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   SimpleClass.hh
+ * \file   simpleclass/SimpleClass.hh
  * \author Seth R Johnson
  * \date   Thu Dec 01 15:07:23 2016
  * \brief  SimpleClass class declaration.
@@ -8,10 +8,10 @@
  */
 //---------------------------------------------------------------------------//
 
-#ifndef simple_class_SimpleClass_hh
-#define simple_class_SimpleClass_hh
+#ifndef simpleclass_SimpleClass_hh
+#define simpleclass_SimpleClass_hh
 
-//! Simple public struct
+//! Simple public struct; generate accessors for it
 struct BasicStruct
 {
     int    foo;
@@ -38,9 +38,6 @@ class SimpleClass
     storage_type d_storage;
 
   public:
-
-    // Static constructor
-    static SimpleClass* EmitSimpleClass();
 
     //! Constructor
     SimpleClass();
@@ -100,7 +97,7 @@ void set_class_by_copy(SimpleClass c);
 void print_struct(const BasicStruct& s);
 
 //---------------------------------------------------------------------------//
-#endif // simple_class_SimpleClass_hh
+#endif // simpleclass_SimpleClass_hh
 
 //---------------------------------------------------------------------------//
 // end of simple_class/SimpleClass.hh

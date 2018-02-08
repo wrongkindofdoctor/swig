@@ -1,6 +1,6 @@
 //---------------------------------*-SWIG-*----------------------------------//
 /*!
- * \file   thinvec/ThinVec.i
+ * \file   thinvec/thinvec.i
  * \author Seth R Johnson
  * \date   Mon Jan 19 08:59:42 2015
  * \note   Copyright (c) 2015 Oak Ridge National Laboratory, UT-Battelle, LLC.
@@ -15,9 +15,6 @@
 %include <typemaps.i>
 %fortran_view(int)
 %fortran_view(double)
-
-// Handle the case of operator overloading
-%rename(resize_fill) ThinVec::resize(size_type, value_type);
 
 // Ignore return of types we don't understand (to prevent a warning)
 %ignore ThinVec::data() const;

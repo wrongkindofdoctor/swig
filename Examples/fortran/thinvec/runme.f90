@@ -1,5 +1,5 @@
 !-----------------------------------------------------------------------------!
-! \file   thinvec/test.f90
+! \file   thinvec/runme.f90
 ! \author Seth R Johnson
 ! \date   Fri Dec 02 15:53:28 2016
 ! \brief  test module
@@ -27,7 +27,7 @@ program main
     call v%resize(4)
     call print_vec(v)
     write(0, *) "Resizing with fill..."
-    call v%resize_fill(10, -999)
+    call v%resize(10, -999)
 
     write(0, *) "Setting"
     do i = 0, 7
@@ -54,5 +54,5 @@ program main
 end program
 
 !-----------------------------------------------------------------------------!
-! end of thinvec/test.f90
+! end of thinvec/runme.f90
 !-----------------------------------------------------------------------------!

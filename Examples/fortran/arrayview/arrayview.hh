@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   algorithms/algorithm.hh
+ * \file   arrayview/arrayview.hh
  * \author Seth R Johnson
  * \date   Tue Dec 06 11:21:58 2016
  * \brief  algorithm class declaration.
@@ -8,10 +8,11 @@
  */
 //---------------------------------------------------------------------------//
 
-#ifndef algorithms_algorithm_hh
-#define algorithms_algorithm_hh
+#ifndef arrayview_arrayview_hh
+#define arrayview_arrayview_hh
 
 #include <algorithm>
+#include <iostream>
 #include <utility>
 
 //---------------------------------------------------------------------------//
@@ -36,16 +37,6 @@ void sort(std::pair<T*, std::size_t> view)
 
 //---------------------------------------------------------------------------//
 /*!
- * \brief Get the same view
- */
-template<class T>
-std::pair<T*, std::size_t> get_view(std::pair<T*, std::size_t> view)
-{
-    return view;
-}
-
-//---------------------------------------------------------------------------//
-/*!
  * \brief Do a binary search on a sorted array
  *
  * \return The fortran index (starts with 1) or zero if not found
@@ -64,8 +55,40 @@ int find_sorted(std::pair<const T*, std::size_t> view, T val)
 }
 
 //---------------------------------------------------------------------------//
-#endif // algorithms_algorithm_hh
+/*!
+ * \brief Passthrough function for getting a view from the original array
+ */
+template<class T>
+std::pair<T*, std::size_t> get_view(std::pair<T*, std::size_t> view)
+{
+    return view;
+}
 
 //---------------------------------------------------------------------------//
-// end of algorithms/algorithm.hh
+/*!
+ * \brief Print the contents of an array
+ */
+template<class T>
+void print_array(std::pair<const T*, size_t> view)
+{
+    const T* data = view.first;
+    const T* end_data = data + view.second;
+
+    using std::cout;
+
+    cout << "{";
+    const char* sep = "";
+    for (; data != end_data; ++data)
+    {
+        cout << sep << *data;
+        sep = ", ";
+    }
+    cout << "}\n";
+}
+
+//---------------------------------------------------------------------------//
+#endif // arrayview_arrayview_hh
+
+//---------------------------------------------------------------------------//
+// end of arrayview.hh
 //---------------------------------------------------------------------------//

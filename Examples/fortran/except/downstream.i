@@ -1,6 +1,6 @@
 //---------------------------------*-SWIG-*----------------------------------//
 /*!
- * \file   exceptions/downstream.i
+ * \file   except/downstream.i
  * \author Seth R Johnson
  * \date   Wed Nov 01 12:54:00 2017
  * \note   Copyright (c) 2017 Oak Ridge National Laboratory, UT-Battelle, LLC.
