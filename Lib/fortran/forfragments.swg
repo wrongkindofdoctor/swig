@@ -25,13 +25,13 @@
 // Memory state enumeration
 //---------------------------------------------------------------------------//
 %fragment("SwigMemState", "header") %{
-enum SwigMemState {
+typedef enum {
     SWIG_NULL = 0,
     SWIG_OWN,
     SWIG_MOVE,
     SWIG_REF,
     SWIG_CREF
-};
+} SwigMemState;
 %}
 
 %fragment("SwigMemState_f", "fpublic") %{
@@ -51,11 +51,10 @@ enum SwigMemState {
 
 %fragment("SwigClassWrapper", "header",
           fragment="SwigMemState") %{
-struct SwigClassWrapper
-{
+typedef struct {
     void* ptr;
     SwigMemState mem;
-};
+} SwigClassWrapper;
 
 SWIGINTERN SwigClassWrapper SwigClassWrapper_uninitialized()
 {
