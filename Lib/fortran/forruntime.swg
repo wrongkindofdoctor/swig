@@ -21,11 +21,12 @@
     throw std::logic_error("In " DECL ": " MSG); RETURNNULL;
 %}
 #else
+%fragment("<stdio.h>");
 %insert(runtime) %{
 #include <assert.h>
 /* Default C exception handler */
 #define SWIG_exception_impl(DECL, CODE, MSG, RETURNNULL) \
-    printf(stderr, "In " DECL ": " MSG, NULL); assert(0); RETURNNULL;
+    printf("In " DECL ": " MSG, NULL); assert(0); RETURNNULL;
 %}
 #endif
 

@@ -7,6 +7,8 @@
  */
 //---------------------------------------------------------------------------//
 
+%include <typemaps/fragments.swg>
+
 // Define SWIGEXTERN for *const* global data variables: 'extern' if C++,
 // nothing if C.
 %insert("runtime") %{
@@ -24,6 +26,17 @@
 //---------------------------------------------------------------------------//
 // Memory state enumeration
 //---------------------------------------------------------------------------//
+#ifdef __cplusplus
+%fragment("SwigMemState", "header") %{
+enum SwigMemState {
+    SWIG_NULL = 0,
+    SWIG_OWN,
+    SWIG_MOVE,
+    SWIG_REF,
+    SWIG_CREF
+};
+%}
+#else
 %fragment("SwigMemState", "header") %{
 typedef enum {
     SWIG_NULL = 0,
@@ -33,6 +46,7 @@ typedef enum {
     SWIG_CREF
 } SwigMemState;
 %}
+#endif
 
 %fragment("SwigMemState_f", "fpublic") %{
  enum, bind(c)
@@ -49,13 +63,26 @@ typedef enum {
 // Wrapper struct that holds a C pointer and memory state
 //---------------------------------------------------------------------------//
 
-%fragment("SwigClassWrapper", "header",
+#ifdef __cplusplus
+%fragment("SwigClassWrapper_decl", "header",
+          fragment="SwigMemState") %{
+struct SwigClassWrapper {
+    void* ptr;
+    SwigMemState mem;
+};
+%}
+#else
+%fragment("SwigClassWrapper_decl", "header",
           fragment="SwigMemState") %{
 typedef struct {
     void* ptr;
     SwigMemState mem;
 } SwigClassWrapper;
+%}
+#endif
 
+%fragment("SwigClassWrapper", "header",
+          fragment="SwigClassWrapper_decl") %{
 SWIGINTERN SwigClassWrapper SwigClassWrapper_uninitialized()
 {
     SwigClassWrapper result;
@@ -377,22 +404,26 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
 #else
 
 %fragment("SWIG_assign_impl", "header",
-          fragment="SwigClassWrapper", "<stddef.h>") %{
+          fragment="SwigClassWrapper", fragment="<stddef.h>") %{
 SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other,
                  size_t size)
 {
-    // XXX TODO: memcpy
-  assert(0);
+    SWIG_exception_impl("SWIG_assign_impl", SWIG_RuntimeError,
+        "Assignment is not yet implemented in C",
+        assert(0));
 }
-
-// Assignment: left = right. TODO: check that left and right are the same type?
-// (or at least the same size)
-%fragment("SWIG_assign", "runtime",
-          fragment="SWIG_assign_impl") %{
-#define SWIG_assign(LEFTTYPE, LEFT, RIGHTTYPE, RIGHT) \
-    SWIG_assign_impl(LEFT, sizeof(LEFTTYPE), RIGHT);
 %}
 
+// Assignment: left = right
+%fragment("SWIG_assign", "runtime",
+          fragment="SWIG_assign_impl") %{
+
+#define SWIG_assign(LEFTTYPE, LEFT, RIGHTTYPE, RIGHT, FLAGS) \
+    SWIG_assign_impl(LEFT, RIGHT, sizeof(LEFTTYPE));
+
+%}
+
+%fragment("SWIG_assign");
 
 #endif
 

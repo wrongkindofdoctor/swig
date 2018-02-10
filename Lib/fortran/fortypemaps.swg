@@ -587,11 +587,8 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
 // doesn't include <stdlib.h> by default. Override the swigtype usage so that
 // downstream code doesn't fail.
 #ifndef __cplusplus
-%typemap(ctype, fragment="<stdlib.h>")
-        SWIGTYPE, SWIGTYPE*, SWIGTYPE&, SWIGTYPE* const
-  "void*"
-%typemap(ctype, fragment="<stdlib.h>") const SWIGTYPE*, const SWIGTYPE&
-  "const void*"
+%include <typemaps/fragments.swg>
+%fragment("<stdlib.h>");
 #endif
 
 // C binding for opaque classes
