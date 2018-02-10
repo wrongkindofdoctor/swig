@@ -213,7 +213,7 @@ FORT_COPY_TYPEMAPS(const void*,
     {$1 = %reinterpret_cast($input, $1_ltype);}
   %typemap(out, noblock=1) CPPTYPE*
     {$result = %reinterpret_cast($1, CTYPE*);}
-  %typemap(imtype, in="type(C_PTR), value", bindc=FTYPE) CPPTYPE*
+  %typemap(imtype, in="type(C_PTR), value") CPPTYPE*
     "type(C_PTR)"
   %typemap(ftype, out=FTYPE ", pointer") CPPTYPE*
     FTYPE ", target, intent(inout)"
@@ -318,6 +318,14 @@ FORT_COPY_TYPEMAPS(const void*,
      "type(C_PTR)"
   %typemap(imbindc, in=FTYPE ", dimension(*)") CTYPE[]
      "type(C_PTR)"
+  %typemap(bindc) CTYPE[][ANY]
+     FTYPE ", dimension($1_dim1,*), intent(inout)"
+  %typemap(bindc) CTYPE[][ANY][ANY]
+     FTYPE ", dimension($1_dim2,$1_dim1,*), intent(inout)"
+  %typemap(imbindc) CTYPE[][ANY]
+     FTYPE ", dimension($1_dim1,*), intent(inout)"
+  %typemap(imbindc) CTYPE[][ANY][ANY]
+     FTYPE ", dimension($1_dim2,$1_dim1,*), intent(inout)"
 
   %typemap(imbindc, in=FTYPE", intent(in)") const CTYPE*
      "type(C_PTR)"
@@ -325,6 +333,14 @@ FORT_COPY_TYPEMAPS(const void*,
      "type(C_PTR)"
   %typemap(imbindc, in=FTYPE ", dimension(*), intent(in)") const CTYPE[]
      "type(C_PTR)"
+  %typemap(bindc) const CTYPE[][ANY]
+     FTYPE ", dimension($1_dim1,*), intent(in)"
+  %typemap(bindc) const CTYPE[][ANY][ANY]
+     FTYPE ", dimension($1_dim2,$1_dim1,*), intent(in)"
+  %typemap(imbindc) const CTYPE[][ANY]
+     FTYPE ", dimension($1_dim1,*), intent(in)"
+  %typemap(imbindc) const CTYPE[][ANY][ANY]
+     FTYPE ", dimension($1_dim2,$1_dim1,*), intent(in)"
 %enddef
 
 FORT_FUND_TYPEMAP(bool       , "logical(C_BOOL)"     )
