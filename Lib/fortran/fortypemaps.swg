@@ -627,13 +627,12 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
   FORT_FUND_TYPEMAP(CTYPE, "type($fclassname)")
 
   // Interface code has to "import' the class type.
-  %typemap(imtype, import="$fclassname") CTYPE, const CTYPE
+  %typemap(imtype, import="$fclassname") CTYPE, const CTYPE, const CTYPE&
     "type($fclassname)"
-  // 
-  %typemap(bindc, import="$fclassname") CTYPE, const CTYPE 
+  %typemap(bindc, import="$fclassname") CTYPE, const CTYPE, const CTYPE& 
     "type($fclassname)"
   %typemap(imbindc, in="type($fclassname), value",
-           import="$fclassname") CTYPE, const CTYPE
+           import="$fclassname") CTYPE, const CTYPE, const CTYPE&
     "type($fclassname)"
   %typemap(imbindc, in="type($fclassname)",
            import="$fclassname") CTYPE*, const CTYPE*

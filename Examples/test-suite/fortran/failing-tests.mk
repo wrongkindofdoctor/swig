@@ -29,7 +29,6 @@ FAILING_CPP_TESTS += \
   overload_return_type \
   overload_simple \
   overload_subtype \
-  pod_struct \
   preproc_constants \
   refcount \
   smart_pointer_template_defaults_overload \
