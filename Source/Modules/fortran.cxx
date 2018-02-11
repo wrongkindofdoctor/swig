@@ -965,7 +965,7 @@ int FORTRAN::functionWrapper(Node *n)
 
         // Emit all of the local variables for holding arguments.
         ParmList* parmlist = Getattr(n, "parms");
-        Swig_typemap_attach_parms("imbindc", parmlist, NULL);
+        Swig_typemap_attach_parms("bindc", parmlist, NULL);
         emit_attach_parmmaps(parmlist, NULL);
         Setattr(n, "wrap:parms", parmlist);
 
@@ -1303,8 +1303,8 @@ int FORTRAN::imfuncWrapper(Node *n)
     int warning_flag = WARN_FORTRAN_TYPEMAP_IMTYPE_UNDEF;
     if (is_bindc(n))
     {
-        tmtype = "imbindc";
-        tmimportkey = "tmap:imbindc:import";
+        tmtype = "bindc";
+        tmimportkey = "tmap:bindc:import";
         warning_flag = WARN_TYPEMAP_UNDEF;
     }
 
