@@ -1,10 +1,11 @@
 
+# failed to run swig
+FAILING_CPP_TESTS += \
+  sizet
+
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
-  arrays_scope \
-  bloody_hell \
-  char_strings \
   contract \
   director_classes \
   director_default \
@@ -32,9 +33,12 @@ FAILING_CPP_TESTS += \
   overload_return_type \
   overload_simple \
   overload_subtype \
+  pod_struct \
+  preproc_constants \
   refcount \
   smart_pointer_template_defaults_overload \
-  template_enum \
+  string_constants \
+  template_default \
   template_extend_overload \
   template_methods \
   template_typedef_inherit \
