@@ -29,11 +29,8 @@ FAILING_CPP_TESTS += \
   overload_return_type \
   overload_simple \
   overload_subtype \
-  preproc_constants \
   refcount \
   smart_pointer_template_defaults_overload \
-  string_constants \
-  template_default \
   template_extend_overload \
   template_methods \
   template_typedef_inherit \

@@ -88,25 +88,30 @@ bool is_fortran_intexpr(String* s)
     if (c == '\0')
         return false;
 
-    while ((c = *p++))
+    // Outer loop over words/tokens
+    while (c)
     {
         // If it's a multi-digit number that starts with 0, it's octal, and thus
         // not a simple integer
         if (c == '0' && *p != 0)
             return false;
 
-        while ((c = *p++))
+        while (c)
         {
             if (c == '+' || c == '-' || c == '*' || c == ' ' || c == '/')
+            {
+                c = *p++;
                 break;
+            }
 
             if (!isdigit(c))
                 return false;
+
+            c = *p++;
         }
     }
     return true;
 }
-
 
 //---------------------------------------------------------------------------//
 /*!
