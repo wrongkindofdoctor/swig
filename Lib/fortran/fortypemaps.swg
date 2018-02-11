@@ -227,9 +227,9 @@ FORT_COPY_TYPEMAPS(const void*,
   FORT_COPY_TYPEMAPS(CPPTYPE*,
                      CPPTYPE&, CPPTYPE*&, CPPTYPE[], CPPTYPE[ANY]);
   // ...except that fixed-sized arrays can be treated natively
-  %typemap(ftype, out=FTYPE ", dimension(:), pointer") CPPTYPE[ANY]
+  %typemap(ftype, out=FTYPE ", dimension(:), pointer", checkdim=1) CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(inout)"
-  %typemap(fout) CPPTYPE[ANY]
+  %typemap(fout, checkdim=1) CPPTYPE[ANY]
   %{
       call c_f_pointer($1, $result, [$1_dim0])
   %}
@@ -272,7 +272,8 @@ FORT_COPY_TYPEMAPS(const void*,
   FORT_COPY_TYPEMAPS(const CPPTYPE*,
                      const CPPTYPE[], const CPPTYPE[ANY]);
   // ...except that fixed-sized arrays can be treated natively
-  %typemap(ftype, out=FTYPE ", dimension(:), pointer") const CPPTYPE[ANY]
+  %typemap(ftype, out=FTYPE ", dimension(:), pointer",
+           checkdim=1) const CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(in)"
   %typemap(fout) const CPPTYPE[ANY] = CPPTYPE[ANY];
 
@@ -306,7 +307,7 @@ FORT_COPY_TYPEMAPS(const void*,
     FTYPE
   %typemap(bindc) CTYPE*
     "type(C_PTR)"
-  %typemap(bindc) CTYPE[ANY]
+  %typemap(bindc, checkdim=1) CTYPE[ANY]
     FTYPE ", dimension($1_dim0)"
   %typemap(bindc) CTYPE[] = CTYPE*;
 
@@ -314,32 +315,33 @@ FORT_COPY_TYPEMAPS(const void*,
     FTYPE
   %typemap(imbindc, in=FTYPE) CTYPE*
      "type(C_PTR)"
-  %typemap(imbindc, in=FTYPE ", dimension($1_dim0)") CTYPE[ANY]
+  %typemap(imbindc, in=FTYPE ", dimension($1_dim0)", checkdim=1) CTYPE[ANY]
      "type(C_PTR)"
   %typemap(imbindc, in=FTYPE ", dimension(*)") CTYPE[]
      "type(C_PTR)"
-  %typemap(bindc) CTYPE[][ANY]
+  %typemap(bindc, checkdim=1) CTYPE[][ANY]
      FTYPE ", dimension($1_dim1,*), intent(inout)"
-  %typemap(bindc) CTYPE[][ANY][ANY]
+  %typemap(bindc, checkdim=1) CTYPE[][ANY][ANY]
      FTYPE ", dimension($1_dim2,$1_dim1,*), intent(inout)"
-  %typemap(imbindc) CTYPE[][ANY]
+  %typemap(imbindc, checkdim=1) CTYPE[][ANY]
      FTYPE ", dimension($1_dim1,*), intent(inout)"
-  %typemap(imbindc) CTYPE[][ANY][ANY]
+  %typemap(imbindc, checkdim=1) CTYPE[][ANY][ANY]
      FTYPE ", dimension($1_dim2,$1_dim1,*), intent(inout)"
 
   %typemap(imbindc, in=FTYPE", intent(in)") const CTYPE*
      "type(C_PTR)"
-  %typemap(imbindc, in=FTYPE", dimension($1_dim0), intent(in)") const CTYPE[ANY]
+  %typemap(imbindc, in=FTYPE", dimension($1_dim0), intent(in)",
+           checkdim=1) const CTYPE[ANY]
      "type(C_PTR)"
   %typemap(imbindc, in=FTYPE ", dimension(*), intent(in)") const CTYPE[]
      "type(C_PTR)"
-  %typemap(bindc) const CTYPE[][ANY]
+  %typemap(bindc, checkdim=1) const CTYPE[][ANY]
      FTYPE ", dimension($1_dim1,*), intent(in)"
-  %typemap(bindc) const CTYPE[][ANY][ANY]
+  %typemap(bindc, checkdim=1) const CTYPE[][ANY][ANY]
      FTYPE ", dimension($1_dim2,$1_dim1,*), intent(in)"
-  %typemap(imbindc) const CTYPE[][ANY]
+  %typemap(imbindc, checkdim=1) const CTYPE[][ANY]
      FTYPE ", dimension($1_dim1,*), intent(in)"
-  %typemap(imbindc) const CTYPE[][ANY][ANY]
+  %typemap(imbindc, checkdim=1) const CTYPE[][ANY][ANY]
      FTYPE ", dimension($1_dim2,$1_dim1,*), intent(in)"
 %enddef
 

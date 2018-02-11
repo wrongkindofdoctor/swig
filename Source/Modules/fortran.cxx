@@ -76,35 +76,79 @@ Wrapper* NewFortranWrapper()
  *
  * Note that if it has a suffix e.g. `l` or `u`, or a prefix `0` (octal), it's
  * not compatible.
+ *
+ * Simple expressions like `1 + 2` are OK.
  */
-bool is_fortran_integer(String* s)
+bool is_fortran_intexpr(String* s)
 {
     const char* p = Char(s);
+    char c = *p++;
 
     // Empty string is not an integer
-    if (*p == 0)
+    if (c == '\0')
         return false;
 
-    // If it's a multi-digit number that starts with 0, it's octal, and thus
-    // not a simple integer
-    if (*p == '0' && *(p+1) != 0)
-        return false;
-
-    // See if all numbers are digits
-    while (*p != 0)
+    while ((c = *p++))
     {
-        if (!isdigit(*p))
+        // If it's a multi-digit number that starts with 0, it's octal, and thus
+        // not a simple integer
+        if (c == '0' && *p != 0)
             return false;
-        ++p;
+
+        while ((c = *p++))
+        {
+            if (c == '+' || c == '-' || c == '*' || c == ' ' || c == '/')
+                break;
+
+            if (!isdigit(c))
+                return false;
+        }
     }
     return true;
+}
+
+
+//---------------------------------------------------------------------------//
+/*!
+ * \brief Check a parameter for invalid dimension names.
+ */
+bool bad_fortran_dims(Node* n, const char* tmap_name)
+{
+    bool is_bad = false;
+    // See if the typemap needs its dimensions checked
+    String* key = NewStringf("tmap:%s:checkdim", tmap_name);
+    if (GetFlag(n, key))
+    {
+        SwigType* t = Getattr(n, "type");
+        if (SwigType_isarray(t))
+        {
+            int ndim = SwigType_array_ndim(t);
+            for (int i = 0; i < ndim; i++)
+            {
+                String* dim = SwigType_array_getdim(t, i);
+                if (dim && !is_fortran_intexpr(dim))
+                {
+                    Swig_warning(WARN_LANG_IDENTIFIER,
+                                 input_file, line_number,
+                                 "Array dimension expression '%s' "
+                                 "is incompatible with Fortran\n",
+                                 dim);
+                    is_bad = true;
+                }
+                Delete(dim);
+            }
+        }
+    }
+
+    Delete(key);
+    return is_bad;
 }
 
 //---------------------------------------------------------------------------//
 /*!
  * \brief Determine whether to wrap an enum as a value.
  */
-bool is_native_enum(Node *n)
+bool is_native_enum(Node* n)
 {
     String* enum_feature = Getattr(n, "feature:fortran:enumerator");
     if (!enum_feature)
@@ -116,7 +160,7 @@ bool is_native_enum(Node *n)
                 continue;
 
             String* enum_value = Getattr(c, "enumvalue");
-            if (enum_value && !is_fortran_integer(enum_value))
+            if (enum_value && !is_fortran_intexpr(enum_value))
             {
                 return false;
             }
@@ -140,14 +184,14 @@ bool is_native_enum(Node *n)
 /*!
  * \brief Determine whether to wrap an enum as a value.
  */
-bool is_native_parameter(Node *n)
+bool is_native_parameter(Node* n)
 {
     String* param_feature = Getattr(n, "feature:fortran:parameter");
     if (!param_feature)
     {
         // No user override given
         String* value = Getattr(n, "value");
-        return is_fortran_integer(value);
+        return is_fortran_intexpr(value);
     }
     else if (Strcmp(param_feature, "0") == 0)
     {
@@ -165,7 +209,7 @@ bool is_native_parameter(Node *n)
 /*!
  * \brief Determine whether to wrap a function/class as a c-bound struct.
  */
-bool is_bindc(Node *n)
+bool is_bindc(Node* n)
 {
     String* bindc_feature = Getattr(n, "feature:fortran:bindc");
     if (!bindc_feature)
@@ -446,8 +490,8 @@ class FORTRAN : public Language
 
   private:
     void cfuncWrapper(Node* n);
-    void imfuncWrapper(Node* n);
-    void proxyfuncWrapper(Node* n);
+    int imfuncWrapper(Node* n);
+    int proxyfuncWrapper(Node* n);
     void assignmentWrapper(Node* n);
     void write_docstring(Node* n, String* dest);
 
@@ -897,8 +941,10 @@ int FORTRAN::functionWrapper(Node *n)
 
         // Typical function wrapping
         this->cfuncWrapper(n);
-        this->imfuncWrapper(n);
-        this->proxyfuncWrapper(n);
+        if (this->imfuncWrapper(n) == SWIG_NOWRAP)
+            return SWIG_NOWRAP;
+        if (this->proxyfuncWrapper(n) == SWIG_NOWRAP)
+            return SWIG_NOWRAP;
     }
     else
     {
@@ -932,7 +978,8 @@ int FORTRAN::functionWrapper(Node *n)
         // Save list of wrapped parms for im declaration and proxy
         Setattr(n, "wrap:cparms", cparmlist);
 
-        this->imfuncWrapper(n);
+        if (this->imfuncWrapper(n) == SWIG_NOWRAP)
+            return SWIG_NOWRAP;
     }
 
     // >>> GENERATE CODE FOR MODULE INTERFACE
@@ -1238,7 +1285,7 @@ void FORTRAN::cfuncWrapper(Node *n)
  *
  * This is the Fortran equivalent of the cfuncWrapper's declaration.
  */
-void FORTRAN::imfuncWrapper(Node *n)
+int FORTRAN::imfuncWrapper(Node *n)
 {
     // Name of the C wrapper function
     String* wname = Getattr(n, "wrap:name");
@@ -1310,6 +1357,12 @@ void FORTRAN::imfuncWrapper(Node *n)
         this->replace_fclassname(Getattr(p, "type"), imtype);
         Printv(imlocals, "\n   ", imtype, " :: ", imname, NULL);
 
+        // Check for bad dimension parameters
+        if (bad_fortran_dims(p, tmtype))
+        {
+            return SWIG_NOWRAP;
+        }
+
         // Include import statements if present; needed for actual structs
         // passed into interface code
         String* imimport = Getattr(p, tmimportkey);
@@ -1349,6 +1402,7 @@ void FORTRAN::imfuncWrapper(Node *n)
 
     DelWrapper(imfunc);
     Delete(imimport_hash);
+    return SWIG_OK;
 }
 
 //---------------------------------------------------------------------------//
@@ -1357,7 +1411,7 @@ void FORTRAN::imfuncWrapper(Node *n)
  *
  * This is for the native Fortran interaction.
  */
-void FORTRAN::proxyfuncWrapper(Node *n)
+int FORTRAN::proxyfuncWrapper(Node *n)
 {
     Wrapper* ffunc = NewFortranWrapper();
 
@@ -1498,6 +1552,11 @@ void FORTRAN::proxyfuncWrapper(Node *n)
         this->replace_fclassname(cpptype, ftype);
         Printv(fargs, "   ", ftype, " :: ", farg, "\n", NULL);
 
+        if (bad_fortran_dims(p, "ftype"))
+        {
+            return SWIG_NOWRAP;
+        }
+
         // Add this argument to the intermediate call function
         Printv(fcall, prepend_comma, Getattr(p, "imname"), NULL);
 
@@ -1575,6 +1634,11 @@ void FORTRAN::proxyfuncWrapper(Node *n)
         Setattr(temp, "lname", "fresult"); // Replaces $1
         fbody = attach_typemap("fout", temp,
                                WARN_FORTRAN_TYPEMAP_FOUT_UNDEF);
+        if (bad_fortran_dims(temp, "fout"))
+        {
+            return SWIG_NOWRAP;
+        }
+
         fparm = attach_typemap("foutdecl", temp, WARN_NONE);
         Delete(temp);
     }
@@ -1640,6 +1704,7 @@ void FORTRAN::proxyfuncWrapper(Node *n)
     Delete(fcleanup);
     Delete(fcall);
     Delete(fargs);
+    return SWIG_OK;
 }
 
 //---------------------------------------------------------------------------//
@@ -2396,6 +2461,12 @@ int FORTRAN::constantWrapper(Node* n)
                 "The 'bindc' typemap for '%s' is not defined, so the ",
                 "corresponding constant cannot be generated\n",
                 SwigType_str(Getattr(n, "type"), Getattr(n, "sym:name")));
+        return SWIG_NOWRAP;
+    }
+
+    // Check for incompatible array dimensions
+    if (bad_fortran_dims(n, "bindc"))
+    {
         return SWIG_NOWRAP;
     }
 
