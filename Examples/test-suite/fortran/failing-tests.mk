@@ -1,8 +1,4 @@
 
-# failed to run swig
-FAILING_CPP_TESTS += \
-  sizet
-
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
