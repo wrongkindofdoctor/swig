@@ -306,8 +306,6 @@ FORT_COPY_TYPEMAPS(const void*,
   %typemap(bindc, in=FTYPE) CTYPE*
     "type(C_PTR)"
   %typemap(bindc) CTYPE[] = CTYPE*;
-  // %typemap(imbindc) CTYPE[]
-  //   FTYPE ", dimension(*)"
   %typemap(bindc, checkdim=1) CTYPE[ANY]
     FTYPE ", dimension($1_dim0)"
 
@@ -436,24 +434,14 @@ FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
 #if 0
 // NOTE: GCC generates lots of warnings when you try to bind to an enum type,
 // even if that enum is C-bound. Instead, just use integer bindings.
-%typemap(bindc) enum SWIGTYPE
+%typemap(bindc, in="integer(kind($fenumname)), value") enum SWIGTYPE
   "integer(kind($fenumname))"
-%typemap(bindc) enum SWIGTYPE*
-  "type(C_PTR)"
-
-%typemap(imbindc, in="integer(kind($fenumname)), value") enum SWIGTYPE
-  "integer(kind($fenumname))"
-%typemap(imbindc, in="integer(kind($fenumname))") enum SWIGTYPE*
+%typemap(bindc, in="integer(kind($fenumname))") enum SWIGTYPE*
   "type(C_PTR)"
 #else
-%typemap(bindc) enum SWIGTYPE
+%typemap(bindc, in="integer(C_INT), value") enum SWIGTYPE
   "integer(C_INT)"
-%typemap(bindc) enum SWIGTYPE*
-  "type(C_PTR)"
-
-%typemap(imbindc, in="integer(C_INT), value") enum SWIGTYPE
-  "integer(kind($fenumname))"
-%typemap(imbindc, in="integer(C_INT)") enum SWIGTYPE*
+%typemap(bindc, in="integer(C_INT)") enum SWIGTYPE*
   "type(C_PTR)"
 #endif
 
@@ -583,14 +571,11 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
 #endif
 
 // C binding for opaque classes
-%typemap(bindc, fragment="SwigClassWrapper_f") SwigClassWrapper
-  "type(SwigClassWrapper)"
-
-%typemap(imbindc, in="type(SwigClassWrapper), value",
+%typemap(bindc, in="type(SwigClassWrapper), value",
          import="SwigClassWrapper", fragment="SwigClassWrapper_f")
     SwigClassWrapper
   "type(SwigClassWrapper)"
-%typemap(imbindc, in="type(SwigClassWrapper)",
+%typemap(bindc, in="type(SwigClassWrapper)",
          import="SwigClassWrapper", fragment="SwigClassWrapper_f")
     SwigClassWrapper*
   "type(C_PTR)"
