@@ -28,6 +28,15 @@ const double* get_something_rcptr(int x);
 double& get_something_rref(int x);
 const double& get_something_rcref(int x);
 
+// These functions will not support overloading in fortran because the first is
+// a "subroutine" and the other a "function".
+inline void cannot_overload(int) { /* * */ }
+inline int  cannot_overload(int x, int y) { return x + y; }
+
+// These functions *can* be overloaded.
+inline int    can_overload(int x) { return x; }
+inline double can_overload(double x) { return x; }
+
 //---------------------------------------------------------------------------//
 // Enums
 //---------------------------------------------------------------------------//
