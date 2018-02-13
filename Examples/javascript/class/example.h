@@ -8,7 +8,7 @@ public:
   virtual ~Shape() {
     nshapes--;
   }
-  double  x, y;
+  double  x, y;   
   void    move(double dx, double dy);
   virtual double area() = 0;
   virtual double perimeter() = 0;
@@ -19,7 +19,7 @@ class Circle : public Shape {
 private:
   double radius;
 public:
-  Circle(double r);
+  Circle(double r) : radius(r) { }
   virtual double area();
   virtual double perimeter();
 };
