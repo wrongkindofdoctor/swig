@@ -1,5 +1,5 @@
 /** 
- * @file simple.cc 
+ * @file simple.cxx 
  * @brief simple test
 */
 

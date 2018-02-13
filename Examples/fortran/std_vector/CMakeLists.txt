@@ -9,7 +9,7 @@
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(stdveclib stdvec.cc)
+ADD_LIBRARY(stdveclib stdvec.cxx)
 
 # Generate SWIG module
 MAKE_SWIG(MODULE stdvec

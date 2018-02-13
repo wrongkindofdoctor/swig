@@ -1,6 +1,6 @@
 /* File : example.cxx */
 
-#include "example.hh"
+#include "example.h"
 
 #include <stdexcept>
 #define M_PI 3.14159265358979323846

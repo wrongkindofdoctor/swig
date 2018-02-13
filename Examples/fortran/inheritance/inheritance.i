@@ -1,7 +1,7 @@
 %module inheritance
 
 %{
-#include "inheritance.hh"
+#include "inheritance.h"
 %}
 
-%include "inheritance.hh"
+%include "inheritance.h"

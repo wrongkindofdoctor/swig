@@ -3,8 +3,8 @@
 %fortran_bindc_struct(Point)
 
 %{
-#include "bindc.hh"
+#include "bindc.h"
 %}
 
-%include "bindc.hh"
+%include "bindc.h"
 

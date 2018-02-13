@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   barefunctions/bare.hh
+ * \file   barefunctions/bare.h
  * \author Seth R Johnson
  * \date   Fri Jan 16 21:19:07 2015
  * \brief  bare declaration
@@ -90,5 +90,5 @@ extern int global_counter;
 #endif // barefunctions_bare_hh
 
 //---------------------------------------------------------------------------//
-// end of swig-dev/bare_function/bare.hh
+// end of swig-dev/bare_function/bare.h
 //---------------------------------------------------------------------------//

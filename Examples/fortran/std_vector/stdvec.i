@@ -11,7 +11,7 @@
 
 %{
 #include <utility>
-#include "stdvec.hh"
+#include "stdvec.h"
 %}
 
 //---------------------------------------------------------------------------//
@@ -65,7 +65,7 @@ ADD_VIEW(double)
 // the input typemaps still correspond to the std::vector class.
 %apply const std::vector<double>& NATIVE { const std::vector<double>& get_vec<double> };
 
-%include "stdvec.hh"
+%include "stdvec.h"
 
 %template(make_viewdbl) make_view<double>;
 %template(make_const_viewdbl) make_const_view<double>;

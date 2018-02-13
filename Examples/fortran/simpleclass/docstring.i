@@ -8,7 +8,7 @@
 
 Simple public struct.
 
-C++ includes: SimpleClass.hh ";
+C++ includes: SimpleClass.h ";
 
 
 // File: classSimpleClass.xml
@@ -16,7 +16,7 @@ C++ includes: SimpleClass.hh ";
 
 Simple test class.
 
-C++ includes: SimpleClass.hh ";
+C++ includes: SimpleClass.h ";
 
 %feature("docstring")  SimpleClass::SimpleClass "SimpleClass::SimpleClass()
 

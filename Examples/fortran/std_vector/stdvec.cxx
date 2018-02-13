@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   std_vector/stdvec.cc
+ * \file   std_vector/stdvec.cxx
  * \author Seth R Johnson
  * \date   Mon Dec 05 09:06:12 2016
  * \brief  stdvec class definitions.
@@ -8,7 +8,7 @@
  */
 //---------------------------------------------------------------------------//
 
-#include "stdvec.hh"
+#include "stdvec.h"
 
 #include <iostream>
 using std::cout;
@@ -49,5 +49,5 @@ template void print_vec(const std::vector<double>&);
 template void print_view(std::pair<const double*, size_t>);
 
 //---------------------------------------------------------------------------//
-// end of std_vector/stdvec.cc
+// end of std_vector/stdvec.cxx
 //---------------------------------------------------------------------------//

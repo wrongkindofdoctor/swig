@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   simpleclass/SimpleClass.cc
+ * \file   simpleclass/SimpleClass.cxx
  * \author Seth R Johnson
  * \date   Thu Dec 01 15:07:23 2016
  * \brief  SimpleClass class definitions.
@@ -8,7 +8,7 @@
  */
 //---------------------------------------------------------------------------//
 
-#include "SimpleClass.hh"
+#include "SimpleClass.h"
 
 #include <iostream>
 using std::cout;
@@ -127,5 +127,5 @@ void print_struct(const BasicStruct& s)
          << ", bar=" << s.bar << endl;
 }
 //---------------------------------------------------------------------------//
-// end of simple_class/SimpleClass.cc
+// end of simple_class/SimpleClass.cxx
 //---------------------------------------------------------------------------//

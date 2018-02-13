@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   thinvec/ThinVec.hh
+ * \file   thinvec/ThinVec.h
  * \author Seth R Johnson
  * \date   Mon Jan 19 08:59:42 2015
  * \brief  thinvec class declaration.
@@ -76,5 +76,5 @@ void print_offbyone(const ThinVec<int>& INDICES);
 #endif // thinvec_ThinVec_hh
 
 //---------------------------------------------------------------------------//
-// end of swig-dev/thinvec/ThinVec.hh
+// end of swig-dev/thinvec/ThinVec.h
 //---------------------------------------------------------------------------//

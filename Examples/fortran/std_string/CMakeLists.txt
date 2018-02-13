@@ -9,7 +9,7 @@
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(std_stringlib stdstr.cc)
+ADD_LIBRARY(std_stringlib stdstr.cxx)
 
 # Generate SWIG module
 MAKE_SWIG(MODULE stdstr

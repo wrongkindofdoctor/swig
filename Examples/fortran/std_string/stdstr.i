@@ -9,7 +9,7 @@
 %module stdstr
 
 %{
-#include "stdstr.hh"
+#include "stdstr.h"
 %}
 
 // Instantiate views of C strings
@@ -63,7 +63,7 @@
 %apply std::string NATIVE { std::string get_reversed_native_string };
 %apply const std::string& NATIVE { const std::string& input };
 
-%include "stdstr.hh"
+%include "stdstr.h"
 
 //---------------------------------------------------------------------------//
 // end of std_string/stdstr.i

@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   std_vector/stdvec.hh
+ * \file   std_vector/stdvec.h
  * \author Seth R Johnson
  * \date   Mon Dec 05 09:06:12 2016
  * \brief  stdvec class declaration.
@@ -52,5 +52,5 @@ const std::vector<T>& get_vec(const std::vector<T>& inp)
 #endif // std_vector_stdvec_hh
 
 //---------------------------------------------------------------------------//
-// end of std_vector/stdvec.hh
+// end of std_vector/stdvec.h
 //---------------------------------------------------------------------------//

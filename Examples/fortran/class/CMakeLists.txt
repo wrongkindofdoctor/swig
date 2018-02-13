@@ -7,7 +7,7 @@
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(cppexamplelib example.cc)
+ADD_LIBRARY(cppexamplelib example.cxx)
 
 # Generate SWIG module
 MAKE_SWIG(MODULE example

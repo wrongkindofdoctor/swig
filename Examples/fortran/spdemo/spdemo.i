@@ -10,12 +10,12 @@
 %module spdemo
 
 %{
-#include "spdemo.hh"
+#include "spdemo.h"
 %}
 
 %include <std_shared_ptr.i>
 %shared_ptr(Foo);
-%include "spdemo.hh"
+%include "spdemo.h"
 
 //---------------------------------------------------------------------------//
 // end of spdemo/spdemo.i

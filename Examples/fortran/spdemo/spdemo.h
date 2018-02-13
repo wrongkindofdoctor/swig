@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   spdemo/spdemo.hh
+ * \file   spdemo/spdemo.h
  * \author Seth R Johnson
  * \date   Tue Dec 06 14:55:04 2016
  * \brief  spdemo class declaration.
@@ -52,5 +52,5 @@ void print_cr(const Foo& f);
 #endif // spdemo_spdemo_hh
 
 //---------------------------------------------------------------------------//
-// end of spdemo/spdemo.hh
+// end of spdemo/spdemo.h
 //---------------------------------------------------------------------------//

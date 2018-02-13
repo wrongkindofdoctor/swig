@@ -10,7 +10,7 @@ INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
 
 # Generate SWIG module
 MAKE_SWIG(MODULE inheritance
-  EXTRASRC inheritance.cc)
+  EXTRASRC inheritance.cxx)
 
 # Create test executable
 add_executable(inheritance_test.exe runme.f90)

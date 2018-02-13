@@ -9,7 +9,7 @@ SET(CMAKE_Fortran_FLAGS "-cpp ${CMAKE_Fortran_FLAGS}")
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(simpleclasslib SimpleClass.cc)
+ADD_LIBRARY(simpleclasslib SimpleClass.cxx)
 
 # Generate SWIG module
 MAKE_SWIG(MODULE simple_class

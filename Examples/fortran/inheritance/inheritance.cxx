@@ -1,4 +1,4 @@
-#include "inheritance.hh"
+#include "inheritance.h"
 #include <iostream>
 
 BaseClass::BaseClass() : _i(-1) {

@@ -2,7 +2,7 @@
 %module example
 
 %{
-#include "example.hh"
+#include "example.h"
 %}
 
 %include <std_except.i>
@@ -17,4 +17,4 @@
 }
 
 /* Let's just grab the original header file here */
-%include "example.hh"
+%include "example.h"

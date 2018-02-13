@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   bindc/bindc.hh
+ * \file   bindc/bindc.h
  * \author Seth R Johnson
  * \date   Thu Feb 08 07:16:02 2018
  * \brief  bindc class declaration.
@@ -35,5 +35,5 @@ bool bound_negation(bool v);
 #endif // bindc_bindc_hh
 
 //---------------------------------------------------------------------------//
-// end of bindc/bindc.hh
+// end of bindc/bindc.h
 //---------------------------------------------------------------------------//

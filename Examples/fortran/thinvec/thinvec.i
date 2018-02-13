@@ -7,7 +7,7 @@
  */
 //---------------------------------------------------------------------------//
 %{
-#include "ThinVec.hh"
+#include "ThinVec.h"
 %}
 
 %module thinvec
@@ -46,7 +46,7 @@
 }
 
 // Load the thinvec class definition
-%include "ThinVec.hh"
+%include "ThinVec.h"
 
 // Instantiate classes
 %template(ThinVecDbl) ThinVec<double>;

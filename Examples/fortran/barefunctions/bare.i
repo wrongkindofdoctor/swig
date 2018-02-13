@@ -9,7 +9,7 @@
 %module bare
 
 %{
-#include "bare.hh"
+#include "bare.h"
 %}
 
 //! A const integer
@@ -35,7 +35,7 @@
 
 #endif
 
-%include "bare.hh"
+%include "bare.h"
 
 //---------------------------------------------------------------------------//
 // end of swig-dev/bare_function/bare.i

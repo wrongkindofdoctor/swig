@@ -10,7 +10,7 @@
 %module arrayview
 
 %{
-#include "arrayview.hh"
+#include "arrayview.h"
 %}
 
 %include <typemaps.i>
@@ -26,7 +26,7 @@
     %template(print_array) print_array< TYPE >;
 %enddef
 
-%include "arrayview.hh"
+%include "arrayview.h"
 
 TEMPLATE_ALGORITHMS(int)
 TEMPLATE_ALGORITHMS(float)

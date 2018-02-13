@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   thinvec/ThinVec.cc
+ * \file   thinvec/ThinVec.cxx
  * \author Seth R Johnson
  * \date   Fri Dec 02 15:55:20 2016
  * \brief  ThinVec class definitions.
@@ -8,7 +8,7 @@
  */
 //---------------------------------------------------------------------------//
 
-#include "ThinVec.hh"
+#include "ThinVec.h"
 
 #include <cassert>
 #include <iostream>
@@ -67,5 +67,5 @@ template void print_vec<double>(const ThinVec<double>&);
 template void print_vec<int>(const ThinVec<int>&);
 
 //---------------------------------------------------------------------------//
-// end of thinvec/ThinVec.cc
+// end of thinvec/ThinVec.cxx
 //---------------------------------------------------------------------------//

@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   arrayview/arrayview.hh
+ * \file   arrayview/arrayview.h
  * \author Seth R Johnson
  * \date   Tue Dec 06 11:21:58 2016
  * \brief  algorithm class declaration.
@@ -90,5 +90,5 @@ void print_array(std::pair<const T*, size_t> view)
 #endif // arrayview_arrayview_hh
 
 //---------------------------------------------------------------------------//
-// end of arrayview.hh
+// end of arrayview.h
 //---------------------------------------------------------------------------//

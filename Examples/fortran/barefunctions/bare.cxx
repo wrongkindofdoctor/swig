@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   bare_function/bare.cc
+ * \file   bare_function/bare.cxx
  * \author Seth R Johnson
  * \date   Wed Nov 30 17:45:22 2016
  * \brief  bare implementation
@@ -8,7 +8,7 @@
  */
 //---------------------------------------------------------------------------//
 
-#include "bare.hh"
+#include "bare.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -105,5 +105,5 @@ void print_cmyk(CmykEnum c)
     cout << str << endl;
 }
 //---------------------------------------------------------------------------//
-// end of bare_function/bare.cc
+// end of bare_function/bare.cxx
 //---------------------------------------------------------------------------//

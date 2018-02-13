@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   std_string/stdstr.cc
+ * \file   std_string/stdstr.cxx
  * \author Seth R Johnson
  * \date   Mon Dec 05 18:32:13 2016
  * \brief  stdstr class definitions.
@@ -8,7 +8,7 @@
  */
 //---------------------------------------------------------------------------//
 
-#include "stdstr.hh"
+#include "stdstr.h"
 
 #include <algorithm>
 #include <iostream>
@@ -33,5 +33,5 @@ std::string get_reversed_native_string(const std::string& input)
 }
 
 //---------------------------------------------------------------------------//
-// end of std_string/stdstr.cc
+// end of std_string/stdstr.cxx
 //---------------------------------------------------------------------------//

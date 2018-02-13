@@ -1,4 +1,4 @@
-/* File : example.hh */
+/* File : example.h */
 class Shape {
 public:
   static int nshapes;

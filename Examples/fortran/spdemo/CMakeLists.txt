@@ -7,7 +7,7 @@
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(spdemolib spdemo.cc)
+ADD_LIBRARY(spdemolib spdemo.cxx)
 
 # Generate SWIG module
 MAKE_SWIG(MODULE spdemo

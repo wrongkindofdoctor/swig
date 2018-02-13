@@ -8,7 +8,7 @@
 
 # Build C++ library
 INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
-ADD_LIBRARY(thinveclib ThinVec.cc)
+ADD_LIBRARY(thinveclib ThinVec.cxx)
 
 # Generate SWIG module
 MAKE_SWIG(MODULE thinvec

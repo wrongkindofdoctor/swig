@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   spdemo/spdemo.cc
+ * \file   spdemo/spdemo.cxx
  * \author Seth R Johnson
  * \date   Tue Dec 06 14:55:04 2016
  * \brief  spdemo class definitions.
@@ -8,7 +8,7 @@
  */
 //---------------------------------------------------------------------------//
 
-#include "spdemo.hh"
+#include "spdemo.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -92,5 +92,5 @@ void print_cr(const Foo& f)
 }
 
 //---------------------------------------------------------------------------//
-// end of spdemo/spdemo.cc
+// end of spdemo/spdemo.cxx
 //---------------------------------------------------------------------------//

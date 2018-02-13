@@ -11,7 +11,7 @@
 //%include "docstring.i"
 
 %{
-#include "SimpleClass.hh"
+#include "SimpleClass.h"
 %}
 
 %{
@@ -56,7 +56,7 @@ void print_pointer(int msg, const SimpleClass* ptr)
 %feature("docstring") SimpleClass %{
 Simple test class.
 
-C++ includes: SimpleClass.hh
+C++ includes: SimpleClass.h
 %};
 
 %feature("docstring")  SimpleClass::double_it %{
@@ -80,7 +80,7 @@ SimpleClass(double a, double b)
 }
 }
 
-%include "SimpleClass.hh"
+%include "SimpleClass.h"
 
 // Overloaded templated function instantiation
 %template(action) SimpleClass::action<double>;

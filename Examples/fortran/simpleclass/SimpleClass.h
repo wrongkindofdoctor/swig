@@ -1,6 +1,6 @@
 //---------------------------------*-C++-*-----------------------------------//
 /*!
- * \file   simpleclass/SimpleClass.hh
+ * \file   simpleclass/SimpleClass.h
  * \author Seth R Johnson
  * \date   Thu Dec 01 15:07:23 2016
  * \brief  SimpleClass class declaration.
@@ -100,5 +100,5 @@ void print_struct(const BasicStruct& s);
 #endif // simpleclass_SimpleClass_hh
 
 //---------------------------------------------------------------------------//
-// end of simple_class/SimpleClass.hh
+// end of simple_class/SimpleClass.h
 //---------------------------------------------------------------------------//
