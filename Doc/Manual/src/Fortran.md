@@ -1139,6 +1139,42 @@ added to the derived type.
 </tbody>
 </table>
 
+The generated C++ wrapper file looks like:
+```c++
+{begin}
+{runtime}
+{header}
+#ifdef __cplusplus
+extern "C" {
+#endif
+{wrapper}
+#ifdef __cplusplus
+}
+#endif
+{init}
+```
+
+The generated Fortran module looks like:
+
+```fortran
+{fbegin}
+module [MODULE_NAME]
+ use, intrinsic :: ISO_C_BINDING
+ {fmodule}
+ implicit none
+ private
+ {fpublic}
+ ! module generic interfaces
+ {fparams}
+ {ftypes}
+interface
+ {finterfaces}
+end interface
+contains
+ {fwrapper}
+end module
+```
+
 ## Known Issues
 
 A number of known limitations to the SWIG Fortran module are tracked at
