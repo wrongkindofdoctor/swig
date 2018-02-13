@@ -7,7 +7,6 @@ Run with:
     --toc --standalone -H src/style.css -o Fortran.html src/Fortran.md
 
 Authored by Seth R Johnson
---
 -->
 
 # Overview 
@@ -70,6 +69,7 @@ roughly illustrates some of the differences between the two languages:
 | function that returns non-void   | function                    |
 | overloaded function              | generic interface           |
 | floating point number            | real                        |
+| fundamental type                 | intrinsic type              |
 
 ## Running SWIG
 
@@ -258,6 +258,9 @@ booleans between the two languages.
 The built-in type wrapping also omits standard C character `char`
 to prevent ambiguity of wrapping character arrays (`char*` or `CHARACTER,
 DIMENSION(:)`) from strings (`char*` or `CHARACTER(LEN=*)`).
+
+A more complete set of typemaps for the full set of integer types available in
+`<stdint.h>` can be used by `%include <cstdint>
 
 ## Pointers and references
 
