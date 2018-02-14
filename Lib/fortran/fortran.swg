@@ -110,9 +110,7 @@
 %include "fundamental.swg"
 %include "enums.swg"
 %include "bindc.swg"
-%include "carrays.swg"
 %include "classes.swg"
-%include "cstring.swg"
 
 #ifdef __cplusplus
 %include "memfunptr.swg"

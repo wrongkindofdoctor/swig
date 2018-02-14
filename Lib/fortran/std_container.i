@@ -13,25 +13,24 @@
 // allow native wrapping, use %template() std::vector<double>
 //---------------------------------------------------------------------------//
 
+%include <view.i>
+
+//---------------------------------------------------------------------------//
+/*!
+ * \def %std_native_container
+ *
+ * Native typemaps for contiguous arrays: translate directly to and from Fortran
+ * arrays.
+ *
+ * - The inputs are contiguous array views
+ * - The outputs are allocatable arrays
+ */
 %define %std_native_container(ARRTYPE...)
 
 #define VTYPE ARRTYPE::value_type
+FORT_ARRAYPTR_TYPEMAP(VTYPE, const ARRTYPE& NATIVE)
 
-// C wrapper type: pointer to templated array wrapper
-%typemap(ctype, noblock=1, out="SwigArrayWrapper",
-       null="SwigArrayWrapper_uninitialized()",
-       fragment="SwigArrayWrapper") const ARRTYPE& NATIVE
-{SwigArrayWrapper*}
-
-%typemap(imtype, import="SwigArrayWrapper") const ARRTYPE& NATIVE
-  "type(SwigArrayWrapper)"
-
-// Fortran proxy code: return allocatable vector<VTYPE>
-%typemap(ftype, out={$typemap(imtype, VTYPE ), dimension(:), allocatable},
-noblock=1) const ARRTYPE& NATIVE
-  {$typemap(imtype,  VTYPE ), dimension(:), target, intent(in)}
-
-  // C input translation typemaps: $1 is SWIGPAIR__, $input is SwigArrayWrapper
+// C input translation typemaps: $1 is SWIGPAIR__, $input is SwigArrayWrapper
 %typemap(in, noblock=1) const ARRTYPE& NATIVE (ARRTYPE temparr, VTYPE* tempbegin)
   {tempbegin = static_cast<VTYPE*>($input->data);
    temparr.assign(tempbegin, tempbegin + $input->size);
@@ -44,25 +43,23 @@ noblock=1) const ARRTYPE& NATIVE
   $result.size = $1->size();
   %}
 
-// Fortran proxy translation code: convert from ftype $input to imtype $1
-%typemap(findecl, noblock=1) const ARRTYPE& NATIVE
-  {$typemap(imtype, VTYPE ), pointer :: $1_view}
-%typemap(fin) const ARRTYPE& NATIVE
-%{$1_view => $input(1)
-  $1%data = c_loc($1_view)
-  $1%size = size($input)%}
+%typemap(ftype, out={$typemap(imtype, VTYPE), dimension(:), allocatable},
+noblock=1) const ARRTYPE& NATIVE
+  {$typemap(imtype, VTYPE), dimension(:), target, intent(in)}
 
 // Fortran proxy translation code: convert from imtype $1 to ftype $result
 %typemap(foutdecl, noblock=1) const ARRTYPE& NATIVE
-    {$typemap(imtype, VTYPE), pointer :: $1_view(:)}
+{$typemap(imtype, VTYPE), pointer :: $1_view(:)}
+
 %typemap(fout, noblock=1) const ARRTYPE& NATIVE
-{ call c_f_pointer($1%data, $1_view, [$1%size])
-  allocate($typemap(imtype, VTYPE) :: $result(size($1_view)))
-  $result = $1_view}
+{call c_f_pointer($1%data, $1_view, [$1%size])
+ allocate($typemap(imtype, VTYPE) :: $result(size($1_view)))
+ $result = $1_view}
 
 #undef VTYPE
 
 %enddef
+
 
 //---------------------------------------------------------------------------//
 // end of fortran/std_container.i

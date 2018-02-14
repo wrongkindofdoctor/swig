@@ -32,7 +32,6 @@
 }
 
  * \endcode
- *
  */
 //---------------------------------------------------------------------------//
 
@@ -44,6 +43,8 @@
 
 //---------------------------------------------------------------------------//
 // Fortran variable declaration: used only if %included, not %imported
+// XXX Should we include this in every module and just rely on the extern C
+// data being in only one translation unit?
 //---------------------------------------------------------------------------//
 #ifndef SWIGIMPORTED
 
@@ -157,7 +158,7 @@ SWIGEXPORT void SWIG_store_exception(const char *decl,
 //---------------------------------------------------------------------------//
 // Functional interface to swig error string
 //---------------------------------------------------------------------------//
-%import <std_string.i>
+%include <std_string.i>
 
 %apply const std::string& NATIVE { const std::string& SWIG_FORTRAN_ERROR_STR};
 

@@ -12,6 +12,23 @@
 #include <vector>
 %}
 
+/*!
+ * This module defines a std::vector class and convenience typemaps.
+ *
+ * Use \code
+    %apply const std::vector<int> NATIVE& { const std::vector<int>& }
+  \endcode
+ * to wrap all const vector references as native fortran array input/output.
+ *
+ * TODO:
+ *  - Add initialization/assignment from fortran array
+ *  - Extend with return-as-view ?
+ *  - Extend with return-allocatable ?
+ *
+ * To avoid wrapping std::vector but still instantiate the typemaps that
+ * allow native wrapping, use
+ * `%template() std::vector<double>` .
+ */
 %include "std_container.i"
 
 namespace std

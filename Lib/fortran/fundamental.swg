@@ -311,7 +311,7 @@ FORT_FUND_TYPEMAP(long long  , "integer(C_LONG_LONG)")
 FORT_FUND_TYPEMAP(size_t     , "integer(C_SIZE_T)"   )
 FORT_FUND_TYPEMAP(float      , "real(C_FLOAT)"       )
 FORT_FUND_TYPEMAP(double     , "real(C_DOUBLE)"      )
-FORT_FUND_TYPEMAP(char       , "integer(C_SIGNED_CHAR)")
+FORT_FUND_TYPEMAP(char       , "character(C_CHAR)"   )
 
 //---------------------------------------------------------------------------//
 // UNSIGNED INTEGER TYPES
