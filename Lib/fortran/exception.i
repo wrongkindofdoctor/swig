@@ -157,7 +157,7 @@ SWIGEXPORT void SWIG_store_exception(const char *decl,
 //---------------------------------------------------------------------------//
 // Functional interface to swig error string
 //---------------------------------------------------------------------------//
-%include <typemaps.i>
+%import <std_string.i>
 
 %apply const std::string& NATIVE { const std::string& SWIG_FORTRAN_ERROR_STR};
 
