@@ -56,35 +56,67 @@
 #define %clearbindc %feature("fortran:bindc", "")
 
 //---------------------------------------------------------------------------//
-// STANDARD TYPE DEFINITIONS
-
-#ifdef __cplusplus
-namespace std
-{
-#endif
-typedef unsigned long size_t;
-typedef long ptrdiff_t;
-#ifdef __cplusplus
-}
-using std::size_t;
-using std::ptrdiff_t;
-#endif
+/*! CUSTOM TYPEMAP DESCRIPTIONS.
+ *
+ * ctype      : type in C wrapper code (input parameter, default return value)
+ * ctype:out  : *return* type (overrides ctype)
+ * ctype:null : null value to return for exceptions, etc. (must be convertible
+ *              to type ctype or ctype:out)
+ * imtype     : Fortran type returned from "BIND" interface (must be Fortran
+ *              equivalent of ctype:out)
+ * imtype:in  : Fortran dummy argument type for "BIND" interface (must be
+ *              Fortran equivalent of ctype)
+ * imtype:import : Import this fortran type into the interface declaration
+ * ftype      : Fortran proxy type
+ * fin        : Fortran proxy code used to translate a Fortran argument to a
+ *              C argument ($input -> $1)
+ * fout       : Fortran proxy code to translate return value ($1 -> $result)
+ *
+ * UNUSUAL TYPEMAPS:
+ *
+ * findecl    : declare any variables used in converting an input value
+ *              ($1_temp)
+ * ffreearg   : clean up any variables used to convert an input value
+ *              ($1, $result)
+ * foutdecl   : declare any temporary variables used to convert output values
+ */
 
 //---------------------------------------------------------------------------//
-// RUNTIME
-%include "forruntime.swg"
+/*!
+ * \def FORT_COPY_TYPEMAPS
+ * \brief Assign our special typemaps to one or more types from an original.
+ *
+ * This is basically like %apply but doesn't touch anything else SWIG has
+ * set up, i.e. globalin
+ */
+%define FORT_COPY_TYPEMAPS(SRC_TYPE, DST_TYPE...)
+  %typemap(ctype)     DST_TYPE = SRC_TYPE;
+  %typemap(in)        DST_TYPE = SRC_TYPE;
+  %typemap(out)       DST_TYPE = SRC_TYPE;
+  %typemap(imtype)    DST_TYPE = SRC_TYPE;
+  %typemap(ftype)     DST_TYPE = SRC_TYPE;
+  %typemap(fin)       DST_TYPE = SRC_TYPE;
+  %typemap(fout)      DST_TYPE = SRC_TYPE;
+%enddef
 
-//---------------------------------------------------------------------------//
-// FRAGMENTS
+/* FRAGMENT OVERRIDES */
 %include "forfragments.swg"
 
-//---------------------------------------------------------------------------//
-// CUSTOM TYPEMAP DESCRIPTIONS.
-%include "fortypemaps.swg"
-
-//---------------------------------------------------------------------------//
-// RESERVED KEYWORDS
+/* RUNTIME AND KEYWORDS */
+%include "forruntime.swg"
 %include "forkw.swg"
+
+/* TYPEMAPS */
+%include "fundamental.swg"
+%include "enums.swg"
+%include "bindc.swg"
+%include "carrays.swg"
+%include "classes.swg"
+%include "cstring.swg"
+
+#ifdef __cplusplus
+%include "memfunptr.swg"
+#endif
 
 //---------------------------------------------------------------------------//
 // end of fortran/fortran.swg
