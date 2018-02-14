@@ -1,9 +1,9 @@
 %module "templated"
 
 %{
-#include "templated.hpp"
+#include "templated.h"
 %}
-%include "templated.hpp"
+%include "templated.h"
 
 // Note that template instantiation is after the header include
 %template(Thing_Int)  Thing<int>;
