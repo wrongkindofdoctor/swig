@@ -1739,7 +1739,10 @@ int FORTRAN::classHandler(Node *n) {
     Node *b = base.item;
     if (GetFlag(b, "feature:ignore"))
       continue;
-    if (basename) {
+    if (!basename) {
+      // First class that was encountered
+      basename = Getattr(b, "sym:name");
+    } else {
       // Another base class exists
       Swig_warning(WARN_FORTRAN_MULTIPLE_INHERITANCE,
                    Getfile(b),
@@ -1749,7 +1752,6 @@ int FORTRAN::classHandler(Node *n) {
                    SwigType_namestr(Getattr(b, "sym:name")),
                    SwigType_namestr(Getattr(n, "sym:name")));
     }
-    basename = Getattr(b, "sym:name");
   }
 
   const bool basic_struct = is_bindc(n);
