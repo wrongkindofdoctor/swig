@@ -17,6 +17,7 @@
   signed long long signed_long_long_identity(signed long long x) { return x; }
   unsigned long long unsigned_long_long_identity(unsigned long long x) { return x; }
 
+#ifdef __cplusplus
   signed char        & signed_char_ref_identity(       signed char        & x) { return x; }
   unsigned char      & unsigned_char_ref_identity(     unsigned char      & x) { return x; }
   signed short       & signed_short_ref_identity(      signed short       & x) { return x; }
@@ -38,6 +39,7 @@
   const unsigned long      & const_unsigned_long_ref_identity(     const unsigned long      & x) { return x; }
   const signed long long   & const_signed_long_long_ref_identity(  const signed long long   & x) { return x; }
   const unsigned long long & const_unsigned_long_long_ref_identity(const unsigned long long & x) { return x; }
+#endif
 
   signed char        * signed_char_ptr() { return NULL; }
   unsigned char      * unsigned_char_ptr() { return NULL; }
