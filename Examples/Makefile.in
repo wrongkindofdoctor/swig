@@ -2075,6 +2075,8 @@ fortran_clean:
 	rm -f core @EXTRA_CLEAN@
 	rm -f *.@OBJEXT@ *$(TCL_SO)
 
+fortran_version:
+	$(FORTRAN) --version
 
 ##################################################################
 #####                         D                             ######
