@@ -2022,15 +2022,12 @@ go_clean:
 ##################################################################
 #####                      Fortran                          ######
 ##################################################################
-# TODO: if running on Windows we'll need to implement these in the configure.ac
-FORTRAN_DLNK =
-FORTRAN_LIBPREFIX = lib
+# NOTE: Fortran creates 'shared libraries' like TCL as opposed to
+# 'bundles' like Python. For the time being, just use TCL_SO, but
+# these should all be replaced with something like MODULE/SHARED.
 FORTRAN = @FORTRAN@
 FORTRANCFLAGS =
-FORTRANFLAGS =
-FORTRANOPTIONS =
-FORTRANSO = .so
-FORTRAN_RUNME = ./$(RUNME).exe
+FORTRAN_RUNME = $(RUNME)
 FORTRAN_CSUMMARY = "summary-c.txt"
 FORTRAN_SUMMARY = "summary.txt"
 FOBJ = $(INTERFACE:.i=_fort.@OBJEXT@)
@@ -2044,12 +2041,13 @@ endif
 fortran: $(SRCDIR_SRCS)
 	$(SWIG) -fortran $(SWIGOPT) -o $(ISRCS) $(INTERFACEPATH) \
 		|| (echo "$(TARGET)|failed to run swig" >> $(FORTRAN_CSUMMARY) && exit 1)
-	$(CC) -c $(CCSHARED) $(CPPFLAGS) $(CFLAGS) $(FORTRANCFLAGS) $(SRCDIR_SRCS) $(ISRCS) $(INCLUDES) \
+	$(CC) -c $(CCSHARED) $(CPPFLAGS) $(CFLAGS) $(FORTRANCFLAGS) \
+			$(SRCDIR_SRCS) $(ISRCS) $(INCLUDES) \
 		|| (echo "$(TARGET)|failed to compile wrapper" >> $(FORTRAN_CSUMMARY) && exit 1)
 	$(FORTRAN) -c $(TARGET).f90 -o $(FOBJ) \
 		|| (echo "$(TARGET)|failed to compile fortran" >> $(FORTRAN_CSUMMARY) && exit 1)
-	$(LDSHARED) $(CFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJ) $(FORTRAN_DLNK) $(LIBS) \
-		-o $(FORTRAN_LIBPREFIX)$(TARGET)$(FORTRANSO) \
+	$(TCLLDSHARED) $(CFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJ) $(TCL_DLNK) \
+			$(LIBS) -o $(LIBPREFIX)$(TARGET)$(TCL_SO) \
 		|| (echo "$(TARGET)|failed to link" >> $(FORTRAN_CSUMMARY) && exit 1)
 	echo "$(TARGET)|passed" >> $(FORTRAN_CSUMMARY)
 
@@ -2061,21 +2059,21 @@ fortran_cpp: $(SRCDIR_SRCS)
 		|| (echo "$(TARGET)|failed to compile wrapper" >> $(FORTRAN_SUMMARY) && exit 1)
 	$(FORTRAN) -c $(TARGET).f90 -o $(FOBJ) \
 		|| (echo "$(TARGET)|failed to compile fortran" >> $(FORTRAN_SUMMARY) && exit 1)
-	$(CXXSHARED) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJ) $(FORTRAN_DLNK) \
-			$(LIBS) $(CXX_DLLIBS) -o $(FORTRAN_LIBPREFIX)$(TARGET)$(FORTRANSO) \
+	$(TCLCXXSHARED) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJ) $(TCL_DLNK) \
+			$(LIBS) $(CXX_DLLIBS) -o $(LIBPREFIX)$(TARGET)$(TCL_SO) \
 		|| (echo "$(TARGET)|failed to link" >> $(FORTRAN_SUMMARY) && exit 1)
 	echo "$(TARGET)|passed" >> $(FORTRAN_SUMMARY)
 
 fortran_run: $(SRCDIR_SRCS)
-	env LD_LIBRARY_PATH=$$PWD $(RUNTOOL) $(FORTRAN_RUNME) $(RUNPIPE)
+	env LD_LIBRARY_PATH=$$PWD $(RUNTOOL) ./$(RUNME).exe $(RUNPIPE)
 
 fortran_compile: $(SRCDIR_SRCS)
-	$(COMPILETOOL) $(FORTRAN) $(FORTFLAGS) $(TARGET)_fort.o $(FORTRANLIBPREFIX)$(TARGET)$(SO) $(SRCDIR_FORTRANSRCS)
+	$(COMPILETOOL) $(FORTRAN) $(FORTFLAGS) $(TARGET)_fort.o $(LIBPREFIX)$(TARGET)$(TCL_SO) $(SRCDIR_FORTRANSRCS)
 
 fortran_clean:
-	rm -f *_wrap* *~ $(RUNME) $(RUNME).exe *.mod *.f90 *$(FORTRANSO)
+	rm -f *_wrap* *~ $(RUNME) $(RUNME).exe *.mod *.f90
 	rm -f core @EXTRA_CLEAN@
-	rm -f *.@OBJEXT@ *$(FORTRANSO)
+	rm -f *.@OBJEXT@ *$(TCL_SO)
 
 
 ##################################################################

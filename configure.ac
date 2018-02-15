@@ -358,8 +358,10 @@ AC_SUBST(PLATCXXFLAGS)
 AC_SUBST(HAVE_CXX11_COMPILER)
 AC_SUBST(LINKFORSHARED)
 
-# This variation is needed on OS-X because there is no (apparent) consistency in shared library naming.
-# Sometimes .bundle works, but sometimes .so is needed.  It depends on the target language
+# This variation is needed on macOS because there is a difference between
+# 'bundles' and 'shared libaries'. The former can only be loaded with dlopen,
+# the latter can be linked at compile time. This is a similar choice between
+# 'MODULE' and 'SHARED' in the CMake ADD_LIBRARY command.
 
 AC_SUBST(PYTHON_SO)
 case $host in

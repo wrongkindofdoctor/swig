@@ -6,11 +6,11 @@ LANGUAGE	= fortran
 FORTRAN		= @FORTRAN@
 FC      	= @FC@
 host		= @host@
-SCRIPTSUFFIX	= _runme.f90
+SCRIPTSUFFIX= _runme.f90
 
 FORTRANOBJEXT = o
 
-SO = @SO@
+TCL_SO = @TCL_SO@
 
 srcdir         = @srcdir@
 top_srcdir     = @top_srcdir@
@@ -44,8 +44,9 @@ run_testcase_cpp = \
 	if test -f $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX); then \
 	    $(COMPILETOOL) $(FORTRAN) $*.f90 -c; \
 	    $(COMPILETOOL) $(FORTRAN) $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX) -c; \
-	    $(COMPILETOOL) $(FORTRAN) -o $*_runme $(SCRIPTPREFIX)$*.@OBJEXT@ $(SCRIPTPREFIX)$*_runme.@OBJEXT@ $*.so; \
-	  env LD_LIBRARY_PATH=.:$$LD_LIBRARY_PATH $(RUNTOOL) ./$*_runme; \
+	    $(COMPILETOOL) $(FORTRAN) -o $*_runme.exe $(SCRIPTPREFIX)$*.@OBJEXT@ $(SCRIPTPREFIX)$*_runme.@OBJEXT@ \
+			$(LIBPREFIX)$*$(TCL_SO); \
+	  env LD_LIBRARY_PATH=.:$$LD_LIBRARY_PATH $(RUNTOOL) ./$*_runme.exe; \
 	fi
 
 %.clean:
