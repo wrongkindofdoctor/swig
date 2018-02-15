@@ -14,5 +14,4 @@ FAILING_C_TESTS += \
 
 # failed to compile fortran
 FAILING_C_TESTS += \
-  enum_forward \
   preproc

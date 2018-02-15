@@ -2304,6 +2304,12 @@ int FORTRAN::enumDeclaration(Node *n)
         return SWIG_NOWRAP;
     }
 
+    if (GetFlag(n, "sym:weak"))
+    {
+        // Ignore forward declarations
+        return SWIG_NOWRAP;
+    }
+
     String* enum_name = NULL;
     String* symname = Getattr(n, "sym:name");
     if (!symname)
