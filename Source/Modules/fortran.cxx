@@ -2,6 +2,14 @@
 #include "cparse.h"
 #include <ctype.h>
 
+#define ASSERT_OR_PRINT_NODE(COND, NODE) \
+    do { \
+    if (!(COND)) { \
+        Printf(stdout, "Assertion '" #COND "' failed for node:\n"); \
+        Swig_print_node(NODE); \
+        assert(0); \
+    } } while (0)
+
 namespace
 {
 //---------------------------------------------------------------------------//
@@ -222,7 +230,7 @@ bool is_bindc(Node* n)
         // No user override given: if it's extern(C) storage function, default
         // to binding it.
         String* kind = Getattr(n, "kind");
-        if (!kind || Strcmp(kind, "function") != 0)
+        if (!kind || Strcmp(kind, "function") != 0 || GetFlag(n, "ismember"))
         {
             // Not a function
             return false;
@@ -885,7 +893,7 @@ int FORTRAN::functionWrapper(Node *n)
     {
         // Create "private" fortran wrapper function class name that will
         // be bound to a class
-        assert(!is_cbound);
+        ASSERT_OR_PRINT_NODE(!is_cbound, n);
         fname = Copy(private_fname);
     }
     else
@@ -924,8 +932,7 @@ int FORTRAN::functionWrapper(Node *n)
         }
         else
         {
-            Swig_print_node(n);
-            assert(0);
+            ASSERT_OR_PRINT_NODE(0, n);
         }
     }
     else
@@ -991,7 +998,7 @@ int FORTRAN::functionWrapper(Node *n)
 
     if (is_member_function)
     {
-        assert(!is_basic_struct());
+        ASSERT_OR_PRINT_NODE(!is_basic_struct(), n);
         String* qualifiers = NewStringEmpty();
 
         if (is_overloaded)
@@ -1724,7 +1731,7 @@ int FORTRAN::proxyfuncWrapper(Node *n)
  */
 void FORTRAN::assignmentWrapper(Node* n)
 {
-    assert(!is_basic_struct());
+    ASSERT_OR_PRINT_NODE(!is_basic_struct(), n);
 
     String* symname = Getattr(n, "sym:name");
     String* classtype = Getattr(n, "feature:smartptr");
@@ -2040,7 +2047,7 @@ int FORTRAN::classHandler(Node *n)
 int FORTRAN::constructorHandler(Node* n)
 {
     Node *classn = getCurrentClass();
-    assert(classn);
+    ASSERT_OR_PRINT_NODE(classn, n);
 
     // Get the constructor's name. This will usually be the unscoped C++ class
     // name: for std::vector<int> will be "vector", but the user can possibly
@@ -2165,7 +2172,7 @@ int FORTRAN::memberfunctionHandler(Node *n)
     }
 
     String* class_symname = Getattr(getCurrentClass(), "sym:name");
-    assert(class_symname);
+    ASSERT_OR_PRINT_NODE(class_symname, n);
     
     // Create a private procedure name that gets bound to the Fortan TYPE
     String* fwrapname = NewStringf("swigf_%s_%s", class_symname, fsymname);
@@ -2462,7 +2469,7 @@ int FORTRAN::constantWrapper(Node* n)
         // For constants, the given value. For enums etc., the C++ identifier.
         value = Getattr(n, "value");
     }
-    assert(value);
+    ASSERT_OR_PRINT_NODE(value, n);
 
     // Get Fortran data type
     String* bindc_typestr = attach_typemap("bindc", n, WARN_TYPEMAP_UNDEF);
