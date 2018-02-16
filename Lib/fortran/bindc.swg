@@ -21,11 +21,9 @@
   // Interface code has to "import' the class type.
   %typemap(imtype, import="$fclassname") CTYPE, const CTYPE, const CTYPE&
     "type($fclassname)"
-  %typemap(bindc, in="type($fclassname), value",
-           import="$fclassname") CTYPE, const CTYPE, const CTYPE&
+  %typemap(bindc, in="type($fclassname), value", import="$fclassname") CTYPE, const CTYPE, const CTYPE&
     "type($fclassname)"
-  %typemap(bindc, in="type($fclassname)",
-           import="$fclassname") CTYPE*, const CTYPE*
+  %typemap(bindc, in="type($fclassname)", import="$fclassname") CTYPE*, const CTYPE*
     "type(C_PTR)"
 %enddef
 

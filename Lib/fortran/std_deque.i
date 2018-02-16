@@ -10,18 +10,14 @@
 %{
 #include <deque>
 %}
-
 #warning "std::deque support is not yet implemented"
 
-namespace std
-{
+namespace std {
 
 template<class T>
-class deque
-{
-    public:
+class deque {
+public:
 };
-
 }
 
 //---------------------------------------------------------------------------//

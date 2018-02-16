@@ -9,20 +9,14 @@
 
 %{
 #include <map>
-%}
-
+  %}
 #warning "std::map support is not yet implemented"
 
-namespace std
-{
+namespace std {
 
 template<class K, class T>
-class map
-{
-};
-
+class map {};
 }
-
 
 //---------------------------------------------------------------------------//
 // end of fortran/std_map.i

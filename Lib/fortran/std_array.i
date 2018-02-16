@@ -13,15 +13,11 @@
 
 #warning "std::array support is not yet implemented"
 
-namespace std
-{
-
+namespace std {
 template<class T, size_t N>
-class array
-{
-    public:
+class array {
+public:
 };
-
 }
 
 //---------------------------------------------------------------------------//

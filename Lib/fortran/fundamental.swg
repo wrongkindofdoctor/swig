@@ -17,8 +17,7 @@ using std::ptrdiff_t;
 // FRAGMENTS
 //---------------------------------------------------------------------------//
 /* Convert Fortran logical values to and from C-bound integers */
-%fragment("SWIG_logical_to_int_f", "fwrapper",
-          noblock="1") %{
+%fragment("SWIG_logical_to_int_f", "fwrapper", noblock="1") %{
 function SWIG_logical_to_int(inp) &
     result(out)
   use, intrinsic :: ISO_C_BINDING
@@ -32,8 +31,7 @@ function SWIG_logical_to_int(inp) &
 end function
 %}
 
-%fragment("SWIG_int_to_logical_f", "fwrapper",
-          noblock="1") %{
+%fragment("SWIG_int_to_logical_f", "fwrapper", noblock="1") %{
 function SWIG_int_to_logical(inp) &
     result(out)
   use, intrinsic :: ISO_C_BINDING
@@ -91,10 +89,12 @@ end function
   // could check *at least* that the types are the same size...
   %typemap(ctype, out="CTYPE*") CPPTYPE*
     "CTYPE*"
-  %typemap(in, noblock=1) CPPTYPE*
-    {$1 = %reinterpret_cast($input, $1_ltype);}
-  %typemap(out, noblock=1) CPPTYPE*
-    {$result = %reinterpret_cast($1, CTYPE*);}
+  %typemap(in, noblock=1) CPPTYPE* {
+    $1 = %reinterpret_cast($input, $1_ltype);
+  }
+  %typemap(out, noblock=1) CPPTYPE* {
+    $result = %reinterpret_cast($1, CTYPE*);
+  }
   %typemap(imtype, in="type(C_PTR), value") CPPTYPE*
     "type(C_PTR)"
   %typemap(ftype, out=FTYPE ", pointer") CPPTYPE*
@@ -106,13 +106,11 @@ end function
   FORT_COPY_TYPEMAPS(CPPTYPE*, CPPTYPE* const);
 
   // Mutable references and arrays are treated just like pointers
-  FORT_COPY_TYPEMAPS(CPPTYPE*,
-                     CPPTYPE&, CPPTYPE*&, CPPTYPE[], CPPTYPE[ANY]);
+  FORT_COPY_TYPEMAPS(CPPTYPE*, CPPTYPE&, CPPTYPE*&, CPPTYPE[], CPPTYPE[ANY]);
   // ...except that fixed-sized arrays can be treated natively
   %typemap(ftype, out=FTYPE ", dimension(:), pointer", checkdim=1) CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(inout)"
-  %typemap(fout, checkdim=1) CPPTYPE[ANY]
-  %{
+  %typemap(fout, checkdim=1) CPPTYPE[ANY] %{
       call c_f_pointer($1, $result, [$1_dim0])
   %}
 
@@ -121,12 +119,13 @@ end function
   // non-const, so we must const-cast.)
   %typemap(ctype, out="const CTYPE*") const CPPTYPE*
     "const CTYPE*"
-  %typemap(in, noblock=1) const CPPTYPE*
-    {$1 = %reinterpret_cast(%const_cast($input, CTYPE*), $1_ltype);}
-  %typemap(out, noblock=1) const CPPTYPE*
-    {$result = %const_cast(%reinterpret_cast($1, const CTYPE*), CTYPE*);}
-  %typemap(imtype, in="type(C_PTR), value")
-        const CPPTYPE*
+  %typemap(in, noblock=1) const CPPTYPE* {
+    $1 = %reinterpret_cast(%const_cast($input, CTYPE*), $1_ltype);
+  }
+  %typemap(out, noblock=1) const CPPTYPE* {
+    $result = %const_cast(%reinterpret_cast($1, const CTYPE*), CTYPE*);
+  }
+  %typemap(imtype, in="type(C_PTR), value") const CPPTYPE*
     "type(C_PTR)"
   %typemap(ftype)  const CPPTYPE*    = CPPTYPE*;
   %typemap(fin)    const CPPTYPE*    = CPPTYPE*;
@@ -146,22 +145,17 @@ end function
   %typemap(fout)   const CPPTYPE& = CPPTYPE;
 
   // References to pointers
-  FORT_COPY_TYPEMAPS(CPPTYPE*,
-                     CPPTYPE*&, const CPPTYPE* const&);
-  FORT_COPY_TYPEMAPS(const CPPTYPE*,
-                     const CPPTYPE*&, const CPPTYPE* const&);
+  FORT_COPY_TYPEMAPS(CPPTYPE*, CPPTYPE*&, const CPPTYPE* const&);
+  FORT_COPY_TYPEMAPS(const CPPTYPE*, const CPPTYPE*&, const CPPTYPE* const&);
 
   // Const arrays are basically like const pointers
-  FORT_COPY_TYPEMAPS(const CPPTYPE*,
-                     const CPPTYPE[], const CPPTYPE[ANY]);
+  FORT_COPY_TYPEMAPS(const CPPTYPE*, const CPPTYPE[], const CPPTYPE[ANY]);
   // ...except that fixed-sized arrays can be treated natively
-  %typemap(ftype, out=FTYPE ", dimension(:), pointer",
-           checkdim=1) const CPPTYPE[ANY]
+  %typemap(ftype, out=FTYPE ", dimension(:), pointer", checkdim=1) const CPPTYPE[ANY]
     FTYPE ", dimension($1_dim0), target, intent(in)"
   %typemap(fout) const CPPTYPE[ANY] = CPPTYPE[ANY];
 
-  FORT_COPY_TYPEMAPS(CPPTYPE*,
-                     CPPTYPE const [], CPPTYPE const [ANY]);
+  FORT_COPY_TYPEMAPS(CPPTYPE*, CPPTYPE const [], CPPTYPE const [ANY]);
 %enddef
 
 //---------------------------------------------------------------------------//
@@ -193,26 +187,21 @@ end function
     FTYPE ", dimension($1_dim0)"
 
   %typemap(bindc, in=FTYPE", intent(in)") const CTYPE*
-     "type(C_PTR)"
+    "type(C_PTR)"
   %typemap(bindc, in=FTYPE", dimension(*), intent(in)") const CTYPE[]
-     "type(C_PTR)"
-  %typemap(bindc, in=FTYPE", dimension($1_dim0), intent(in)",
-           checkdim=1) const CTYPE[ANY]
-     "type(C_PTR)"
+    "type(C_PTR)"
+  %typemap(bindc, in=FTYPE", dimension($1_dim0), intent(in)", checkdim=1) const CTYPE[ANY]
+    "type(C_PTR)"
 
-  %typemap(bindc, in=FTYPE ", dimension($1_dim1,*), intent(inout)",
-           checkdim=1) CTYPE[][ANY]
-     FTYPE ", dimension($1_dim1,*)"
-  %typemap(bindc, in=FTYPE ", dimension($1_dim2,$1_dim1,*), intent(inout)",
-           checkdim=1) CTYPE[][ANY][ANY]
-     FTYPE ", dimension($1_dim2,$1_dim1,*)"
+  %typemap(bindc, in=FTYPE ", dimension($1_dim1,*), intent(inout)", checkdim=1) CTYPE[][ANY]
+    FTYPE ", dimension($1_dim1,*)"
+  %typemap(bindc, in=FTYPE ", dimension($1_dim2,$1_dim1,*), intent(inout)", checkdim=1) CTYPE[][ANY][ANY]
+    FTYPE ", dimension($1_dim2,$1_dim1,*)"
 
-  %typemap(bindc, in=FTYPE ", dimension($1_dim1,*), intent(in",
-           checkdim=1) const CTYPE[][ANY]
-     FTYPE ", dimension($1_dim1,*)"
-  %typemap(bindc, in=FTYPE ", dimension($1_dim2,$1_dim1,*), intent(in)",
-           checkdim=1) const CTYPE[][ANY][ANY]
-     FTYPE ", dimension($1_dim2,$1_dim1,*)"
+  %typemap(bindc, in=FTYPE ", dimension($1_dim1,*), intent(in", checkdim=1) const CTYPE[][ANY]
+    FTYPE ", dimension($1_dim1,*)"
+  %typemap(bindc, in=FTYPE ", dimension($1_dim2,$1_dim1,*), intent(in)", checkdim=1) const CTYPE[][ANY][ANY]
+    FTYPE ", dimension($1_dim2,$1_dim1,*)"
 %enddef
 
 //---------------------------------------------------------------------------//
@@ -241,8 +230,9 @@ end function
 
 %typemap(ctype) void*
   "$1_ltype"
-%typemap(in, noblock=1) void*
-  {$1 = %reinterpret_cast($input, $1_ltype);}
+%typemap(in, noblock=1) void* {
+  $1 = %reinterpret_cast($input, $1_ltype);
+}
 %typemap(out) void*
   "$result = $1;"
 %typemap(imtype, in="type(C_PTR), value") void*
@@ -255,15 +245,14 @@ end function
   "$result = $1"
 
 // Void pointers are returned as opaque C pointers
-FORT_COPY_TYPEMAPS(void*,
-                   const void*, void* const, void&, void[], void[ANY]);
+FORT_COPY_TYPEMAPS(void*, const void*, void* const, void&, void[], void[ANY]);
 // Handles are returned as opaque C pointers
-FORT_COPY_TYPEMAPS(void*,
-                   SWIGTYPE**, SWIGTYPE* [], SWIGTYPE* [ANY])
+FORT_COPY_TYPEMAPS(void*, SWIGTYPE**, SWIGTYPE* [], SWIGTYPE* [ANY])
 
 // Use const-correct arguments/return values.
-%typemap(in, noblock=1) const void*
-{$1 = %const_cast($input, $1_ltype);}
+%typemap(in, noblock=1) const void* {
+  $1 = %const_cast($input, $1_ltype);
+}
 FORT_COPY_TYPEMAPS(const void*,
                    const SWIGTYPE**, const SWIGTYPE* [], const SWIGTYPE* [ANY],
                    SWIGTYPE* const *, SWIGTYPE* const [], SWIGTYPE* const [ANY]);
@@ -277,23 +266,22 @@ FORT_COPY_TYPEMAPS(const void*,
 //---------------------------------------------------------------------------//
 
 %typemap(ctype)  SWIGTYPE (*)(ANY)
-    %{$1_ltype%}
+  %{$1_ltype%}
 %typemap(in)     SWIGTYPE (*)(ANY)
-    %{$1 = $input;%}
+  %{$1 = $input;%}
 %typemap(out)    SWIGTYPE (*)(ANY)
-    %{$result = $1;%}
+  %{$result = $1;%}
 %typemap(imtype, in="type(C_FUNPTR), value") SWIGTYPE (*)(ANY)
-    "type(C_FUNPTR)"
+  "type(C_FUNPTR)"
 %typemap(ftype, out="type(C_FUNPTR)")  SWIGTYPE (*)(ANY)
-    "type(C_FUNPTR), intent(in), value"
+  "type(C_FUNPTR), intent(in), value"
 %typemap(fin)    SWIGTYPE (*)(ANY)
-    "$1 = $input"
+  "$1 = $input"
 %typemap(fout)   SWIGTYPE (*)(ANY)
-    "$result = $1"
+  "$result = $1"
 
 // Copy to immutable function pointers
-FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY),
-                   SWIGTYPE (*const)(ANY));
+FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY), SWIGTYPE (*const)(ANY));
 
 %typemap(bindc, in="type(C_FUNPTR), value") SWIGTYPE (*)(ANY)
   "type(C_FUNPTR)"
@@ -346,34 +334,34 @@ FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)");
 // http://www.fortran90.org/src/gotchas.html
 //---------------------------------------------------------------------------//
 %typemap(ctype, out="int") bool
-"const int*"
+  "const int*"
 %typemap(in) bool
-"$1 = (*$input ? true : false);"
+  "$1 = (*$input ? true : false);"
 %typemap(out) bool
-"$result = ($1 ? 1 : 0);"
+  "$result = ($1 ? 1 : 0);"
 %typemap(imtype, in="integer(C_INT), intent(in)") bool
-"integer(C_INT)"
+  "integer(C_INT)"
 %typemap(ftype, out="logical") bool
-"logical, intent(in)"
+  "logical, intent(in)"
 %typemap(fin, fragment="SWIG_logical_to_int_f")  bool
-"$1 = SWIG_logical_to_int($input)"
+  "$1 = SWIG_logical_to_int($input)"
 %typemap(fout, fragment="SWIG_int_to_logical_f") bool
-"$result = SWIG_int_to_logical($1)"
+  "$result = SWIG_int_to_logical($1)"
 
 // Treat const references like values
 %apply bool { const bool& };
 // ... except our 'in' typemap has to create a temporary
-%typemap(in) const bool& (bool tempbool)
-{tempbool = (*$input ? true : false);
- $1 = &tempbool;
+%typemap(in) const bool& (bool tempbool) {
+  tempbool = (*$input ? true : false);
+  $1 = &tempbool;
 }
 
 // Mutable references and arrays are treated like opaque pointers
 %apply void* { bool[], bool[ANY],
-                   const bool*&, const bool[], const bool[ANY],
-                   bool const [], bool const [ANY],
-                   bool&, bool*&,
-                   const bool*, const bool* const };
+  const bool*&, const bool[], const bool[ANY],
+  bool const [], bool const [ANY],
+  bool&, bool*&,
+  const bool*, const bool* const };
 
 //---------------------------------------------------------------------------//
 // TYPE CHECKING
@@ -381,5 +369,5 @@ FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)");
 
 // Type checking isn't used for Fortran but is required for unit tests
 %typemap(typecheck, precedence=0) SWIGTYPE
-    ""
+  ""
 

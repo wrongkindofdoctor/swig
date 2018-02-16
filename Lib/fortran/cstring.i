@@ -5,9 +5,7 @@
 //---------------------------------------------------------------------------//
 // Return fortran allocatable array from assumed-length character string. Put a
 // null character *after* the string for compatibility with const char*.
-%fragment("SWIG_string_to_chararray_f", "fwrapper",
-          fragment="SwigArrayWrapper_f",
-          noblock="1") %{
+%fragment("SWIG_string_to_chararray_f", "fwrapper", fragment="SwigArrayWrapper_f", noblock="1") %{
 subroutine SWIG_string_to_chararray(string, chars, wrap)
   use, intrinsic :: ISO_C_BINDING
   character(kind=C_CHAR, len=*), intent(IN) :: string
@@ -26,9 +24,7 @@ end subroutine
 %}
 
 // Copy string to character array
-%fragment("SWIG_restore_chararray_f", "fwrapper",
-          fragment="SwigArrayWrapper_f",
-          noblock="1") %{
+%fragment("SWIG_restore_chararray_f", "fwrapper", fragment="SwigArrayWrapper_f", noblock="1") %{
 subroutine SWIG_restore_chararray(chars, string)
   use, intrinsic :: ISO_C_BINDING
   character(kind=C_CHAR), dimension(:), intent(IN) :: chars
@@ -41,9 +37,7 @@ end subroutine
 %}
 
 // Return fortran allocatable string from character array
-%fragment("SWIG_chararray_to_string_f", "fwrapper",
-          fragment="SwigArrayWrapper_f",
-          noblock="1") %{
+%fragment("SWIG_chararray_to_string_f", "fwrapper", fragment="SwigArrayWrapper_f", noblock="1") %{
 subroutine SWIG_chararray_to_string(wrap, string)
   use, intrinsic :: ISO_C_BINDING
   type(SwigArrayWrapper), intent(IN) :: wrap
@@ -63,33 +57,27 @@ end subroutine
 //---------------------------------------------------------------------------//
 
 // C wrapper type: pointer to templated array wrapper
-%typemap(ctype, noblock=1, out="SwigArrayWrapper",
-     null="SwigArrayWrapper_uninitialized()",
-     fragment="SwigArrayWrapper") const char* NATIVE
-{SwigArrayWrapper*}
+%typemap(ctype, noblock=1, out="SwigArrayWrapper", null="SwigArrayWrapper_uninitialized()", fragment="SwigArrayWrapper") const char* NATIVE {
+  SwigArrayWrapper*
+}
 
-%typemap(imtype, import="SwigArrayWrapper")  const char* NATIVE
-"type(SwigArrayWrapper)"
+%typemap(imtype, import="SwigArrayWrapper") const char* NATIVE
+  "type(SwigArrayWrapper)"
 
 // Fortran proxy code: return allocatable string
-%typemap(ftype, out="character(kind=C_CHAR, len=:), allocatable")
-  const char* NATIVE
-"character(kind=C_CHAR, len=*), target"
+%typemap(ftype, out="character(kind=C_CHAR, len=:), allocatable") const char* NATIVE
+  "character(kind=C_CHAR, len=*), target"
 
-%typemap(findecl) const char* NATIVE
-%{
-character(kind=C_CHAR), dimension(:), allocatable, target :: $1_chars
+%typemap(findecl) const char* NATIVE %{
+  character(kind=C_CHAR), dimension(:), allocatable, target :: $1_chars
 %}
 
-%typemap(fin, fragment="SWIG_string_to_chararray_f", noblock=1)
-  const char* NATIVE
-%{
-call SWIG_string_to_chararray($input, $1_chars, $1)
+%typemap(fin, fragment="SWIG_string_to_chararray_f", noblock=1) const char* NATIVE %{
+  call SWIG_string_to_chararray($input, $1_chars, $1)
 %}
 
 // Fortran proxy translation code: convert from char array to Fortran string
-%typemap(fout, fragment="SWIG_chararray_to_string_f") const char* NATIVE
-%{
-call SWIG_chararray_to_string($1, $result)
+%typemap(fout, fragment="SWIG_chararray_to_string_f") const char* NATIVE %{
+  call SWIG_chararray_to_string($1, $result)
 %}
 

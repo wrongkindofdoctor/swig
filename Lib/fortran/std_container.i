@@ -31,30 +31,33 @@
 FORT_ARRAYPTR_TYPEMAP(VTYPE, const ARRTYPE& NATIVE)
 
 // C input translation typemaps: $1 is SWIGPAIR__, $input is SwigArrayWrapper
-%typemap(in, noblock=1) const ARRTYPE& NATIVE (ARRTYPE temparr, VTYPE* tempbegin)
-  {tempbegin = static_cast<VTYPE*>($input->data);
-   temparr.assign(tempbegin, tempbegin + $input->size);
-   $1 = &temparr;
-   }
+%typemap(in, noblock=1) const ARRTYPE& NATIVE (ARRTYPE temparr, VTYPE* tempbegin) {
+  tempbegin = static_cast<VTYPE*>($input->data);
+  temparr.assign(tempbegin, tempbegin + $input->size);
+  $1 = &temparr;
+}
 
 // C output translation typemaps: $1 is vector<VTYPE>*, $input is SwigArrayWrapper
-%typemap(out) const ARRTYPE& NATIVE
-%{$result.data = ($1->empty() ? NULL : &(*$1->begin()));
+%typemap(out) const ARRTYPE& NATIVE %{
+  $result.data = ($1->empty() ? NULL : &(*$1->begin()));
   $result.size = $1->size();
-  %}
+%}
 
-%typemap(ftype, out={$typemap(imtype, VTYPE), dimension(:), allocatable},
-noblock=1) const ARRTYPE& NATIVE
-  {$typemap(imtype, VTYPE), dimension(:), target, intent(in)}
+%typemap(ftype, out={$typemap(imtype, VTYPE), dimension(:), allocatable}, noblock=1)
+    const ARRTYPE& NATIVE {
+  $typemap(imtype, VTYPE), dimension(:), target, intent(in)
+}
 
 // Fortran proxy translation code: convert from imtype $1 to ftype $result
-%typemap(foutdecl, noblock=1) const ARRTYPE& NATIVE
-{$typemap(imtype, VTYPE), pointer :: $1_view(:)}
+%typemap(foutdecl, noblock=1) const ARRTYPE& NATIVE {
+  $typemap(imtype, VTYPE), pointer :: $1_view(:)
+}
 
-%typemap(fout, noblock=1) const ARRTYPE& NATIVE
-{call c_f_pointer($1%data, $1_view, [$1%size])
- allocate($typemap(imtype, VTYPE) :: $result(size($1_view)))
- $result = $1_view}
+%typemap(fout, noblock=1) const ARRTYPE& NATIVE {
+  call c_f_pointer($1%data, $1_view, [$1%size])
+  allocate($typemap(imtype, VTYPE) :: $result(size($1_view)))
+  $result = $1_view
+}
 
 #undef VTYPE
 

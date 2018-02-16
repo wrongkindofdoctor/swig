@@ -7,14 +7,12 @@
 //---------------------------------------------------------------------------//
 
 %fragment("SwigArrayWrapper", "header") %{
-struct SwigArrayWrapper
-{
+struct SwigArrayWrapper {
     void* data;
     std::size_t size;
 };
 
-SWIGINTERN SwigArrayWrapper SwigArrayWrapper_uninitialized()
-{
+SWIGINTERN SwigArrayWrapper SwigArrayWrapper_uninitialized() {
     SwigArrayWrapper result;
     result.data = NULL;
     result.size = 0;
@@ -23,8 +21,7 @@ SWIGINTERN SwigArrayWrapper SwigArrayWrapper_uninitialized()
 %}
 
 // Add array wrapper to Fortran types when used
-%fragment("SwigArrayWrapper_f", "fpublic",
-          noblock="1") %{
+%fragment("SwigArrayWrapper_f", "fpublic", noblock="1") %{
 type, bind(C) :: SwigArrayWrapper
   type(C_PTR), public :: data = C_NULL_PTR
   integer(C_SIZE_T), public :: size = 0
@@ -45,24 +42,23 @@ end type
  * - Fortran in/out
  */
 %define FORT_ARRAYPTR_TYPEMAP(VTYPE, CPPTYPE...)
-  
   // C wrapper type: pointer to templated array wrapper
   %typemap(ctype, noblock=1, out="SwigArrayWrapper",
          null="SwigArrayWrapper_uninitialized()",
-         fragment="SwigArrayWrapper") CPPTYPE
-  {SwigArrayWrapper*}
+         fragment="SwigArrayWrapper") CPPTYPE {
+    SwigArrayWrapper*
+  }
   
   // Interface type: fortran equivalent of "ctype"
   // Since the type is declared in the module, it's necessary to use the
   // fortran "import" statement to bring it into scope.
-  %typemap(imtype, import="SwigArrayWrapper",
-           fragment="SwigArrayWrapper_f") CPPTYPE
-     "type(SwigArrayWrapper)"
+  %typemap(imtype, import="SwigArrayWrapper", fragment="SwigArrayWrapper_f") CPPTYPE
+    "type(SwigArrayWrapper)"
   
   // Fortran proxy code: input is target 1D array
-  %typemap(ftype, out={$typemap(imtype, VTYPE ), dimension(:), pointer},
-  noblock=1) CPPTYPE
-    {$typemap(imtype, VTYPE ), dimension(:), target}
+  %typemap(ftype, out={$typemap(imtype, VTYPE ), dimension(:), pointer}, noblock=1) CPPTYPE {
+    $typemap(imtype, VTYPE ), dimension(:), target
+  }
   
   // Fortran proxy translation code: convert from ftype $input to imtype $1
   // Note that we take the address of the first element instead of the array,
@@ -74,19 +70,18 @@ end type
   // arithmetic.
   // TODO: use the "CONTIGUOUS" attribute if f2008 is being used to guarantee
   // that we can get the C location of the input array directly.
-  %typemap(findecl, noblock=1) CPPTYPE
-    {$typemap(imtype, VTYPE ), pointer :: $1_view}
+  %typemap(findecl, noblock=1) CPPTYPE {
+    $typemap(imtype, VTYPE ), pointer :: $1_view
+  }
   
-  %typemap(fin) CPPTYPE
-  %{$1_view => $input(1)
+  %typemap(fin) CPPTYPE %{
+    $1_view => $input(1)
     $1%data = c_loc($1_view)
-    $1%size = size($input)%}
-  
-  // Fortran proxy translation code: convert from imtype 1 to ftype $result
-  %typemap(fout) CPPTYPE
-  %{
-    call c_f_pointer($1%data, $result, [$1%size])
+    $1%size = size($input)
   %}
   
+  // Fortran proxy translation code: convert from imtype 1 to ftype $result
+  %typemap(fout) CPPTYPE %{
+    call c_f_pointer($1%data, $result, [$1%size])
+  %}
 %enddef
-

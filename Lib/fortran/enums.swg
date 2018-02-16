@@ -19,18 +19,22 @@ end enum
 FORT_SIMPLE_TYPEMAP(enum SWIGTYPE, int, "integer(C_INT)");
 
 // Fortran input types look like enums
-%typemap(in, noblock=1) enum SWIGTYPE
-    {$1 = %static_cast(*$input, $1_ltype);}
-%typemap(out, noblock=1) enum SWIGTYPE
-    {$result = %static_cast($1, int);}
+%typemap(in, noblock=1) enum SWIGTYPE {
+  $1 = %static_cast(*$input, $1_ltype);
+}
+%typemap(out, noblock=1) enum SWIGTYPE {
+  $result = %static_cast($1, int);
+}
 %typemap(ftype, out="integer(kind($fenumname))") enum SWIGTYPE
-   "integer(kind($fenumname)), intent(in)"
+  "integer(kind($fenumname)), intent(in)"
 
-%typemap(in, noblock=1) const enum SWIGTYPE& ($*1_ltype temp)
-    {temp = %static_cast(*$input, $*1_ltype);
-     $1 = &temp;}
-%typemap(out, noblock=1) const enum SWIGTYPE&
-    {$result = %static_cast(*$1, int);}
+%typemap(in, noblock=1) const enum SWIGTYPE& ($*1_ltype temp) {
+  temp = %static_cast(*$input, $*1_ltype);
+  $1 = &temp;
+}
+%typemap(out, noblock=1) const enum SWIGTYPE& {
+  $result = %static_cast(*$1, int);
+}
 %typemap(ftype) const enum SWIGTYPE& = enum SWIGTYPE;
 
 #if 0
