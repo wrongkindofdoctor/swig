@@ -10,6 +10,7 @@ program main
     implicit none
     call test_bindc()
     call test_logical()
+    call test_strings()
 contains
 
 subroutine test_bindc()
@@ -45,6 +46,20 @@ subroutine test_logical()
     write(0, *) "Should be false:", ninp, "; should be true: ", noutp
 end subroutine
 
+subroutine test_strings()
+    use ISO_C_BINDING
+    use bindc
+    implicit none
+    integer :: i
+    character(len=:), allocatable :: str
+
+    do i = -1, 3
+        write(0, *) get_existing_string(i)
+    end do
+
+    str = concat("String a", "string b")
+    write(0, *) "Concatenated string: '"//str//"'"
+end subroutine
 end program
 
 !-----------------------------------------------------------------------------!

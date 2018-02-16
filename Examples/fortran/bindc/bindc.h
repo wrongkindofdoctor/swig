@@ -22,6 +22,10 @@ inline bool wrapped_negation(bool v) {
   return !v;
 }
 
+// String access
+const char* get_existing_string(int i);
+char* concat(const char* a, const char* b);
+
 extern "C" {
 //---------------------------------------------------------------------------//
 

@@ -3,8 +3,9 @@
 //---------------------------------------------------------------------------//
 // FRAGMENTS
 //---------------------------------------------------------------------------//
-// Return fortran allocatable array from assumed-length character string. Put a
-// null character *after* the string for compatibility with const char*.
+/* Return fortran allocatable array from assumed-length character string. Put a
+ * null character *after* the string for compatibility with const char*.
+ */
 %fragment("SWIG_string_to_chararray_f", "fwrapper", fragment="SwigArrayWrapper_f", noblock="1") %{
 subroutine SWIG_string_to_chararray(string, chars, wrap)
   use, intrinsic :: ISO_C_BINDING
@@ -70,6 +71,23 @@ end subroutine
   SwigArrayWrapper*
 }
 
+// Copy the output string (if owned) or reference it
+%typemap(out, fragment="<stdlib.h>", fragment="<cstring>") const char* NATIVE %{
+  $result.size = strlen($1);
+  if ($owner) {
+    $result.data = std::malloc($result.size);
+    memcpy($result.data, $1, $result.size);
+  } else {
+    $result.data = $1;
+  }
+%}
+
+// Since we add a final null character in SWIG_chararray_to_string_f, we can
+// just access the data directly.
+%typemap(in, noblock=1) const char* NATIVE {
+  $1 = %reinterpret_cast($input->data, $1_ltype);
+}
+
 %typemap(imtype, import="SwigArrayWrapper") const char* NATIVE
   "type(SwigArrayWrapper)"
 
@@ -86,7 +104,8 @@ end subroutine
 %}
 
 // Fortran proxy translation code: convert from char array to Fortran string
-%typemap(fout, fragment="SWIG_chararray_to_string_f") const char* NATIVE %{
+%typemap(fout, fragment="SWIG_chararray_to_string_f",
+         fragment="SWIG_free_f") const char* NATIVE %{
   call SWIG_chararray_to_string($1, $result)
+  if ($owner) call SWIG_free($1%data)
 %}
-

@@ -10,6 +10,7 @@
 
 #include "bindc.h"
 
+#include <cstring>
 #include <iostream>
 using std::cout;
 using std::endl;
@@ -20,6 +21,36 @@ using std::endl;
  */
 void wrapped_print_point(const Point *p) {
   cout << "{" << p->x << ',' << p->y << ',' << p->z << "}" << endl;
+}
+
+const char* get_existing_string(int i) {
+  if (i < 0)
+    return "I can't deal with negatives";
+
+  switch (i) {
+    case 0:
+      return "zero";
+    case 1:
+      return "one";
+  }
+  return "I can't count that high";
+}
+
+char* concat(const char* a, const char* b) {
+  using std::strlen;
+  using std::malloc;
+  int len_a = strlen(a);
+  int len_b = strlen(b);
+  char* result = static_cast<char*>(malloc(len_a + len_b + 2));
+  char* dst = result;
+  memcpy(dst, a, len_a);
+  dst += len_a;
+  *dst++ = '+';
+  memcpy(dst, b, len_b);
+  dst += len_b;
+  *dst++ = '\0';
+
+  return result;
 }
 
 //---------------------------------------------------------------------------//

@@ -1472,7 +1472,8 @@ int FORTRAN::proxyfuncWrapper(Node *n) {
   // conversion code
   if (Len(fbody) > 0) {
     Replaceall(fbody, "$result", swig_result_name);
-    Replaceall(fbody, "$owner", (GetFlag(n, "feature:new") ? "1" : "0"));
+    Replaceall(fbody, "$owner", (GetFlag(n, "feature:new")
+                                 ? ".true." : ".false."));
     this->replace_fclassname(cpp_return_type, fbody);
     Printv(ffunc->code, fbody, "\n", NULL);
   }
