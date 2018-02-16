@@ -70,6 +70,26 @@ roughly illustrates some of the differences between the two languages:
 | overloaded function              | generic interface           |
 | floating point number            | real                        |
 | fundamental type                 | intrinsic type              |
+| derived type                     | extended type               |
+
+## Identifiers
+
+C and C++ have different rules for identifiers (i.e. variable names, function
+names, class names) than Fortran. The following restrictions apply to Fortran
+that do not apply to C and C++:
+- Names are **case insensitive**
+- Names may not begin with an underscore
+- Names may be no longer than 63 characters
+
+SWIG automatically renames identifiers that start with a leading underscore. It
+keeps a symbol table of publicly accessible Fortran identifiers (as their
+lower-cased, renamed versions) and warns about and ignores duplicate names.
+
+There is also no "namespace" concept in Fortran 2003 aside from defining
+procedures and types in separate modules. (Fortran 2008 supports submodules, but
+these are more akin to private namespaces inside a translation unit in C++.)
+Keep in mind that the extremely flexible `%rename` directive can be used to
+adjust the symbolic names created in SWIG.
 
 ## Running SWIG
 
@@ -634,16 +654,40 @@ If the variable is defined in the header file and is a simple integer, this
 feature will be enabled by default. It can be explicitly enabled or disabled
 using the `%parameter` and `%noparameter` directives.
 
-
 ## Classes
 
 As mentioned previously, C++ classes are transformed to Fortran *derived
-types*. These types have *bound procedures* that mirror the C++ *member
-functions*. 
+types*. These types have *type-bound procedures* that mirror the C++ *member
+functions*.
 
 ### Member functions
 
+SWIG generates unique, private procedure names for each class and function.
+These procedures are bound to the type. If [function
+overloading](#function-overloading) is used, "generic" procedures will be added
+to the derived type.
+
+Type-bound procedures in Fortran can be used as follows:
+```fortran
+integer(C_INT) :: value
+type(Foo) :: food
+food = create_Foo()
+call food%do_something()
+value = food%get_something()
+```
+
 ### Member data
+
+Just like [global variables](#global-variables), SWIG generates member functions
+for getters and, when appropriate, setters. 
+
+```fortran
+type(Foo) :: f
+f = create_Foo()
+call food%set_val(123)
+value = food%get_something()
+```
+
 
 ### Constructors and Destructors
 
@@ -651,6 +695,31 @@ Because Fortran is not a stack-based language like C (where variables enter and
 leave scope by being pushed onto and popped off the memory stack), generally
 speaking all data are static -- they occupy the same location in memory,
 determined at compile time. 
+
+### Inheritance
+
+Single inheritance in C++ is mirrored by Fortran using the `EXTENDS` attribute.
+For classes with virtual methods, the user should keep in mind that function
+calls are dispatched through C++. In other words, even if you call a base-class
+member function in Fortran that wraps a derived class instance, the correct
+virtual function call will be dispatched.
+
+Fortran has no mechanism for multiple inheritance, so this SWIG target language
+does not support it. The first base class listed that has not been `%ignore`d
+will be treated as the single parent class.
+
+There is no intrinsic way to `dynamic_cast` to a daughter class, but
+if a particular casting operation is needed a small inline function can be
+created that should suffice:
+```swig
+%inline %{
+Derived& base_to_derived(Base& b) {
+    return dynamic_cast<Derived&>(b);
+}
+%}
+```
+(Note that this function will *not* transfer ownership to the new object. Doing
+that is outside the scope of this chapter.)
 
 ## Exceptions
 
@@ -705,8 +774,7 @@ customization.
 
 Consider a vector-like C++ class:
 ```c++
-class Array
-{
+class Array {
 public:
   double* data();
   int size();
@@ -1105,7 +1173,6 @@ another layer of wrapping using the `%feature("shadow")` macro. The
 special symbol `$action` will be replaced with the usual invocation.
 
 # Advanced
-
 
 ## Fragments
 
