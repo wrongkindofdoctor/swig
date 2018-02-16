@@ -14,66 +14,59 @@
 #include <vector>
 
 template<typename T>
-class ThinVec
-{
-  public:
-    typedef int size_type;
-    typedef T            value_type;
-    typedef T*           pointer;
-    typedef const T*     const_pointer;
-    typedef std::pair<pointer, std::size_t> view_type;
-    typedef std::pair<const_pointer, std::size_t> const_view_type;
+class ThinVec {
+public:
+  typedef int size_type;
+  typedef T value_type;
+  typedef T *pointer;
+  typedef const T *const_pointer;
+  typedef std::pair<pointer, std::size_t> view_type;
+  typedef std::pair<const_pointer, std::size_t> const_view_type;
 
-    typedef typename std::vector<T>::iterator iterator;
-    typedef typename std::vector<T>::const_iterator const_iterator;
-  private:
-    std::vector<T> d_data;
+  typedef typename std::vector<T>::iterator iterator;
+  typedef typename std::vector<T>::const_iterator const_iterator;
 
-  public:
-    // Constructors
-    ThinVec()
-        : d_data()
-    { /* * */ }
+private:
+  std::vector<T> d_data;
 
-    ThinVec(size_type count, value_type fillval = 0)
-        : d_data(count, fillval)
-    { /* * */ }
+public:
+  // Constructors
+  ThinVec() : d_data() { /* * */
+  }
 
-    // Accessors
-    bool empty() const
-    { return d_data.empty(); }
+  ThinVec(size_type count, value_type fillval = 0) : d_data(count, fillval) { /* * */
+  }
 
-    size_type size() const
-    { return d_data.size(); }
+  // Accessors
+  bool empty() const { return d_data.empty(); }
 
-    const value_type& get(size_type index) const
-    { return d_data.at(index); }
+  size_type size() const { return d_data.size(); }
 
-    void set(size_type index, const value_type& val)
-    { d_data.at(index) = val; }
+  const value_type &get(size_type index) const { return d_data.at(index); }
 
-    void resize(size_type newsize, value_type fillval = T())
-    { d_data.resize(newsize, fillval); }
+  void set(size_type index, const value_type &val) { d_data.at(index) = val; }
 
-    void assign(const_view_type arr);
+  void resize(size_type newsize, value_type fillval = T()) { d_data.resize(newsize, fillval); }
 
-    view_type view();
+  void assign(const_view_type arr);
 
-    const std::vector<T>& data() const { return d_data; }
+  view_type view();
+
+  const std::vector<T> &data() const { return d_data; }
 #ifndef SWIG
-    iterator begin() { return d_data.begin(); }
-    iterator end() { return d_data.end(); }
-    const_iterator begin() const { return d_data.begin(); }
-    const_iterator end() const { return d_data.end(); }
+  iterator begin() { return d_data.begin(); }
+  iterator end() { return d_data.end(); }
+  const_iterator begin() const { return d_data.begin(); }
+  const_iterator end() const { return d_data.end(); }
 #endif
 };
 
 template<typename T>
-void print_vec(const ThinVec<T>& v);
+void print_vec(const ThinVec<T> &v);
 
-void print_offbyone(const ThinVec<int>& INDICES);
+void print_offbyone(const ThinVec<int> &INDICES);
 
-#endif // thinvec_ThinVec_hh
+#endif                                 // thinvec_ThinVec_hh
 
 //---------------------------------------------------------------------------//
 // end of swig-dev/thinvec/ThinVec.h

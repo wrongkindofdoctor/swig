@@ -13,26 +13,28 @@
 
 // C-bound struct
 struct Point {
-    float x, y, z;
+  float x, y, z;
 };
 
 // Wrapped functions
-void wrapped_print_point(const Point* p);
-inline bool wrapped_negation(bool v) { return !v; }
+void wrapped_print_point(const Point *p);
+inline bool wrapped_negation(bool v) {
+  return !v;
+}
 
 extern "C" {
 //---------------------------------------------------------------------------//
 
 // These functions are simply bound, not wrapped.
-void make_point(Point* pt, const double xyz[3]);
-void print_sphere(const Point* origin, const double* radius);
+void make_point(Point *pt, const double xyz[3]);
+void print_sphere(const Point *origin, const double *radius);
 bool bound_negation(bool v);
 
 //---------------------------------------------------------------------------//
-} // end extern
+}                                 // end extern
 
 //---------------------------------------------------------------------------//
-#endif // bindc_bindc_hh
+#endif                                 // bindc_bindc_hh
 
 //---------------------------------------------------------------------------//
 // end of bindc/bindc.h

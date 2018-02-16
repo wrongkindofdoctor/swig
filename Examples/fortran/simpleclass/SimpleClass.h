@@ -12,10 +12,9 @@
 #define simpleclass_SimpleClass_hh
 
 //! Simple public struct; generate accessors for it
-struct BasicStruct
-{
-    int    foo;
-    double bar;
+struct BasicStruct {
+  int foo;
+  double bar;
 };
 
 //===========================================================================//
@@ -25,59 +24,59 @@ struct BasicStruct
  */
 //===========================================================================//
 
-class SimpleClass
-{
-  public:
-    typedef int  storage_type;
-    typedef int  multiple_type;
+class SimpleClass {
+public:
+  typedef int storage_type;
+  typedef int multiple_type;
 
-  private:
-    // >>> DATA
+private:
+  // >>> DATA
 
-    int d_id;
-    storage_type d_storage;
+  int d_id;
+  storage_type d_storage;
 
-  public:
+public:
+  //! Constructor
+  SimpleClass();
 
-    //! Constructor
-    SimpleClass();
+  //! Copy constructor
+  SimpleClass(const SimpleClass &rhs);
 
-    //! Copy constructor
-    SimpleClass(const SimpleClass& rhs);
+  //! assignment
+  SimpleClass &operator=(const SimpleClass &rhs);
 
-    //! assignment
-    SimpleClass& operator=(const SimpleClass& rhs);
+  //! Other constructor
+  explicit SimpleClass(double d);
 
-    //! Other constructor
-    explicit SimpleClass(double d);
+  //! Destructor
+  ~SimpleClass();
 
-    //! Destructor
-    ~SimpleClass();
+  //! Set the value
+  void set(storage_type val);
 
-    //! Set the value
-    void set(storage_type val);
+  //! Multiply the value by 2
+  void double_it();
 
-    //! Multiply the value by 2
-    void double_it();
+  //! Access the value
+  storage_type get() const;
 
-    //! Access the value
-    storage_type get() const;
+  //! Access the ID
+  int id() const { return d_id; }
 
-    //! Access the ID
-    int id() const { return d_id; }
+  //! templated function
+  template<class T>
+  void action(T &val) {
+    val *= d_storage;
+  }
 
-    //! templated function
-    template<class T>
-    void action(T& val) { val *= d_storage; }
-
-    //! Access the value, multiplied by some parameter
-    storage_type get_multiplied(multiple_type multiple) const;
+  //! Access the value, multiplied by some parameter
+  storage_type get_multiplied(multiple_type multiple) const;
 };
 
 // Typemaps to make it a little more complicated
-typedef SimpleClass* SC_Ptr;
-typedef SimpleClass& SC_Ref;
-typedef const SimpleClass& const_SC_Ref;
+typedef SimpleClass *SC_Ptr;
+typedef SimpleClass &SC_Ref;
+typedef const SimpleClass &const_SC_Ref;
 
 //! Free function
 void print_value(const_SC_Ref c);
@@ -94,10 +93,10 @@ const_SC_Ref get_class();
 //! Pass class as a parameter
 void set_class_by_copy(SimpleClass c);
 
-void print_struct(const BasicStruct& s);
+void print_struct(const BasicStruct &s);
 
 //---------------------------------------------------------------------------//
-#endif // simpleclass_SimpleClass_hh
+#endif                                 // simpleclass_SimpleClass_hh
 
 //---------------------------------------------------------------------------//
 // end of simple_class/SimpleClass.h

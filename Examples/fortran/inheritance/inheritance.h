@@ -2,47 +2,47 @@
 #include <vector>
 
 class BaseClass {
-   public:
-    BaseClass();
-    BaseClass(int i_in);
-    virtual ~BaseClass();
+public:
+  BaseClass();
+  BaseClass(int i_in);
+  virtual ~BaseClass();
 
-    virtual float foo() const = 0;
+  virtual float foo() const = 0;
 
-    int get_i() const { return _i; }
+  int get_i() const { return _i; }
 
-    void set_i(int i) {
-        _i = i;
-        return;
-    }
+  void set_i(int i) {
+    _i = i;
+    return;
+  }
 
-   private:
-    int _i;
+private:
+  int _i;
 };
 
 class DerivedA : public BaseClass {
-   public:
-    DerivedA();
-    DerivedA(int i, float f);
-    virtual ~DerivedA();
+public:
+  DerivedA();
+  DerivedA(int i, float f);
+  virtual ~DerivedA();
 
-    float foo() const;
+  float foo() const;
 
-    void print() const;
+  void print() const;
 
-   private:
-    float _f;
-    std::vector<int> _data;
+private:
+  float _f;
+  std::vector<int> _data;
 };
 
 class DerivedB : public BaseClass {
-   public:
-    DerivedB();
-    DerivedB(int i, int i2);
-    virtual ~DerivedB();
+public:
+  DerivedB();
+  DerivedB(int i, int i2);
+  virtual ~DerivedB();
 
-    float foo() const;
+  float foo() const;
 
-   private:
-    int _i2;
+private:
+  int _i2;
 };

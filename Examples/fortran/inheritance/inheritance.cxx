@@ -21,7 +21,7 @@ DerivedA::DerivedA() : _f(-1.0), _data() {
 
 DerivedA::DerivedA(int i, float f) : BaseClass(i), _f(f), _data(i, 0) {
   std::cout << "DerivedA::DerivedA(int, float)\n";
-  for(int ii=0; ii<i; ii++) {
+  for (int ii = 0; ii < i; ii++) {
     _data[ii] = ii;
   }
   return;
@@ -32,10 +32,12 @@ DerivedA::~DerivedA() {
   return;
 }
 
-float DerivedA::foo() const { return BaseClass::get_i() * _f; }
+float DerivedA::foo() const {
+  return BaseClass::get_i() * _f;
+}
 
 void DerivedA::print() const {
-  for( const auto &v: _data ) {
+  for (const auto &v : _data) {
     std::cout << v << " ";
   }
   std::cout << "\n";
@@ -54,4 +56,6 @@ DerivedB::~DerivedB() {
   std::cout << "DerivedB::~DerivedB()\n";
   return;
 }
-float DerivedB::foo() const { return BaseClass::get_i() * _i2 * 2; }
+float DerivedB::foo() const {
+  return BaseClass::get_i() * _i2 * 2;
+}
