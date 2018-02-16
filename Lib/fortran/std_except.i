@@ -16,9 +16,9 @@
   try {
     // Attempt the wrapped function call
     $action
-  }
-  SWIG_CATCH_STDEXCEPT // catch std::exception
-  catch (...) {
+  } catch (std::exception& e) {
+    SWIG_exception(SWIG_RuntimeError, e.what() );
+  } catch (...) {
     SWIG_exception(SWIG_UnknownError, "An unknown exception occurred");
   }
 }
@@ -36,9 +36,9 @@
 
 %include <exception.i>
 
-  //---------------------------------------------------------------------------//
-  // Exception mapping
-  //---------------------------------------------------------------------------//
+//---------------------------------------------------------------------------//
+// Exception mapping
+//---------------------------------------------------------------------------//
 %define %std_exception_map(Exception, Code)
 %typemap(throws, noblock = 1) Exception {
   SWIG_exception(Code, $1.what());

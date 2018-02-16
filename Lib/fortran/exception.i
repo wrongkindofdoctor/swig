@@ -6,14 +6,16 @@
  * \note   Copyright (c) 2017 Oak Ridge National Laboratory, UT-Battelle, LLC.
  *
  * This file is automatically included when the user loads <std_except.i>.
- * Since it's also loaded by constraints.i,
- *
+ * Since it's also loaded by constraints.i, it must be compatible with C as
+ * well.
  */
 //---------------------------------------------------------------------------//
 
 // Allow the user to change the name of the error flag on the fortran side
 #ifndef SWIG_FORTRAN_ERROR_INT
 #define SWIG_FORTRAN_ERROR_INT ierr
+#endif
+#ifndef SWIG_FORTRAN_ERROR_STR
 #define SWIG_FORTRAN_ERROR_STR get_serr
 #endif
 
