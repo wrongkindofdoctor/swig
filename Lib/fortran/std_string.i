@@ -12,34 +12,6 @@
 %fragment("<string>");
 
 //---------------------------------------------------------------------------//
-// FRAGMENTS
-//---------------------------------------------------------------------------//
-/* When returning a std::string by value, store it in this temporary memory
- * space so that it's still allocated when the Fortran wrapper code converts it.
- */
-%fragment("SWIG_store_string", "header", fragment="SwigArrayWrapper", fragment="<string>") %{
-  SWIGINTERN SwigArrayWrapper SWIG_store_string(const std::string &str) {
-    static std::string *temp = NULL;
-    SwigArrayWrapper result;
-    if (str.empty()) {
-      // Result is empty
-      result.data = NULL;
-      result.size = 0;
-    } else {
-      if (!temp) {
-        // Allocate a new temporary string
-        temp = new std::string(str);
-      } else {
-        // Assign the string
-        *temp = str;
-      }
-      result.data = &(*(temp->begin()));
-      result.size = temp->size();
-    }
-    return result;
-  }
-%}
-//---------------------------------------------------------------------------//
 // TYPEMAPS
 //---------------------------------------------------------------------------//
 // Optional string typemaps for native fortran conversion.
@@ -51,8 +23,13 @@
 // Fortran side treats like regular strings
 %apply const char *NATIVE{ const std::string & NATIVE };
 
+// Fortran proxy translation code: convert from char array to Fortran string
+%typemap(fout, fragment="SWIG_chararray_to_string_f") const std::string &NATIVE %{
+  call SWIG_chararray_to_string($1, $result)
+%}
+
 // C input translation typemaps: $1 is std::string*, $input is SwigArrayWrapper
-%typemap(in) const std::string &NATIVE(std::string tempstr) %{
+%typemap(in) const std::string &NATIVE (std::string tempstr) %{
   tempstr = std::string(static_cast<const char *>($input->data), $input->size);
   $1 = &tempstr;
 %}
@@ -62,12 +39,23 @@
   $result.data = ($1->empty() ? NULL : &(*$1->begin()));
   $result.size = $1->size();
 %}
+
 // RETURN BY VALUE
 %apply const std::string &NATIVE{ std::string NATIVE };
+%feature("novaluewrapper") std::string;
 
-// Copy the string to a temporary buffer
-%typemap(out, fragment = "SWIG_store_string") std::string NATIVE %{
-  $result = SWIG_store_string($1);
+// Copy the string to a temporary buffer (not null-terminated)
+%typemap(out, fragment="<stdlib.h>", fragment="<cstring>") std::string NATIVE %{
+  $result.size = $1.size();
+  $result.data = std::malloc($result.size);
+  memcpy($result.data, $1.c_str(), $result.size);
+%}
+
+// Fortran proxy translation code: convert from char array to Fortran string
+%typemap(fout, fragment="SWIG_chararray_to_string_f",
+         fragment="SWIG_free_f") std::string NATIVE %{
+  call SWIG_chararray_to_string($1, $result)
+  call SWIG_free($1%data)
 %}
 
 //---------------------------------------------------------------------------//

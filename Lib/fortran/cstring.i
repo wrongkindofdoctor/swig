@@ -52,6 +52,15 @@ subroutine SWIG_chararray_to_string(wrap, string)
 end subroutine
 %}
 
+// Generate a wrapper function for cstdlib's 'free' memory function
+%fragment("SWIG_free_f", "finterfaces", fragment="<stdlib.h>") %{
+subroutine SWIG_free(ptr) &
+  bind(C, name="free")
+ use, intrinsic :: ISO_C_BINDING
+ type(C_PTR), value :: ptr
+end subroutine
+%}
+
 //---------------------------------------------------------------------------//
 // TYPEMAPS
 //---------------------------------------------------------------------------//

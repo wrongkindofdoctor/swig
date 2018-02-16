@@ -263,7 +263,6 @@ struct AssignmentTraits {
 %}
 
 %fragment("SWIG_assign_impl", "header", fragment="SwigClassWrapper", fragment="swig::AssignmentTraits") %{
-
 template<class T1, class T2, int AFlags>
 SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other) {
   typedef swig::AssignmentTraits<T1, AFlags> Traits_t;
@@ -389,10 +388,8 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
 /* Assignment: left = right */
 %fragment("SWIG_assign", "runtime",
           fragment="SWIG_assign_impl") %{
-
 #define SWIG_assign(LEFTTYPE, LEFT, RIGHTTYPE, RIGHT, FLAGS) \
     SWIG_assign_impl(LEFT, RIGHT, sizeof(LEFTTYPE));
-
 %}
 
 %fragment("SWIG_assign");
