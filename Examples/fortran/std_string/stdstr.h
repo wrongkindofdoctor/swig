@@ -19,7 +19,7 @@ void halve_str(std::string &s);
 
 std::string get_reversed_native_string(const std::string &input);
 
-#endif                                 // std_string_stdstr_hh
+#endif
 
 //---------------------------------------------------------------------------//
 // end of std_string/stdstr.h

@@ -40,8 +40,9 @@ public:
   const Foo *ptr() const { return this; }
 };
 
-int use_count(const std::shared_ptr<Foo> &f) {
-  return f.use_count();
+int use_count(const std::shared_ptr<Foo> *f) {
+  if (!f) return 0;
+  return f->use_count();
 }
 void print_crsp(const std::shared_ptr<Foo> &f);
 void print_sp(std::shared_ptr<Foo> f);

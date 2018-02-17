@@ -41,14 +41,19 @@
 %}
 
 // RETURN BY VALUE
-%apply const std::string &NATIVE{ std::string NATIVE };
+%apply const std::string &NATIVE { std::string NATIVE };
+
 %feature("novaluewrapper") std::string;
 
 // Copy the string to a temporary buffer (not null-terminated)
 %typemap(out, fragment="<stdlib.h>", fragment="<cstring>") std::string NATIVE %{
   $result.size = $1.size();
-  $result.data = std::malloc($result.size);
-  memcpy($result.data, $1.c_str(), $result.size);
+  if ($result.size > 0) {
+    $result.data = std::malloc($result.size);
+    memcpy($result.data, $1.c_str(), $result.size);
+  } else {
+    $result.data = NULL;
+  }
 %}
 
 // Fortran proxy translation code: convert from char array to Fortran string
