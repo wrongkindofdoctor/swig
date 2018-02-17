@@ -309,17 +309,25 @@ FORT_FUND_TYPEMAP(char       , "character(C_CHAR)"   )
  * the values being passed back and forth don't exceed the range of the signed
  * values (or ensure that values being passed to C++ aren't negative). However,
  * since some sentinel values are deliberately defined as e.g.
- * \code static_cast<unsigned int> foo(-1); \endcode we don't want to do this
- * by default.
-
- * Note: ssize_t is defined in <sys/types.h> and isn't part of the standard, 
+ * \code
+ * foo = static_cast<unsigned int>(-1);
+ * \endcode
+ * we don't want to do this by default.
+ *
+ * Note that according to the Fortran standard "the C type unsigned char is
+ * interoperable with the type integer with a kind type parameter of
+ * C_SIGNED_CHAR".
+ *
+ * Note: ssize_t is defined in <sys/types.h> and isn't part of the standard.
+ *
+ * Because `FORT_FUND_TYPEMAP` creates all the derivative types and `%apply`
+ * copies a single type, we explicitly remap these.
  */
 FORT_FUND_TYPEMAP(unsigned char     , "integer(C_SIGNED_CHAR)");
 FORT_FUND_TYPEMAP(unsigned short    , "integer(C_SHORT)");
 FORT_FUND_TYPEMAP(unsigned int      , "integer(C_INT)");
 FORT_FUND_TYPEMAP(unsigned long     , "integer(C_LONG)");
 FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)");
-// XXX: use %apply or at least FORT_COPY_TYPEMAPS for these??
 
 //---------------------------------------------------------------------------//
 // LOGICAL (BOOLEAN) TYPE
