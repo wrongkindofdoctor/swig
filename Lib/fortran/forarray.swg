@@ -13,10 +13,10 @@ struct SwigArrayWrapper {
 };
 
 SWIGINTERN SwigArrayWrapper SwigArrayWrapper_uninitialized() {
-    SwigArrayWrapper result;
-    result.data = NULL;
-    result.size = 0;
-    return result;
+  SwigArrayWrapper result;
+  result.data = NULL;
+  result.size = 0;
+  return result;
 }
 %}
 
@@ -26,6 +26,15 @@ type, bind(C) :: SwigArrayWrapper
   type(C_PTR), public :: data = C_NULL_PTR
   integer(C_SIZE_T), public :: size = 0
 end type
+%}
+
+// Generate a wrapper function for cstdlib's 'free' memory function
+%fragment("SWIG_free_f", "finterfaces", fragment="<stdlib.h>") %{
+subroutine SWIG_free(ptr) &
+  bind(C, name="free")
+ use, intrinsic :: ISO_C_BINDING
+ type(C_PTR), value :: ptr
+end subroutine
 %}
 
 //---------------------------------------------------------------------------//
@@ -56,8 +65,8 @@ end type
     "type(SwigArrayWrapper)"
   
   // Fortran proxy code: input is target 1D array
-  %typemap(ftype, out={$typemap(imtype, VTYPE ), dimension(:), pointer}, noblock=1) CPPTYPE {
-    $typemap(imtype, VTYPE ), dimension(:), target
+  %typemap(ftype, out={$typemap(imtype, VTYPE), dimension(:), pointer}, noblock=1) CPPTYPE {
+    $typemap(imtype, VTYPE), dimension(:), target
   }
   
   // Fortran proxy translation code: convert from ftype $input to imtype $1
@@ -71,7 +80,7 @@ end type
   // TODO: use the "CONTIGUOUS" attribute if f2008 is being used to guarantee
   // that we can get the C location of the input array directly.
   %typemap(findecl, noblock=1) CPPTYPE {
-    $typemap(imtype, VTYPE ), pointer :: $1_view
+    $typemap(imtype, VTYPE), pointer :: $1_view
   }
   
   %typemap(fin) CPPTYPE %{

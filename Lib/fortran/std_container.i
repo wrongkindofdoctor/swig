@@ -59,6 +59,28 @@ FORT_ARRAYPTR_TYPEMAP(VTYPE, const ARRTYPE& NATIVE)
   $result = $1_view
 }
 
+// Return by value: allocate data and free it
+%apply const ARRTYPE& NATIVE { ARRTYPE NATIVE };
+
+// Copy the string to a temporary buffer (not null-terminated)
+%typemap(out, fragment="<stdlib.h>", fragment="<cstring>", noblock=1) ARRTYPE NATIVE {
+  $result.size = $1.size();
+  if ($result.size > 0) {
+    $result.data = std::malloc($result.size * sizeof(VTYPE));
+    memcpy($result.data, &($1[0]), $result.size * sizeof(VTYPE));
+  } else {
+    $result.data = NULL;
+  }
+}
+
+// Fortran proxy translation code: copy array pointer and free the original data
+%typemap(fout, fragment="SWIG_free_f", noblock=1) ARRTYPE NATIVE {
+  call c_f_pointer($1%data, $1_view, [$1%size])
+  allocate($typemap(imtype, VTYPE) :: $result(size($1_view)))
+  $result = $1_view
+  call SWIG_free($1%data)
+}
+
 #undef VTYPE
 
 %enddef

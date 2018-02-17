@@ -21,6 +21,7 @@ std::pair<T *, size_t> make_view(std::vector<T> &v) {
     return {};
   return { v.data(), v.size() };
 }
+
 //---------------------------------------------------------------------------//
 template<class T>
 std::pair<const T *, size_t> make_const_view(const std::vector<T> &v) {
@@ -30,14 +31,16 @@ std::pair<const T *, size_t> make_const_view(const std::vector<T> &v) {
 }
 
 //---------------------------------------------------------------------------//
-
 template<class T>
 void print_vec(const std::vector<T> &v);
 
 //---------------------------------------------------------------------------//
-
 template<class T>
 void print_view(std::pair<const T *, size_t> view);
+
+//---------------------------------------------------------------------------//
+inline std::vector<double>& as_array_ptr(std::vector<double>& inp)
+{ return inp; }
 
 //---------------------------------------------------------------------------//
 template<class T>

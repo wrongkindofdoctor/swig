@@ -11,7 +11,7 @@ program main
     use, intrinsic :: ISO_C_BINDING
     use stdvec, only : make_view => make_const_viewdbl, &
         print_view => print_viewdbl, VecDbl, get_vec => get_vecdbl, &
-        create_vecdbl
+        create_vecdbl, as_array_ptr, make_array
     implicit none
     type(VecDbl) :: v
     integer :: i
@@ -42,6 +42,9 @@ program main
     write(0, *) "Printing from array pointer"
     call print_view(vview)
 
+    vview => as_array_ptr(v)
+    write(0, *) "also as array pointer:", vview
+
     write(0, *) "Printing from test data"
     call print_view(test_dbl)
 
@@ -53,6 +56,8 @@ program main
     write(0, *) "Printing copied data"
     call print_view(local_vec)
 
+    local_vec = make_array()
+    write(0, *) "Return-by-value vector:", local_vec
 end program
 
 !-----------------------------------------------------------------------------!
