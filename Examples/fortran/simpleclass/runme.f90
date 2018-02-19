@@ -1,5 +1,6 @@
 ! File : runme.f90
 
+#define ASSERT(COND) if (.not. (COND)) stop 1
 program main
   implicit none
   call test_simple_class_memory()
@@ -50,17 +51,20 @@ subroutine test_simple_class_memory()
   ! Copy construct ideally
   write(0, *) "Copying class "
   copied = orig
-  write(0, *) "Orig/copied: should be 12/1"
-  write(0,*) "is", copied%id(), "/", orig%id()
+  write(0, *) "Orig/copied: ", copied%id(), "/", orig%id()
+  ASSERT(copied%id() == 12)
+  ASSERT(orig%id() == 1)
 
   ! Assign to an already-created instance
   write(0, *) "Assigning"
   orig = create_SimpleClass_dbl(3.0d0)
   assigned = orig
   call orig%set(4)
-  write(0, *) "Orig/assigned: should be 4/3"
+  write(0, *) "Orig/assigned:"
   call print_value(orig)
   call print_value(assigned)
+  ASSERT(orig%get() == 4)
+  ASSERT(assigned%get() == 3)
 
   ! Get a class by const reference; it should fail if you try to modify it
   constref = get_class()
