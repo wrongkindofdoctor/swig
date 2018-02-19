@@ -3,10 +3,9 @@ This document is formatted with [Github-flavored
 Markdown](https://github.github.com/gfm/)
 
 Run with:
-    pandoc --from=gfm+smart  --metadata title="SWIG and Fortran" \
+    pandoc --from=gfm+smart  -M title:"SWIG and Fortran" \
+    -M author:"Seth R Johnson" \
     --toc --standalone -H style.css -o ../Fortran.html Fortran.md
-
-Authored by Seth R Johnson
 -->
 
 # Overview 
@@ -74,6 +73,7 @@ presents some essentially equivalent concepts and names in the two languages:
 | fundamental type                 | intrinsic type              |
 | derived type                     | extended type               |
 | class instance                   | structure                   |
+| parameter list                   | dummy arguments             |
 
 ## Identifiers
 
@@ -591,9 +591,13 @@ that translates native Fortran data types to and from the C interface
 datatypes. This interface, and not the `swigc_$symname` bound function, is the
 one used by Fortran application codes.
 
+## Function overloading
+
 There is an important exception to the naming scheme described above:
-overloaded functions in C++ create private procedures
-suffixed with unique strings. These procedures are then combined under a
+function overloading, when two or more free functions share a name but have
+different arguments. 
+For each overloaded function signature, SWIG generates a private procedure with
+a unique symname. These procedures are then combined under a
 *separate module procedure* that is given a public interface with the original
 symbolic name. For example, an overloaded free function `myfunc` in C++ will
 generate two private procedures and add an interface to the module
@@ -603,6 +607,16 @@ specification:
  interface myfunc
   module procedure myfunc__SWIG_0, myfunc__SWIG_1
  end interface
+```
+
+It should be noted that a function that returns `void` cannot be overloaded
+with a function that returns anything else: generic interfaces must be either
+all subroutines or all functions. Use SWIG's `%ignore` statement to hide one or
+the other:
+```swig
+void cannot_overload(int x);
+int  cannot_overload(int x, int y);
+%ignore cannot_overload(int x);
 ```
 
 ## Global variables
@@ -834,6 +848,13 @@ the C address of a dynamic-length string.
 Improved support for the various character typemaps and representations (as in
 the standard SWIG `<cstring.i>` which provides `%cstring_bounded_output`) could
 be implemented in a later version of SWIG.
+
+Note: it seems that some Fortran compilers (gfortran 5.5) emit a spurious
+warning when assigning an allocatable string returned by one of these
+functions:
+```
+Warning: '.str' may be used uninitialized in this function [-Wmaybe-uninitialized]
+```
 
 ## Std::string
 
@@ -1095,35 +1116,52 @@ memory, and an enumeration that tracks the ownership of that memory.
 
 ## Constructors and Destructors
 
-Because Fortran is not a stack-based language like C (where variables enter and
-leave scope by being pushed onto and popped off the memory stack), generally
-speaking the storage duration of *all* data (functions, arrays) is static,
-where their location in memory is determined at compile/link time. And, unlike
-C++, there is no static initialization of objects.
+In C++, the allocation and initialization of a class instance is (almost
+without exception) performed effectively simultaneously using a constructor.
+The initialization can be arbitrarily complex, and since the constructor can be
+overloaded, the instance can be allocated and initialized by several different
+code paths. In Fortran, initialization can only assign simple scalars and set
+pointers to null. 
 
-Consequently, the concept of "scope" for an object does not translate directly
-to Fortran, and construction/destruction is performed manually. Because of
-limitations in [function overloading](#function-overloading) with
-[inheritance](#inheritance), it is not generally possible to provide a
-type-bound procedure that mirrors the C++ constructors. The design decision was
-made to treat construction through procedures *not* bound to a type. The
+Because of limitations in [function overloading](#function-overloading) with
+[inheritance](#inheritance) in Fortran, it is not generally possible to provide
+type-bound procedures that mirror the C++ constructors.
+The design decision was
+made to construct objects by calling procedures *not* bound to a type. The
 constructor is wrapped as `create_{symname}`:
 ```fortran
 type(Foo) :: f
 type(Foo) :: g
 f = create_Foo()
 g = create_Foo(123)
+call f%do_something()
+call g%do_something_else()
 ```
 
-Freeing memory and cleaning up the associated C++ class is done by calling the
-`release` procedure on the Fortran object.
+Even though the Fortran 2003 standard specifies when local variables become
+*undefined* (and are *finalized* if they have a `FINAL` subroutine), support
+for finalization in even the latest compilers is not entirely reliable. Rather
+than relying on the finalization mechanics to clean up and free a C++ object,
+destructors for the C++ wrappers wrapped as a `release` procedure:
 ```fortran
 call f%release()
 call g%release()
 ```
-To be safe, `release` should always be called when the proxy instance is no
-longer needed. It will free memory if appropriate and reset the C pointer to
-`NULL`.
+To avoid leaking memory, `release` should *always* be called when the proxy
+class instance is no longer needed. It will free memory if appropriate and
+reset the C pointer to `NULL`. Calling `release` on an uninitialized variable
+(or a variable that has been released) is a null-op.
+
+Because Fortran 2003 does specify support for a special `FINAL` procedure to
+clean up local or dynamic variables, the call to `release()` can be replaced by
+adding a `FINAL` procedure. The SWIG Fortran interface can generate this
+procedure, which will call the C++ destructor:
+```swig
+%feature("final") Foo;
+%include "Foo.h"
+```
+**However**, this feature is relatively untested and its behavior could be
+compiler-dependent, so extreme caution is recommended when enabling it.
 
 ## Member functions
 
@@ -1132,7 +1170,8 @@ These procedures are bound to the type. If [function
 overloading](#function-overloading) is used, "generic" procedures will be added
 to the derived type.
 
-Type-bound procedures in Fortran can be used as follows:
+Type-bound procedures in Fortran proxy classes are treated exactly the same as
+for native derived types:
 ```fortran
 integer(C_INT) :: value
 type(Foo) :: food
@@ -1140,12 +1179,34 @@ food = create_Foo()
 call food%do_something()
 value = food%get_something()
 ```
+Function overloading for derived types is implemented using *generic
+interfaces*. Each overloaded function gets a unique internal symname, and they
+are bound together in a generic interface. For example, if a member function
+`doit` of class `Action` is overloaded, a generic binding will be generated
+inside the Fortran proxy derived type:
+```fortran
+  procedure, private :: doit__SWIG_0 => swigf_Action_doit__SWIG_0
+  procedure, private :: doit__SWIG_1 => swigf_Action_doit__SWIG_1
+  generic :: doit => doit__SWIG_0, doit__SWIG_1
+```
+
+As with [free functions](#function-overloading), a member function returning
+`void` cannot be overloaded with a function returning non-void.
 
 ## Member data
 
-Just like [global variables](#global-variables), SWIG generates member functions
-for getters and, when appropriate, setters. 
+SWIG generates member functions for class member data in the same way that it
+generates free functions for [global variables](#global-variables). Each public
+member produces a "getter", and unless the data is marked `const`, it
+generates a "setter". 
 
+For a struct
+```c++
+struct Foo {
+  int val;
+};
+```
+the interface to an instance and its data is:
 ```fortran
 type(Foo) :: f
 f = create_Foo()
@@ -1178,23 +1239,31 @@ Derived& base_to_derived(Base& b) {
 (Note that this function will *not* transfer ownership to the new object. Doing
 that is outside the scope of this chapter.)
 
+The implementation of [function overloading](#function-overloading) in the
+Fortran types can cause compiler errors when member functions are *shadowed* or
+*overridden* in a daughter class. First, Fortran requires essentially that
+overriding procedures must have the exact same function signature *including
+the names of the dummy arguments*. Overriding functions in C++ merely require
+the same parameter types. Second, Fortran does not allow a procedure in a
+parent type to be "shadowed" by the extending type as C++ does. Finally,
+a non-generic procedure in the parent type cannot be shadowed by a generic
+procedure.
+
 ## Memory management
 
-For reasons of simplicity, a single Fortran proxy class must be able to act as a
-value, a pointer, or a reference. They must be able to be created and destroyed
-without double-deleting memory. Finally, and most frustratingly, C++ functions
-must be able to return both new'd data and referenced data to Fortran, and
+A single Fortran proxy class must be able to act as a value, a pointer, or a reference to a C++ class instance.
+When stored as a value, a method must be put in place to deallocate the
+associated memory; if the instance is a reference, that same method cannot
+double-delete the associated memory. Finally, C++ functions
+must be able to send Fortran pointers both *with and without* owning the
+associated memory, depending on the function. Finally,
 assignment between Fortran classes must preserve memory association.
 
-[ Footnote: Fortran pointers cannot be used for returning references and C
-pointers, because the pointed-to object needs to be a *proxy* class rather than
-a C++ class. ]
-
-The complicating issue with assignment is that Fortran's "dummy argument" for
-the return result is `intent(out)`, preventing its previous contents (if any)
-from being modified or deallocated. At the same time, the assignment operator
-must behave correctly in both of these assignments, which are treated
-identically:
+Fortran's "dummy argument" for the return result of any function (including
+generic assignment) is `intent(out)`, preventing the previous contents (if any)
+of the assignee from being modified or deallocated.
+At the same time, the assignment operator must behave correctly in both of
+these assignments, which are treated identically by the language:
 ```fortran
  type(Foo) :: a, b
  a = make_foo()
@@ -1202,9 +1271,9 @@ identically:
 ```
 Note that unlike Python, `b` is not a pointer to `a`; and unlike C++, `b` is
 not copy-constructed from `a`. Instead, `a` is assigned to `b` using the
-`assignment(=)` operator. Likewise, `a` is not "constructed" on the second line: 
-there is no return value optimization as in C++. Instead, `make_foo` returns a
-temporary `Foo`, and that temporary is assigned to `a`.
+`assignment(=)` operator. Likewise, `a` is not "constructed" on the second
+line: there is no return value optimization as in C++. Instead, `make_foo`
+returns a temporary `Foo`, and that *temporary* is assigned to `a`.
 
 Because these two assignments are treated equally and a temporary is created in
 only one of them, we have to be clever to avoid leaking or double-deleting
@@ -1278,30 +1347,6 @@ Memory can still be leaked, of course, by calling `make_foo()` without
 capturing and releasing the result, or by failing to call `release` on a proxy
 class.
 
-## Function overloading
-
-Function overloading is when two or more free functions share a name but have
-different arguments. This is implemented using *generic interfaces*. Each
-overloaded function gets a unique internal symname, and they are bound
-together in a generic interface. For example, if a member function `doit` of
-class `Action` is overloaded, a generic binding will be generated inside the
-Fortran proxy derived type:
-```fortran
-  procedure, private :: doit__SWIG_0 => swigf_Action_doit__SWIG_0
-  procedure, private :: doit__SWIG_1 => swigf_Action_doit__SWIG_1
-  generic :: doit => doit__SWIG_0, doit__SWIG_1
-```
-
-It should be noted that a function that returns `void` cannot be overloaded
-with a function that returns anything else: generic interfaces must be either
-all subroutines or all functions. Use SWIG's `%ignore` statement to hide one or
-the other:
-```swig
-void cannot_overload(int x);
-int  cannot_overload(int x, int y);
-%ignore cannot_overload(int x);
-```
-
 ## Opaque class types
 
 SWIG's default Fortran type (the `ftype` typemap) for generic types such as
@@ -1337,24 +1382,6 @@ compiler macro for `%feature("fortran:prepend")`) and appended using
 For advanced cases, the function or subroutine invocation can be embedded in
 another layer of wrapping using the `%feature("shadow")` macro. The
 special symbol `$action` will be replaced with the usual invocation.
-
-## Finalization
-
-Ideally, the `release` type-bound procedure would not have to be invoked
-manually, and C++ memory could be freed when the Fortran proxy object is no
-longer in use.
-
-Fortran 2003 does have support for a special "final" procedure called when a
-dynamic or temporary object is deallocated; however, support for this feature
-is limited and fragile even on recent Fortran compilers. The SWIG Fortran
-interface does support the creation of a "final" procedure that calls the C++
-destructor:
-```swig
-%feature("final") Foo;
-%include "Foo.h"
-```
-This special feature is relatively untested and its behavior could be
-compiler-dependent, so extreme caution is recommended when enabling it.
 
 <!-- ###################################################################### -->
 
