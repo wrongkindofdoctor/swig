@@ -8,32 +8,6 @@ program main
   call test_basic_struct()
 contains
 
-subroutine test_simple_class_actions()
-  use simple_class
-  use ISO_C_BINDING
-  implicit none
-  type(SimpleClass) :: sc
-  integer(C_INT) :: example
-
-  write(0, *) "Null-op to release..."
-  call sc%release()
-
-  write(0, *) "Constructing..."
-  sc = create_SimpleClass()
-  call sc%set(9)
-
-  write(0, *) "Alternate constructor..."
-  sc = create_SimpleClass(1.0d0, 2.0d0)
-
-  example = 7
-  call sc%action(example)
-  write(0, *) "Should be 63:", example
-  call sc%release()
-
-  write(0, *) "Null-op to release..."
-  call sc%release()
-end subroutine
-
 subroutine test_simple_class_memory()
   use simple_class
   use ISO_C_BINDING
@@ -92,6 +66,32 @@ subroutine test_simple_class_memory()
   ! Release a pointer in its null state
   write(0, *) "Releasing unassigned"
   call unassigned%release()
+end subroutine
+
+subroutine test_simple_class_actions()
+  use simple_class
+  use ISO_C_BINDING
+  implicit none
+  type(SimpleClass) :: sc
+  integer(C_INT) :: example
+
+  write(0, *) "Null-op to release..."
+  call sc%release()
+
+  write(0, *) "Constructing..."
+  sc = create_SimpleClass()
+  call sc%set(9)
+
+  write(0, *) "Alternate constructor..."
+  sc = create_SimpleClass(1.0d0, 2.0d0)
+
+  example = 7
+  call sc%action(example)
+  write(0, *) "Should be 63:", example
+  call sc%release()
+
+  write(0, *) "Null-op to release..."
+  call sc%release()
 end subroutine
 
 subroutine test_basic_struct()

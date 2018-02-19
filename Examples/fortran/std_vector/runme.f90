@@ -1,7 +1,11 @@
 ! File : runme.f90
 
 program main
-  use ISO_FORTRAN_ENV
+  implicit none
+  call test_usage()
+contains
+
+subroutine test_usage()
   use, intrinsic :: ISO_C_BINDING
   use stdvec, only : make_view => make_const_viewdbl, &
     print_view => print_viewdbl, VecDbl, get_vec => get_vecdbl, &
@@ -11,7 +15,7 @@ program main
   integer :: i
   real(C_DOUBLE), pointer :: vview(:)
   real(C_DOUBLE), allocatable :: local_vec(:)
-  real(C_DOUBLE), dimension(4)  :: test_dbl = (/ 0.1, 1.9, -2.0, 4.0 /)
+  real(C_DOUBLE), dimension(4)  :: test_dbl = [ 0.1, 1.9, -2.0, 4.0 ]
 
   ! This should be a null-op since the underlying pointer is initialized to
   ! null
@@ -52,9 +56,6 @@ program main
 
   local_vec = make_array()
   write(0, *) "Return-by-value vector:", local_vec
+end subroutine
 end program
-
-!-----------------------------------------------------------------------------!
-! end of std_vector/runme.f90
-!-----------------------------------------------------------------------------!
 ! vim: set ts=2 sw=2 sts=2 tw=129 :
