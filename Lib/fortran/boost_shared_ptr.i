@@ -34,6 +34,8 @@
  * %naturalvar causes these types to be wrapped as const references rather than
  * pointers when they're member variables.
  */
+%naturalvar TYPE;
+%naturalvar SWIGSP__;
 
 /* -------------------------------------------------------------------------
  * Copy basic settings from non-SP type (i.e. Fortran will see it the same; we
