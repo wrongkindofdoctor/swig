@@ -1,3 +1,4 @@
+! File : runme.f90
 #define ASSERT(conditional) \
 if (.not. conditional) then; \
   stop 1; \
@@ -27,3 +28,4 @@ call v1%release()
 call v2%release()
 
 end program
+! vim: set ts=2 sw=2 sts=2 tw=129 :

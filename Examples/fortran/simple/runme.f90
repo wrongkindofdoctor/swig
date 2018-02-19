@@ -1,3 +1,4 @@
+! File : runme.f90
 program simple_runme
   use simple
 
@@ -20,8 +21,5 @@ program simple_runme
   call set_Foo(3.1415926_8)
 
   write(*,*)"Foo = ", get_Foo()
-
-
-
-
 end program
+! vim: set ts=2 sw=2 sts=2 tw=129 :

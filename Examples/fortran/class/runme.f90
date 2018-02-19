@@ -1,3 +1,4 @@
+! File : runme.f90
 program class_runme
   use example
 
@@ -21,16 +22,16 @@ program class_runme
 
   ! Need accessors for public members to be able to do this
   write(*,*)"Here is their current position:"
-  write(*,*)"    Circle = (", c%get_x(), ",", c%get_y(), " )"
+  write(*,*)"  Circle = (", c%get_x(), ",", c%get_y(), " )"
 
   ! Call some methods
   write(*,*)"Here are some properties of the shapes:"
-  write(*,*)"    Circle:"
-  write(*,*)"        area      = ",c%area()
-  write(*,*)"        perimeter = ",c%perimeter()
-  write(*,*)"    Square:"
-  write(*,*)"        area      = ",s%area()
-  write(*,*)"        perimeter = ",s%perimeter()
+  write(*,*)"  Circle:"
+  write(*,*)"    area    = ",c%area()
+  write(*,*)"    perimeter = ",c%perimeter()
+  write(*,*)"  Square:"
+  write(*,*)"    area    = ",s%area()
+  write(*,*)"    perimeter = ",s%perimeter()
 
   ! Call function that takes base class
   write(*,*)" Circle P/A  = ", surface_to_volume(c)
@@ -39,8 +40,8 @@ program class_runme
   ! Example of exception handling
   c = create_circle(-2.0d0)
   if (ierr /= 0) then
-      write(*,*) "Caught the following error: ", get_serr()
-      ierr = 0
+    write(*,*) "Caught the following error: ", get_serr()
+    ierr = 0
   endif
 
   call c%release()
@@ -50,3 +51,4 @@ program class_runme
   write(*,*)c%get_nshapes(), "shapes remain"
   write(*,*)"Goodbye"
 end program
+! vim: set ts=2 sw=2 sts=2 tw=129 :

@@ -1,3 +1,4 @@
+! File : runme.f90
 program main
   use templated
   implicit none
@@ -12,3 +13,4 @@ program main
   call dt%release()
 end program
 
+! vim: set ts=2 sw=2 sts=2 tw=129 :

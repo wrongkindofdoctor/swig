@@ -1,3 +1,4 @@
+! File : runme.f90
 program main
   use except, only : do_it, do_it_again, ierr, get_serr
   use downstream, only : throw_error
@@ -34,3 +35,4 @@ program main
     stop 1
   endif
 end program
+! vim: set ts=2 sw=2 sts=2 tw=129 :
