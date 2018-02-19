@@ -1,61 +1,16 @@
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <meta name="author" content="Seth R Johnson" />
-  <title>SWIG and Fortran</title>
-  <style type="text/css">
-      code{white-space: pre-wrap;}
-      span.smallcaps{font-variant: small-caps;}
-      span.underline{text-decoration: underline;}
-      div.column{display: inline-block; vertical-align: top; width: 50%;}
-  </style>
-  <!--[if lt IE 9]>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
-  <![endif]-->
-  <style type="text/css">
-  /* from div.code */
-  pre.swig, pre.c, pre.c++ {
-    border-style: solid; 
-    border-width: 1px; 
-    padding: 2pt; 
-    margin-left: 4em;
-    margin-right: 4em;
-    background-color: #F0FFFF;
-    font-family: "Courier New", Courier, "Courier 10 Pitch", monospace;
-  }    
-  /* from div.targetlang */
-  pre.fortran {
-    border-style: solid; 
-    border-width: 1px; 
-    padding: 2pt; 
-    margin-left: 4em;
-    margin-right: 4em;
-    background-color: #d7f6bb;
-    font-family: "Courier New", Courier, "Courier 10 Pitch", monospace;
-  }
-  /* from div.shell */
-  pre.sh {
-    border-style: solid; 
-    border-width: 1px; 
-    padding: 2pt; 
-    margin-left: 4em;
-    margin-right: 4em;
-    background-color: #DCDCDC;
-    font-family: "Courier New", Courier, "Courier 10 Pitch", monospace;
-  }
-  </style>
+<meta name="generator" content="pandoc" />
+<link rel="stylesheet" type="text/css" href="style.css">
+<meta name="author" content="Seth R Johnson" />
+<title>SWIG and Fortran</title>
 </head>
 <body>
-<header>
-<h1 class="title">SWIG and Fortran</h1>
-<p class="author">Seth R Johnson
+<H1><a name="Fortran">23 SWIG and Fortran</a></H1>
 </p>
-
-</header>
-<nav id="TOC">
+<!-- INDEX -->
+<div class="sectiontoc">
 <ul>
 <li><a href="#Fortran_overview">Overview</a></li>
 <li><a href="#Fortran_fundamental_concepts">Fundamental concepts</a><ul>
@@ -123,18 +78,8 @@
 <li><a href="#Fortran_known_issues">Known Issues</a></li>
 </ul></li>
 </ul>
-</nav>
-<!--
-This document is formatted with [Github-flavored
-Markdown](https://github.github.com/gfm/)
-
-Run with:
-
-pandoc --from=gfm+smart --no-highlight \
--M title:"SWIG and Fortran" -M author:"Seth R Johnson" \
---toc --standalone -H style.css -o ../Fortran.html Fortran.md
-
--->
+</div>
+<!-- INDEX -->
 
 <H2><a name="Fortran_overview">Overview</a></H2>
 
