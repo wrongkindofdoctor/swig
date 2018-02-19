@@ -48,26 +48,33 @@ subroutine test_simple_class_memory()
   orig = create_SimpleClass()
   call orig%set(1)
 
-  ! Copy construct ideally
+  ! Copy construct
   write(0, *) "Copying class "
   copied = orig
-  write(0, *) "Orig/copied: ", copied%id(), "/", orig%id()
-  ASSERT(copied%id() == 12)
+  write(0, *) "Orig/copied: ", orig%id(), "/", copied%id()
   ASSERT(orig%id() == 1)
+  ASSERT(copied%id() == 12)
 
   ! Assign to an already-created instance
+  assigned = create_SimpleClass_dbl(3.0d0)
+  ASSERT(assigned%id() == 3)
+  call orig%set(1234)
   write(0, *) "Assigning"
-  orig = create_SimpleClass_dbl(3.0d0)
   assigned = orig
-  call orig%set(4)
-  write(0, *) "Orig/assigned:"
-  call print_value(orig)
-  call print_value(assigned)
-  ASSERT(orig%get() == 4)
-  ASSERT(assigned%get() == 3)
+  ! IDs should not have changed
+  write(0, *) "Orig/assigned IDs:", orig%id(), assigned%id()
+  ASSERT(orig%id() == 1)
+  ASSERT(assigned%id() == 3)
 
-  ! Get a class by const reference; it should fail if you try to modify it
+  ! Values should have been assigned though
+  call print_value(assigned)
+  ASSERT(assigned%get() == 1234)
+
+  ! Get the 'static'-duration class by const reference
+  write(0, *) "Getting by const reference"
   constref = get_class()
+  ASSERT(constref%get() == 0)
+  ! Calling a non-const function of a const reference will raise an error
   ! call constref%double_it()
 
   ! Release created

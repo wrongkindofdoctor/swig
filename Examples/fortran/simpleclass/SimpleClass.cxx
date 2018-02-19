@@ -19,7 +19,7 @@ SimpleClass::SimpleClass() : d_id(g_next_id++), d_storage(0) {
   ++g_counter;
 }
 
-SimpleClass::SimpleClass(const SimpleClass &rhs) : d_id(rhs.d_id * 10 + (g_next_id++)), d_storage(rhs.d_storage + 10) {
+SimpleClass::SimpleClass(const SimpleClass &rhs) : d_id(rhs.d_id * 10 + (g_next_id++)), d_storage(rhs.d_storage) {
   cout << "Copy-constructing " << rhs.d_id << "=>" << d_id << " at " << this << endl;
   ++g_counter;
 }
@@ -30,9 +30,8 @@ SimpleClass::SimpleClass(double d) : d_id(g_next_id++), d_storage(d) {
 }
 
 SimpleClass &SimpleClass::operator=(const SimpleClass &rhs) {
-  int orig_id = d_id;
-  d_id = 10 * rhs.d_id + (g_next_id++);
-  cout << "Assigning " << rhs.d_id << "=>" << d_id << " at " << this << " (replaces " << orig_id << ")" << endl;
+  cout << "Assigning " << rhs.d_id << "=>" << d_id << " at " << this << endl;
+  d_storage = rhs.d_storage;
   return *this;
 }
 
