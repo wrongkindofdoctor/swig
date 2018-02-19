@@ -85,8 +85,27 @@ def swig_cpp_headers(path):
 
         new_file.write("/* vim: set ts=2 sw=2 sts=2 tw=129 : */\n")
 
+def swig_f90_headers(path):
+    filename = os.path.basename(path)
+    with ReWriter(path) as rewriter:
+        (old_file, new_file) = rewriter.files
+        rewriter.dirty = True
+
+        new_file.write("! File : {}\n".format(filename))
+
+        # Delete old headr
+        for line in old_file:
+            if not line.startswith('!'):
+                new_file.write(line)
+                break
+
+        for line in old_file:
+            new_file.write(line.replace("    ", "  "))
+
+        new_file.write("! vim: set ts=2 sw=2 sts=2 tw=129 :\n")
+
 #-----------------------------------------------------------------------------#
-def main():
+def main_cpp():
     extensions = (".h",".cxx",".c",".i",".swg")
 
     from exnihiloenv.filemodify import _common
@@ -94,8 +113,16 @@ def main():
                 default_extensions=",".join(extensions))
 
 #-----------------------------------------------------------------------------#
+def main_f90():
+    extensions = (".f90",)
+
+    from exnihiloenv.filemodify import _common
+    _common.run(swig_f90_headers,
+                default_extensions=",".join(extensions))
+
+#-----------------------------------------------------------------------------#
 if __name__ == '__main__':
-    main()
+    main_f90()
 
 ###############################################################################
 # end of Tools/fix-srj-headers.py

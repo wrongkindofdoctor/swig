@@ -331,6 +331,16 @@ FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)");
 
 /* -------------------------------------------------------------------------
  * LOGICAL (BOOLEAN) TYPE
+ *
+ * Due to differences in how Fortran and C treat logical values, it's not always
+ * safe to treat C_BOOL and bool as compatible. Yay. So we pass integers
+ * between the language and have the wrapper convert them. This also lets us
+ * use the native fortran logical type instead of requiring users cast to
+ * the special C_BOOL type.
+ *
+ * https://software.intel.com/en-us/forums/intel-fortran-compiler-for-linux-and-mac-os-x/topic/594856
+ * http://www.fortran90.org/src/gotchas.html
+ * 
  * ------------------------------------------------------------------------- */
 %typemap(ctype, out="int") bool
   "const int*"

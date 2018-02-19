@@ -79,8 +79,8 @@ FORT_ARRAYPTR_TYPEMAP(double, std::vector<double>& NATIVE)
 
 /* -------------------------------------------------------------------------
  * Example of creating an allocatable array in Fortran by returning a vector by
-
- *  value in C++
+ * value in C++
+ */
 
 %apply std::vector<double> NATIVE { std::vector<double> make_array };
 

@@ -1,6 +1,17 @@
 /* -------------------------------------------------------------------------
  * bindc.swg
  * ------------------------------------------------------------------------- */
+/*!
+ * \def %fortran_bindc_typedef_struct
+ * \brief Wrap a struct as BIND(C).
+ *
+ * Because SWIG's processing of the feature directive doesn't quite work, if
+ * you define a struct as 'typedef struct A {} B;' the features have to apply
+ * to A but the typedefs to B.
+ *
+ * In the typical case that you're wrapping 'struct A {};', then use
+ * %fortran_bindc_struct .
+ * ------------------------------------------------------------------------- */
 %define %fortran_bindc_typedef_struct(CTYPE, TD_CTYPE)
   // Mark the class as being C-bound
   %bindc TD_CTYPE;

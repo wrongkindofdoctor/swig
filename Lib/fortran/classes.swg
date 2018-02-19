@@ -415,8 +415,11 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
 
 /* -------------------------------------------------------------------------
  * CLASS TYPEMAPS
- * -------------------------------------------------------------------------
- *  Returning a class by value is copy-constructed as a new'd pointer
+ *
+ * Classes accepted by value are passed as const reference.
+ * They're copy-assigned when they're passed
+ * Returning a class by value is copy-constructed as a new'd pointer
+ */
 %typemap(ctype, out="SwigClassWrapper", null="SwigClassWrapper_uninitialized()", noblock=1, fragment="SwigClassWrapper")
     SWIGTYPE
 {const SwigClassWrapper *}

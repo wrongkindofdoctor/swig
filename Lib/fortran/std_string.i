@@ -8,7 +8,12 @@
 
 /* -------------------------------------------------------------------------
  * TYPEMAPS
- * ------------------------------------------------------------------------- * ------------------------------------------------------------------------- */
+ *
+ * Optional string typemaps for native fortran conversion.
+ *
+ * Use:
+ *     %apply const std::string& NATIVE { const std::string& key };
+ * ------------------------------------------------------------------------- */
 
 // Fortran side treats like regular strings
 %apply const char *NATIVE{ const std::string & NATIVE };

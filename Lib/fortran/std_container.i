@@ -1,5 +1,12 @@
 /* -------------------------------------------------------------------------
  * std_container.i
+ *
+ * Native typemaps for contiguous arrays: translate directly to and from Fortran
+ * arrays. Returns an allocatable array copy of a std::vector reference.
+ *
+ * To avoid wrapping std::vector but still instantiate the typemaps that
+ * allow native wrapping, use %template() std::vector<double>
+ *
  * ------------------------------------------------------------------------- */
 
 %include <view.i>

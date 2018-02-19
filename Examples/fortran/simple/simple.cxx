@@ -1,5 +1,4 @@
 /* File : simple.cxx */
-*/
 
 /** A global variable */
 double Foo = 3.0;

@@ -6,6 +6,12 @@
 
 /* -------------------------------------------------------------------------
  * STRING VIEWS
+ *
+ * String views are treated almost exactly like array views, except the Fortran
+ * wrapper code uses slightly different types. (To be strictly compatible with
+ * Fortran-C interoperability, only arrays of length-1 chars can be passed back
+ * and forth between C; we use a fragment in `forfragments.swg` to perform the
+ * remapping.
  * ------------------------------------------------------------------------- */
 
 %define %fortran_string_view(CTYPE)

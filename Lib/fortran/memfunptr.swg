@@ -63,6 +63,9 @@ using swig::brute_cast;
 
 /* -------------------------------------------------------------------------
  * MEMBER FUNCTION POINTERS
+ *
+ * We memcpy the member function pointer to an opaque data class using
+ * brute_cast.
  * ------------------------------------------------------------------------- */
 
 // Add array wrapper to C++ code when used by Fortran fragment

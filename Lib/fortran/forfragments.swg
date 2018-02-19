@@ -1,6 +1,6 @@
 /* -------------------------------------------------------------------------
  * forfragments.swg
- * ------------------------------------------------------------------------- */
+ * -------------------------------------------------------------------------
   Create a file with this name, 'forfragments.swg', in your working
   directory and add all the %fragments you want to take precedence
   over the default ones defined by SWIG.

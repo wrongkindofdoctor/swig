@@ -1,5 +1,9 @@
 /* -------------------------------------------------------------------------
  * exception.i
+ *
+ * This file is automatically included when the user loads <std_except.i>.
+ * Since it's also loaded by constraints.i, it must be compatible with C as
+ * well.
  * ------------------------------------------------------------------------- */
 
 // Allow the user to change the name of the error flag on the fortran side
@@ -19,6 +23,9 @@
 
 /* -------------------------------------------------------------------------
  * Function declarations
+ *
+ * These are declared as fragments so that they will be included in imported
+ * modules as well.
  * ------------------------------------------------------------------------- */
 #ifdef __cplusplus
 %fragment("SWIG_exception_decl", "runtime") %{
@@ -42,6 +49,12 @@ void SWIG_store_exception(const char* decl, int errcode, const char *msg);
 
 /* -------------------------------------------------------------------------
  * Runtime code
+ *
+ * This is always inserted into the wrapped file, even if imported. It
+ * overrides the  default exception handler (defined in forruntime.swg).
+ *
+ * Note that SWIG_exception_impl is also used by SWIG_contract_assert, so the
+ * *_impl* is the one that changes.
  * ------------------------------------------------------------------------- */
 %fragment("SWIG_exception_impl", "runtime") %{
 #undef SWIG_exception_impl
