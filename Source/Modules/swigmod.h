@@ -1,5 +1,5 @@
 /* -----------------------------------------------------------------------------
- * This file is part of SWIG, which is licensed as a whole under version 3
+ * This file is part of SWIG, which is licensed as a whole under version 3 
  * (or any later version) of the GNU General Public License. Some additional
  * terms also apply to certain portions of SWIG. The full details of the SWIG
  * license and copyrights can be found in the LICENSE and COPYRIGHT files
@@ -212,7 +212,7 @@ public:
   virtual void dumpSymbols();
   virtual Node *symbolLookup(const String *s, const_String_or_char_ptr scope = ""); /* Symbol lookup */
   virtual Hash* symbolAddScope(const_String_or_char_ptr scope);
-  virtual Hash* symbolScopeLookup(const_String_or_char_ptr scope) const;
+  virtual Hash* symbolScopeLookup(const_String_or_char_ptr scope);
   virtual Hash* symbolScopePseudoSymbolLookup(const_String_or_char_ptr scope);
   virtual Node *classLookup(const SwigType *s) const; /* Class lookup      */
   virtual Node *enumLookup(SwigType *s);	/* Enum lookup       */
@@ -307,11 +307,11 @@ public:
     NCS_Full, // Target language does have an equivalent to nested classes and is fully implemented
     NCS_Unknown // Target language may or may not have an equivalent to nested classes. If it does, it has not been implemented yet.
   };
-  /* Does target language support nested classes? Default is NCS_Unknown.
-    If NCS_Unknown is returned, then the nested classes will be ignored unless
+  /* Does target language support nested classes? Default is NCS_Unknown. 
+    If NCS_Unknown is returned, then the nested classes will be ignored unless 
     %feature "flatnested" is applied to them, in which case they will appear in global space.
     If the target language does not support the notion of class
-    nesting, the language module should return NCS_None from this function, and
+    nesting, the language module should return NCS_None from this function, and 
     the nested classes will be moved to the global scope (like implicit global %feature "flatnested").
   */
   virtual NestedClassSupport nestedClassesSupport() const;
@@ -394,7 +394,7 @@ void Swig_director_parms_fixup(ParmList *parms);
 extern "C" {
   void SWIG_typemap_lang(const char *);
   typedef Language *(*ModuleFactory) (void);
-}
+} 
 
 void Swig_register_module(const char *name, ModuleFactory fac);
 ModuleFactory Swig_find_module(const char *name);
