@@ -379,5 +379,6 @@ FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)");
 // Type checking isn't used for Fortran but is required for unit tests
 %typemap(typecheck, precedence=0) SWIGTYPE
   ""
+%typemap(typecheck) char* = SWIGTYPE;
 
 /* vim: set ts=2 sw=2 sts=2 tw=129 : */
