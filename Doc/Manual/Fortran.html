@@ -111,6 +111,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="#overview">Overview</a></li>
 <li><a href="#fundamental-concepts">Fundamental concepts</a><ul>
 <li><a href="#nomenclature">Nomenclature</a></li>
+<li><a href="#identifiers">Identifiers</a></li>
 <li><a href="#running-swig">Running SWIG</a></li>
 <li><a href="#compiling-a-simple-fortran-program">Compiling a simple Fortran program</a></li>
 <li><a href="#compiling-more-complex-fortrancc-programs">Compiling more complex Fortran/C/C++ programs</a></li>
@@ -132,11 +133,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="#global-constants">Global constants</a></li>
 </ul></li>
 <li><a href="#classes">Classes</a><ul>
+<li><a href="#constructors-and-destructors">Constructors and Destructors</a></li>
 <li><a href="#member-functions">Member functions</a></li>
 <li><a href="#member-data">Member data</a></li>
-<li><a href="#constructors-and-destructors">Constructors and Destructors</a></li>
+<li><a href="#inheritance">Inheritance</a></li>
 </ul></li>
 <li><a href="#exceptions">Exceptions</a></li>
+<li><a href="#shared-pointers">Shared pointers</a></li>
 </ul></li>
 <li><a href="#typemaps">Typemaps</a><ul>
 <li><a href="#fortran-proxy-datatype-translation">Fortran proxy datatype translation</a></li>
@@ -155,6 +158,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li><a href="#function-overloading">Function overloading</a></li>
 <li><a href="#opaque-class-types">Opaque class types</a></li>
 <li><a href="#proxy-class-wrapper-code">Proxy class wrapper code</a></li>
+<li><a href="#finalization">Finalization</a></li>
 </ul></li>
 <li><a href="#advanced">Advanced</a><ul>
 <li><a href="#fragments">Fragments</a></li>
@@ -168,10 +172,9 @@ Markdown](https://github.github.com/gfm/)
 
 Run with:
     pandoc --from=gfm  --metadata title="SWIG and Fortran" \
-    --toc --standalone -H src/style.css -o Fortran.html src/Fortran.md
+    --toc --standalone -H style.css -o ../Fortran.html Fortran.md
 
 Authored by Seth R Johnson
---
 -->
 
 <h1 id="overview">Overview</h1>
@@ -219,8 +222,29 @@ Authored by Seth R Johnson
 <td>floating point number</td>
 <td>real</td>
 </tr>
+<tr class="even">
+<td>fundamental type</td>
+<td>intrinsic type</td>
+</tr>
+<tr class="odd">
+<td>derived type</td>
+<td>extended type</td>
+</tr>
+<tr class="even">
+<td>class instance</td>
+<td>structure</td>
+</tr>
 </tbody>
 </table>
+<h2 id="identifiers">Identifiers</h2>
+<p>C and C++ have different rules for identifiers (i.e. variable names, function names, class names) than Fortran. The following restrictions apply to Fortran that do not apply to C and C++:</p>
+<ul>
+<li>Names are <strong>case insensitive</strong></li>
+<li>Names may not begin with an underscore</li>
+<li>Names may be no longer than 63 characters</li>
+</ul>
+<p>SWIG automatically renames identifiers that start with a leading underscore. It keeps a symbol table of publicly accessible Fortran identifiers (as their lower-cased, renamed versions) and warns about and ignores duplicate names.</p>
+<p>There is also no &quot;namespace&quot; concept in Fortran 2003 aside from defining procedures and types in separate modules. (Fortran 2008 supports submodules, but these are more akin to private namespaces inside a translation unit in C++.) Keep in mind that the extremely flexible <code>%rename</code> directive can be used to adjust the symbolic names created in SWIG.</p>
 <h2 id="running-swig">Running SWIG</h2>
 <p>Suppose that we have a SWIG interface file <code>example.i</code> with the following contents:</p>
 <pre class="swig"><code>/* File: example.i */
@@ -366,6 +390,7 @@ width="352"/></p>
 <p>However, advanced typemaps can be constructed (and indeed are provided by the SWIG Fortran library) that <em>can</em> return that information or extend the Fortran interface to obtain the additional information needed to return an array pointer.</p>
 <p>The astute reader may notice the omission of <code>C_BOOL</code> from the above table. Because of the different treatment of booleans in C and Fortran, guaranteeing the sizes of the <code>bool</code> is equivalent in the two languages does <em>not</em> guarantee the equivalence of their values. See <a href="https://software.intel.com/en-us/forums/intel-fortran-compiler-for-linux-and-mac-os-x/topic/594856">this discussion topic</a> for details of the subtle compatibility, but in brief, Fortran's <code>.true.</code> is defined by having the least significant bit set to <code>1</code>, whereas C defines it as any nonzero value. So the value <code>2</code> would be <code>true</code> in C but <code>false</code> in Fortran. A special typemap inserts wrapper code to explicitly convert booleans between the two languages.</p>
 <p>The built-in type wrapping also omits standard C character <code>char</code> to prevent ambiguity of wrapping character arrays (<code>char*</code> or <code>CHARACTER, DIMENSION(:)</code>) from strings (<code>char*</code> or <code>CHARACTER(LEN=*)</code>).</p>
+<p>A more complete set of typemaps for the full set of integer types available in <code>&lt;stdint.h&gt;</code> can be used by `%include <cstdint></p>
 <h2 id="pointers-and-references">Pointers and references</h2>
 <p>C pointers and mutable references are treated as Fortran pointers. Suppose a C function that returns a pointer to an array element at a given index:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode c"><code class="sourceCode c"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="dt">double</span>* get_array_element(<span class="dt">int</span> x);</a></code></pre></div>
@@ -558,12 +583,83 @@ might a symbolic name `bar_dbl
 <div class="sourceCode" id="cb32"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb32-1" data-line-number="1"><span class="dt"> real(C_DOUBLE)</span>, <span class="dt">parameter</span>, <span class="dt">public</span> <span class="dt">::</span> approx_pi <span class="kw">=</span> <span class="fl">3.1416_C_DOUBLE</span></a></code></pre></div>
 <p>If the variable is defined in the header file and is a simple integer, this feature will be enabled by default. It can be explicitly enabled or disabled using the <code>%parameter</code> and <code>%noparameter</code> directives.</p>
 <h2 id="classes">Classes</h2>
-<p>As mentioned previously, C++ classes are transformed to Fortran <em>derived types</em>. These types have <em>bound procedures</em> that mirror the C++ <em>member functions</em>.</p>
-<h3 id="member-functions">Member functions</h3>
-<h3 id="member-data">Member data</h3>
+<p>As mentioned previously, C++ classes are transformed to Fortran <em>derived types</em>. These types have <em>type-bound procedures</em> that mirror the C++ <em>member functions</em>. Other SWIG target languages refer to the transformed wrapper classes as &quot;proxy classes&quot; because they act as a proxy to the underlying C++ class.</p>
+<p>The derived type in Fortran is effectively a C pointer with memory management metadata. The C pointer is initialized to <code>C_NULL_PTR</code>, and when assigned it can represent a class as a <em>value</em> (i.e. the local Fortran code has ownership) or by <em>reference</em>. More details about <a href="#memory-management">memory management of classes</a>, are available in the section that details the proxy classes that SWIG constructs.</p>
 <h3 id="constructors-and-destructors">Constructors and Destructors</h3>
-<p>Because Fortran is not a stack-based language like C (where variables enter and leave scope by being pushed onto and popped off the memory stack), generally speaking all data are static -- they occupy the same location in memory, determined at compile time.</p>
+<p>Because Fortran is not a stack-based language like C (where variables enter and leave scope by being pushed onto and popped off the memory stack), generally speaking the storage duration of <em>all</em> data (functions, arrays) is static, where their location in memory is determined at compile/link time. And, unlike C++, there is no static initialization of objects.</p>
+<p>Consequently, the concept of &quot;scope&quot; for an object does not translate directly to Fortran, and construction/destruction is performed manually. Because of limitations in <a href="#function-overloading">function overloading</a> with <a href="#inheritance">inheritance</a>, it is not generally possible to provide a type-bound procedure that mirrors the C++ constructors. The design decision was made to treat construction through procedures <em>not</em> bound to a type. The constructor is wrapped as <code>create_{symname}</code>:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb33-1" data-line-number="1"><span class="dt">type(Foo)</span> <span class="dt">::</span> f</a>
+<a class="sourceLine" id="cb33-2" data-line-number="2"><span class="dt">type(Foo)</span> <span class="dt">::</span> g</a>
+<a class="sourceLine" id="cb33-3" data-line-number="3">f <span class="kw">=</span> create_Foo()</a>
+<a class="sourceLine" id="cb33-4" data-line-number="4">g <span class="kw">=</span> create_Foo(<span class="dv">123</span>)</a></code></pre></div>
+<p>Freeing memory and cleaning up the associated C++ class is done by calling the <code>release</code> procedure on the Fortran object.</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb34-1" data-line-number="1"><span class="kw">call</span> f%release()</a>
+<a class="sourceLine" id="cb34-2" data-line-number="2"><span class="kw">call</span> g%release()</a></code></pre></div>
+<p>To be safe, <code>release</code> should always be called when the proxy instance is no longer needed. It will free memory if appropriate and reset the C pointer to <code>NULL</code>.</p>
+<h3 id="member-functions">Member functions</h3>
+<p>SWIG generates unique, private procedure names for each class and function. These procedures are bound to the type. If <a href="#function-overloading">function overloading</a> is used, &quot;generic&quot; procedures will be added to the derived type.</p>
+<p>Type-bound procedures in Fortran can be used as follows:</p>
+<div class="sourceCode" id="cb35"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb35-1" data-line-number="1"><span class="dt">integer(C_INT)</span> <span class="dt">::</span> value</a>
+<a class="sourceLine" id="cb35-2" data-line-number="2"><span class="dt">type(Foo)</span> <span class="dt">::</span> food</a>
+<a class="sourceLine" id="cb35-3" data-line-number="3">food <span class="kw">=</span> create_Foo()</a>
+<a class="sourceLine" id="cb35-4" data-line-number="4"><span class="kw">call</span> food%do_something()</a>
+<a class="sourceLine" id="cb35-5" data-line-number="5">value <span class="kw">=</span> food%get_something()</a></code></pre></div>
+<h3 id="member-data">Member data</h3>
+<p>Just like <a href="#global-variables">global variables</a>, SWIG generates member functions for getters and, when appropriate, setters.</p>
+<div class="sourceCode" id="cb36"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb36-1" data-line-number="1"><span class="dt">type(Foo)</span> <span class="dt">::</span> f</a>
+<a class="sourceLine" id="cb36-2" data-line-number="2">f <span class="kw">=</span> create_Foo()</a>
+<a class="sourceLine" id="cb36-3" data-line-number="3"><span class="kw">call</span> food%set_val(<span class="dv">123</span>)</a>
+<a class="sourceLine" id="cb36-4" data-line-number="4">value <span class="kw">=</span> food%get_something()</a></code></pre></div>
+<h3 id="inheritance">Inheritance</h3>
+<p>Single inheritance in C++ is mirrored by Fortran using the <code>EXTENDS</code> attribute. For classes with virtual methods, the user should keep in mind that function calls are dispatched through C++. In other words, even if you call a base-class member function in Fortran that wraps a derived class instance, the correct virtual function call will be dispatched.</p>
+<p>Fortran has no mechanism for multiple inheritance, so this SWIG target language does not support it. The first base class listed that has not been <code>%ignore</code>d will be treated as the single parent class.</p>
+<p>There is no intrinsic way to <code>dynamic_cast</code> to a daughter class, but if a particular casting operation is needed a small inline function can be created that should suffice:</p>
+<pre class="swig"><code>%inline %{
+Derived&amp; base_to_derived(Base&amp; b) {
+    return dynamic_cast&lt;Derived&amp;&gt;(b);
+}
+%}
+</code></pre>
+<p>(Note that this function will <em>not</em> transfer ownership to the new object. Doing that is outside the scope of this chapter.)</p>
 <h2 id="exceptions">Exceptions</h2>
+<p>By default, a C++ exception will call <code>std::terminate</code> to be called, abruptly aborting the Fortran program execution. With the <code>%exception</code> feature, C++ exceptions can be caught and handled by the Fortran code by setting and clearing an integer flag. The following snippet from the Examples directory illustrates it default use:</p>
+<div class="sourceCode" id="cb38"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb38-1" data-line-number="1"><span class="kw">use</span> except, <span class="kw">only</span> : do_it, ierr, get_serr</a>
+<a class="sourceLine" id="cb38-2" data-line-number="2"><span class="kw">call</span> do_it(<span class="kw">-</span><span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb38-3" data-line-number="3"><span class="kw">if</span> (ierr <span class="op">/=</span> <span class="dv">0</span>) <span class="kw">then</span></a>
+<a class="sourceLine" id="cb38-4" data-line-number="4">  <span class="fu">write(</span><span class="dv">0</span>,<span class="fu">*)</span> <span class="st">&quot;Got error &quot;</span>, ierr, <span class="st">&quot;: &quot;</span>, get_serr()</a>
+<a class="sourceLine" id="cb38-5" data-line-number="5">  ierr <span class="kw">=</span> <span class="dv">0</span></a>
+<a class="sourceLine" id="cb38-6" data-line-number="6"><span class="kw">endif</span></a></code></pre></div>
+<p>Enabling the</p>
+<pre class="swig"><code>%include &lt;std_except.i&gt;
+
+%exception {
+  // Make sure no unhandled exceptions exist before performing a new action
+  SWIG_check_unhandled_exception();
+  try {
+    // Attempt the wrapped function call
+    $action
+  } catch (std::exception&amp; e) {
+    SWIG_exception(SWIG_RuntimeError, e.what() );
+  } catch (...) {
+    SWIG_exception(SWIG_UnknownError, &quot;An unknown exception occurred&quot;);
+  }
+}
+
+%inline %{
+#include &lt;stdexcept&gt;
+void do_it(int i)
+{
+  if (i &lt; 0) throw std::runtime_error(&quot;Bad value&quot;);
+}
+%}
+</code></pre>
+<p>The above code will wrap (by default) <em>every</em> function call. (The standard SWIG <code>%allowexception</code> and <code>%noallowexception</code> directives can be used to selectively enable or disable exception handling). Before calling the wrapped function, the call to <code>SWIG_check_unhandled_exception</code> ensures that no previous unhandled error</p>
+<p>The names of the integer and string accessor will have C linkage and thus must be unique in a compiled program. Since other translation units might have symbols that share the default exception handling names, the user can provide custom names before including the exception handling file:</p>
+<pre class="swig"><code>#define SWIG_FORTRAN_ERROR_INT my_ierr
+#define SWIG_FORTRAN_ERROR_STR get_my_serr
+%include &lt;std_except.i&gt;
+</code></pre>
+<h2 id="shared-pointers">Shared pointers</h2>
 <!-- ###################################################################### -->
 
 <h1 id="typemaps">Typemaps</h1>
@@ -572,20 +668,19 @@ might a symbolic name `bar_dbl
 <p>Note that fundamental types include the opaque pointer <code>void*</code> and its Fortran equivalent <code>type(C_PTR)</code> as well as function pointers and the opaque Fortran equivalent <code>type(C_FUNPTR)</code>.</p>
 <h2 id="fortran-proxy-datatype-translation">Fortran proxy datatype translation</h2>
 <p>The <code>fin</code> and <code>fout</code> typemaps are Fortran proxy wrapper code analogous to the <code>in</code> and <code>out</code> in the C wrapper code: they are used for translating native Fortran objects and types into types that can be transmitted through the C layer. For example, to pass a class by reference, the Fortran class <code>class(SimpleClass) :: self</code> is converted to the corresponding C class via the stored C pointer using the <code>fin</code> typemap, which is expanded to:</p>
-<div class="sourceCode" id="cb33"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb33-1" data-line-number="1">farg1 <span class="kw">=</span> self%swigdata%ptr</a></code></pre></div>
+<div class="sourceCode" id="cb41"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb41-1" data-line-number="1">farg1 <span class="kw">=</span> self%swigdata%ptr</a></code></pre></div>
 <p>This argument is then passed into the C function call:</p>
-<div class="sourceCode" id="cb34"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb34-1" data-line-number="1">fresult <span class="kw">=</span> swigc_make_class(farg1)</a></code></pre></div>
+<div class="sourceCode" id="cb42"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb42-1" data-line-number="1">fresult <span class="kw">=</span> swigc_make_class(farg1)</a></code></pre></div>
 <p>and the output is translated back via the <code>fout</code> typemap, which in this case expands to:</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb35-1" data-line-number="1">swig_result%swigdata%ptr <span class="kw">=</span> fresult</a></code></pre></div>
+<div class="sourceCode" id="cb43"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb43-1" data-line-number="1">swig_result%swigdata%ptr <span class="kw">=</span> fresult</a></code></pre></div>
 <h2 id="special-overrides-for-return-variables">Special overrides for return variables</h2>
 <p>Sometimes a return type in C++ needs additional contextual information to be meaningful in Fortran. For example, a returned pointer may be the first element in a C array but requires a size to be used as an array. Since special typemaps cannot be applied to output variables like they can for inputs (i.e. <code>%typemap(in) int* OUTPUT</code>), we provide a <code>%feature</code> directive for additional customization.</p>
 <p>Consider a vector-like C++ class:</p>
-<div class="sourceCode" id="cb36"><pre class="sourceCode c++"><code class="sourceCode cpp"><a class="sourceLine" id="cb36-1" data-line-number="1"><span class="kw">class</span> Array</a>
-<a class="sourceLine" id="cb36-2" data-line-number="2">{</a>
-<a class="sourceLine" id="cb36-3" data-line-number="3"><span class="kw">public</span>:</a>
-<a class="sourceLine" id="cb36-4" data-line-number="4">  <span class="dt">double</span>* data();</a>
-<a class="sourceLine" id="cb36-5" data-line-number="5">  <span class="dt">int</span> size();</a>
-<a class="sourceLine" id="cb36-6" data-line-number="6">};</a></code></pre></div>
+<div class="sourceCode" id="cb44"><pre class="sourceCode c++"><code class="sourceCode cpp"><a class="sourceLine" id="cb44-1" data-line-number="1"><span class="kw">class</span> Array {</a>
+<a class="sourceLine" id="cb44-2" data-line-number="2"><span class="kw">public</span>:</a>
+<a class="sourceLine" id="cb44-3" data-line-number="3">  <span class="dt">double</span>* data();</a>
+<a class="sourceLine" id="cb44-4" data-line-number="4">  <span class="dt">int</span> size();</a>
+<a class="sourceLine" id="cb44-5" data-line-number="5">};</a></code></pre></div>
 <p>With typemaps alone, it's impossible to convert the return value from <code>data</code> to a sized array pointer in Fortran. (By default, <code>data</code> is interpreted as a scalar pointer.) Since the SWIG <code>%feature</code> directive can be applied to specific functions and methods, we can use <code>%feature(&quot;ftype&quot;)</code> and <code>%feature(&quot;fout&quot;)</code> to override the <code>%typemap(&quot;ftype&quot;) double*</code> and <code>%typemap(&quot;fout&quot;) double*</code>:</p>
 <pre class="swig"><code>%feature(&quot;ftype&quot;) Array::data %{
 real(C_DOUBLE), dimension(:), pointer
@@ -637,7 +732,7 @@ call c_f_pointer($1, $result, [self%size()])
 </code></pre>
 <p>Similarly, instantiating a <code>std::vector</code> creates a typemap that allows native treatment of array inputs and outputs. This is used in the ForTrilinos to treat <code>ParameterList</code> embedded arrays as native Fortran arrays for convenience.</p>
 <p>One other note to be made about Fortran interoperability concerns the mismatch between default Fortran integers and C++'s <code>size_type</code>, which is often used as a parameter. The mismatch requires that users awkwardly cast values when passing into function calls:</p>
-<div class="sourceCode" id="cb42"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb42-1" data-line-number="1"><span class="kw">call</span> my_vector%resize(<span class="bu">INT</span>(n,C_LONG))</a></code></pre></div>
+<div class="sourceCode" id="cb50"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb50-1" data-line-number="1"><span class="kw">call</span> my_vector%resize(<span class="bu">INT</span>(n,C_LONG))</a></code></pre></div>
 <p>This nuisance can be simply avoided by replacing occurrences of C's size type with the native Fortran integer type:</p>
 <pre class="swig"><code>%apply int { std::size_t }
 </code></pre>
@@ -660,36 +755,36 @@ call c_f_pointer($1, $result, [self%size()])
   &quot;type(SwigfArrayWrapper)&quot;;
 </code></pre>
 <p>an <code>import</code> directive will be inserted into the Fortran proxy function:</p>
-<div class="sourceCode" id="cb46"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb46-1" data-line-number="1"><span class="kw">module</span> thinvec</a>
-<a class="sourceLine" id="cb46-2" data-line-number="2"> <span class="kw">use</span>, <span class="kw">intrinsic</span> <span class="dt">::</span> ISO_C_BINDING</a>
-<a class="sourceLine" id="cb46-3" data-line-number="3"> <span class="kw">implicit</span> <span class="kw">none</span></a>
-<a class="sourceLine" id="cb46-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb46-5" data-line-number="5"> <span class="dt">type</span>, <span class="dt">public</span>, bind(C) <span class="dt">::</span> SwigfArrayWrapper</a>
-<a class="sourceLine" id="cb46-6" data-line-number="6">   <span class="dt">type(C_PTR)</span>, <span class="dt">public</span> <span class="dt">::</span> data</a>
-<a class="sourceLine" id="cb46-7" data-line-number="7">   <span class="dt">integer(C_SIZE_T)</span>, <span class="dt">public</span> <span class="dt">::</span> <span class="fu">size</span></a>
-<a class="sourceLine" id="cb46-8" data-line-number="8"> <span class="dt">end type</span></a>
-<a class="sourceLine" id="cb46-9" data-line-number="9"> <span class="kw">interface</span></a>
-<a class="sourceLine" id="cb46-10" data-line-number="10"> <span class="kw">subroutine</span> swigc_foo(farg1) <span class="kw">&amp;</span></a>
-<a class="sourceLine" id="cb46-11" data-line-number="11">   bind(C, name<span class="kw">=</span><span class="st">&quot;swigc_foo&quot;</span>)</a>
-<a class="sourceLine" id="cb46-12" data-line-number="12">   <span class="kw">use</span>, <span class="kw">intrinsic</span> <span class="dt">::</span> ISO_C_BINDING</a>
-<a class="sourceLine" id="cb46-13" data-line-number="13">   import <span class="dt">::</span> SwigfArrayWrapper    <span class="co">! Will not compile without this line</span></a>
-<a class="sourceLine" id="cb46-14" data-line-number="14">   <span class="dt">type(SwigfArrayWrapper)</span> <span class="dt">::</span> farg1</a>
-<a class="sourceLine" id="cb46-15" data-line-number="15"> <span class="kw">end subroutine</span></a></code></pre></div>
+<div class="sourceCode" id="cb54"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb54-1" data-line-number="1"><span class="kw">module</span> thinvec</a>
+<a class="sourceLine" id="cb54-2" data-line-number="2"> <span class="kw">use</span>, <span class="kw">intrinsic</span> <span class="dt">::</span> ISO_C_BINDING</a>
+<a class="sourceLine" id="cb54-3" data-line-number="3"> <span class="kw">implicit</span> <span class="kw">none</span></a>
+<a class="sourceLine" id="cb54-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb54-5" data-line-number="5"> <span class="dt">type</span>, <span class="dt">public</span>, bind(C) <span class="dt">::</span> SwigfArrayWrapper</a>
+<a class="sourceLine" id="cb54-6" data-line-number="6">   <span class="dt">type(C_PTR)</span>, <span class="dt">public</span> <span class="dt">::</span> data</a>
+<a class="sourceLine" id="cb54-7" data-line-number="7">   <span class="dt">integer(C_SIZE_T)</span>, <span class="dt">public</span> <span class="dt">::</span> <span class="fu">size</span></a>
+<a class="sourceLine" id="cb54-8" data-line-number="8"> <span class="dt">end type</span></a>
+<a class="sourceLine" id="cb54-9" data-line-number="9"> <span class="kw">interface</span></a>
+<a class="sourceLine" id="cb54-10" data-line-number="10"> <span class="kw">subroutine</span> swigc_foo(farg1) <span class="kw">&amp;</span></a>
+<a class="sourceLine" id="cb54-11" data-line-number="11">   bind(C, name<span class="kw">=</span><span class="st">&quot;swigc_foo&quot;</span>)</a>
+<a class="sourceLine" id="cb54-12" data-line-number="12">   <span class="kw">use</span>, <span class="kw">intrinsic</span> <span class="dt">::</span> ISO_C_BINDING</a>
+<a class="sourceLine" id="cb54-13" data-line-number="13">   import <span class="dt">::</span> SwigfArrayWrapper    <span class="co">! Will not compile without this line</span></a>
+<a class="sourceLine" id="cb54-14" data-line-number="14">   <span class="dt">type(SwigfArrayWrapper)</span> <span class="dt">::</span> farg1</a>
+<a class="sourceLine" id="cb54-15" data-line-number="15"> <span class="kw">end subroutine</span></a></code></pre></div>
 <p>This extra typemap trickery should only be needed if you're generating bound types without using the <code>%fortran_bindc_struct</code> macro.</p>
 <h2 id="generating-direct-fortran-interfaces-to-c-functions">Generating direct Fortran interfaces to C functions</h2>
 <p>In addition to generating functions with translation code, it is also possible to specify that a function be directly <em>bound</em> and not <em>wrapped</em>. For this feature to work correctly, all function arguments and return types must be inherently Fortran/C interoperable. If using C++, the function must be defined using <code>extern &quot;C&quot;</code> linkage; and in fact, when SWIG is asked to wrap a function with that linkage, it defaults to binding it. Use the <code>%nobindc my_func_name;</code> feature to suppress this behavior.</p>
 <p>The C++ code:</p>
-<div class="sourceCode" id="cb47"><pre class="sourceCode C++"><code class="sourceCode cpp"><a class="sourceLine" id="cb47-1" data-line-number="1"><span class="at">extern</span> <span class="st">&quot;C&quot;</span> {</a>
-<a class="sourceLine" id="cb47-2" data-line-number="2"><span class="co">// These functions are simply bound, not wrapped.</span></a>
-<a class="sourceLine" id="cb47-3" data-line-number="3"><span class="dt">void</span> print_sphere(<span class="at">const</span> <span class="dt">double</span> origin[<span class="dv">3</span>], <span class="at">const</span> <span class="dt">double</span>* radius);</a>
-<a class="sourceLine" id="cb47-4" data-line-number="4">}</a></code></pre></div>
+<div class="sourceCode" id="cb55"><pre class="sourceCode C++"><code class="sourceCode cpp"><a class="sourceLine" id="cb55-1" data-line-number="1"><span class="at">extern</span> <span class="st">&quot;C&quot;</span> {</a>
+<a class="sourceLine" id="cb55-2" data-line-number="2"><span class="co">// These functions are simply bound, not wrapped.</span></a>
+<a class="sourceLine" id="cb55-3" data-line-number="3"><span class="dt">void</span> print_sphere(<span class="at">const</span> <span class="dt">double</span> origin[<span class="dv">3</span>], <span class="at">const</span> <span class="dt">double</span>* radius);</a>
+<a class="sourceLine" id="cb55-4" data-line-number="4">}</a></code></pre></div>
 <p>is automatically translated into</p>
-<div class="sourceCode" id="cb48"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb48-1" data-line-number="1"><span class="kw">subroutine</span> print_sphere(origin, radius) <span class="kw">&amp;</span></a>
-<a class="sourceLine" id="cb48-2" data-line-number="2">    bind(C, name<span class="kw">=</span><span class="st">&quot;print_sphere&quot;</span>)</a>
-<a class="sourceLine" id="cb48-3" data-line-number="3">  <span class="kw">use</span>, <span class="kw">intrinsic</span> <span class="dt">::</span> ISO_C_BINDING</a>
-<a class="sourceLine" id="cb48-4" data-line-number="4"><span class="dt">  real(C_DOUBLE)</span>, <span class="dt">dimension(3)</span>, <span class="dt">intent(in)</span> <span class="dt">::</span> origin</a>
-<a class="sourceLine" id="cb48-5" data-line-number="5"><span class="dt">  real(C_DOUBLE)</span>, <span class="dt">intent(in)</span> <span class="dt">::</span> radius</a>
-<a class="sourceLine" id="cb48-6" data-line-number="6"><span class="kw">end subroutine</span></a></code></pre></div>
+<div class="sourceCode" id="cb56"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb56-1" data-line-number="1"><span class="kw">subroutine</span> print_sphere(origin, radius) <span class="kw">&amp;</span></a>
+<a class="sourceLine" id="cb56-2" data-line-number="2">    bind(C, name<span class="kw">=</span><span class="st">&quot;print_sphere&quot;</span>)</a>
+<a class="sourceLine" id="cb56-3" data-line-number="3">  <span class="kw">use</span>, <span class="kw">intrinsic</span> <span class="dt">::</span> ISO_C_BINDING</a>
+<a class="sourceLine" id="cb56-4" data-line-number="4"><span class="dt">  real(C_DOUBLE)</span>, <span class="dt">dimension(3)</span>, <span class="dt">intent(in)</span> <span class="dt">::</span> origin</a>
+<a class="sourceLine" id="cb56-5" data-line-number="5"><span class="dt">  real(C_DOUBLE)</span>, <span class="dt">intent(in)</span> <span class="dt">::</span> radius</a>
+<a class="sourceLine" id="cb56-6" data-line-number="6"><span class="kw">end subroutine</span></a></code></pre></div>
 <!-- ###################################################################### -->
 
 <h1 id="swig-generated-fortran-derived-types">SWIG-generated Fortran derived types</h1>
@@ -701,9 +796,9 @@ call c_f_pointer($1, $result, [self%size()])
 <p>For reasons of simplicity, a single Fortran proxy class must be able to act as a value, a pointer, or a reference. They must be able to be created and destroyed without double-deleting memory. Finally, and most frustratingly, C++ functions must be able to return both new'd data and referenced data to Fortran, and assignment between Fortran classes must preserve memory association.</p>
 <p>[ Footnote: Fortran pointers cannot be used for returning references and C pointers, because the pointed-to object needs to be a <em>proxy</em> class rather than a C++ class. ]</p>
 <p>The complicating issue with assignment is that Fortran's &quot;dummy argument&quot; for the return result is <code>intent(out)</code>, preventing its previous contents (if any) from being modified or deallocated. At the same time, the assignment operator must behave correctly in both of these assignments, which are treated identically:</p>
-<div class="sourceCode" id="cb49"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb49-1" data-line-number="1"> <span class="dt">type(Foo)</span> <span class="dt">::</span> a, b</a>
-<a class="sourceLine" id="cb49-2" data-line-number="2"> a <span class="kw">=</span> make_foo()</a>
-<a class="sourceLine" id="cb49-3" data-line-number="3"> b <span class="kw">=</span> a</a></code></pre></div>
+<div class="sourceCode" id="cb57"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb57-1" data-line-number="1"> <span class="dt">type(Foo)</span> <span class="dt">::</span> a, b</a>
+<a class="sourceLine" id="cb57-2" data-line-number="2"> a <span class="kw">=</span> make_foo()</a>
+<a class="sourceLine" id="cb57-3" data-line-number="3"> b <span class="kw">=</span> a</a></code></pre></div>
 <p>Note that unlike Python, <code>b</code> is not a pointer to <code>a</code>; and unlike C++, <code>b</code> is not copy-constructed from <code>a</code>. Instead, <code>a</code> is assigned to <code>b</code> using the <code>assignment(=)</code> operator. Likewise, <code>a</code> is not &quot;constructed&quot; on the second line: there is no return value optimization as in C++. Instead, <code>make_foo</code> returns a temporary <code>Foo</code>, and that temporary is assigned to <code>a</code>.</p>
 <p>Because these two assignments are treated equally and a temporary is created in only one of them, we have to be clever to avoid leaking or double-deleting memory.</p>
 <p>Ideally, as was done in Rousson's implementation of Fortran shared pointers, we could rely on the <code>FINAL</code> operator defined by Fortran 2003 to release the temporary's memory. Unfortunately, even 15 years after the standard was ratified, support for <code>FINAL</code> is patchy and unreliable.</p>
@@ -812,14 +907,14 @@ call c_f_pointer($1, $result, [self%size()])
 <p>Memory can still be leaked, of course, by calling <code>make_foo()</code> without capturing and releasing the result, or by failing to call <code>release</code> on a proxy class.</p>
 <h2 id="function-overloading">Function overloading</h2>
 <p>Function overloading is when two or more free functions share a name but have different arguments. This is implemented using <em>generic interfaces</em>. Each overloaded function gets a unique symbolic internal name, and they are bound together. For an overloaded free function <code>myfunc</code> in C++, SWIG will generate two private procedures and add an interface to the module specification:</p>
-<div class="sourceCode" id="cb50"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb50-1" data-line-number="1"> <span class="dt">public</span> <span class="dt">::</span> myfunc</a>
-<a class="sourceLine" id="cb50-2" data-line-number="2"> <span class="kw">interface</span> myfunc</a>
-<a class="sourceLine" id="cb50-3" data-line-number="3">  <span class="kw">module procedure</span> myfunc__SWIG_<span class="dv">0</span>, myfunc__SWIG_<span class="dv">1</span></a>
-<a class="sourceLine" id="cb50-4" data-line-number="4"> <span class="kw">end interface</span></a></code></pre></div>
+<div class="sourceCode" id="cb58"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb58-1" data-line-number="1"> <span class="dt">public</span> <span class="dt">::</span> myfunc</a>
+<a class="sourceLine" id="cb58-2" data-line-number="2"> <span class="kw">interface</span> myfunc</a>
+<a class="sourceLine" id="cb58-3" data-line-number="3">  <span class="kw">module procedure</span> myfunc__SWIG_<span class="dv">0</span>, myfunc__SWIG_<span class="dv">1</span></a>
+<a class="sourceLine" id="cb58-4" data-line-number="4"> <span class="kw">end interface</span></a></code></pre></div>
 <p>If a member function <code>doit</code> of class <code>Action</code> is overloaded, a generic binding will be generated inside the Fortran proxy derived type:</p>
-<div class="sourceCode" id="cb51"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb51-1" data-line-number="1">  <span class="kw">procedure</span>, <span class="dt">private</span> <span class="dt">::</span> doit__SWIG_<span class="dv">0</span> <span class="kw">=</span><span class="op">&gt;</span> swigf_Action_doit__SWIG_<span class="dv">0</span></a>
-<a class="sourceLine" id="cb51-2" data-line-number="2">  <span class="kw">procedure</span>, <span class="dt">private</span> <span class="dt">::</span> doit__SWIG_<span class="dv">1</span> <span class="kw">=</span><span class="op">&gt;</span> swigf_Action_doit__SWIG_<span class="dv">1</span></a>
-<a class="sourceLine" id="cb51-3" data-line-number="3">  generic <span class="dt">::</span> doit <span class="kw">=</span><span class="op">&gt;</span> doit__SWIG_<span class="dv">0</span>, doit__SWIG_<span class="dv">1</span></a></code></pre></div>
+<div class="sourceCode" id="cb59"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb59-1" data-line-number="1">  <span class="kw">procedure</span>, <span class="dt">private</span> <span class="dt">::</span> doit__SWIG_<span class="dv">0</span> <span class="kw">=</span><span class="op">&gt;</span> swigf_Action_doit__SWIG_<span class="dv">0</span></a>
+<a class="sourceLine" id="cb59-2" data-line-number="2">  <span class="kw">procedure</span>, <span class="dt">private</span> <span class="dt">::</span> doit__SWIG_<span class="dv">1</span> <span class="kw">=</span><span class="op">&gt;</span> swigf_Action_doit__SWIG_<span class="dv">1</span></a>
+<a class="sourceLine" id="cb59-3" data-line-number="3">  generic <span class="dt">::</span> doit <span class="kw">=</span><span class="op">&gt;</span> doit__SWIG_<span class="dv">0</span>, doit__SWIG_<span class="dv">1</span></a></code></pre></div>
 <p>It should be noted that a function that returns <code>void</code> cannot be overloaded with a function that returns anything else: generic interfaces must be either all subroutines or all functions. Use SWIG's <code>%ignore</code> statement to hide one or the other:</p>
 <pre class="swig"><code>void cannot_overload(int x);
 int  cannot_overload(int x, int y);
@@ -837,6 +932,13 @@ int  cannot_overload(int x, int y);
 <h2 id="proxy-class-wrapper-code">Proxy class wrapper code</h2>
 <p>The Fortran wrapper code generated for each function can be extended in multiple ways besides using the <code>fin</code> and <code>fout</code> typemaps. A specific function can have code prepended to it using the <code>%fortranprepend</code> macro (which is a compiler macro for <code>%feature(&quot;fortran:prepend&quot;)</code>) and appended using <code>%fortranappend</code> (which aliases <code>%feature(&quot;fortran:append&quot;)</code>.</p>
 <p>For advanced cases, the function or subroutine invocation can be embedded in another layer of wrapping using the <code>%feature(&quot;shadow&quot;)</code> macro. The special symbol <code>$action</code> will be replaced with the usual invocation.</p>
+<h2 id="finalization">Finalization</h2>
+<p>Ideally, the <code>release</code> type-bound procedure would not have to be invoked manually, and C++ memory could be freed when the Fortran proxy object is no longer in use.</p>
+<p>Fortran 2003 does have support for a special &quot;final&quot; procedure called when a dynamic or temporary object is deallocated; however, support for this feature is limited and fragile even on recent Fortran compilers. The SWIG Fortran interface does support the creation of a &quot;final&quot; procedure that calls the C++ destructor:</p>
+<pre class="swig"><code>%feature(&quot;final&quot;) Foo;
+%include &quot;Foo.h&quot;
+</code></pre>
+<p>This special feature is relatively untested and its behavior could be compiler-dependent, so extreme caution is recommended when enabling it.</p>
 <h1 id="advanced">Advanced</h1>
 <h2 id="fragments">Fragments</h2>
 <p>The <code>%insert(section) %{ ...code... %}</code> directive can be used to inject code directly into the C/C++ wrapper file as well as the Fortran module file. The Fortran module uses several additional sections that can be used to insert arbitrary extensions to the module. For example, if an <code>%insert</code> directive is embedded within a class <code>%extend</code>, new type-bound procedures can be manually added to the derived type.</p>
@@ -866,6 +968,35 @@ int  cannot_overload(int x, int y);
 </tbody>
 </table>
 
+<p>The generated C++ wrapper file looks like:</p>
+<div class="sourceCode" id="cb64"><pre class="sourceCode c++"><code class="sourceCode cpp"><a class="sourceLine" id="cb64-1" data-line-number="1">{begin}</a>
+<a class="sourceLine" id="cb64-2" data-line-number="2">{runtime}</a>
+<a class="sourceLine" id="cb64-3" data-line-number="3">{header}</a>
+<a class="sourceLine" id="cb64-4" data-line-number="4"><span class="pp">#ifdef </span><span class="ot">__cplusplus</span></a>
+<a class="sourceLine" id="cb64-5" data-line-number="5"><span class="at">extern</span> <span class="st">&quot;C&quot;</span> {</a>
+<a class="sourceLine" id="cb64-6" data-line-number="6"><span class="pp">#endif</span></a>
+<a class="sourceLine" id="cb64-7" data-line-number="7">{wrapper}</a>
+<a class="sourceLine" id="cb64-8" data-line-number="8"><span class="pp">#ifdef </span><span class="ot">__cplusplus</span></a>
+<a class="sourceLine" id="cb64-9" data-line-number="9">}</a>
+<a class="sourceLine" id="cb64-10" data-line-number="10"><span class="pp">#endif</span></a>
+<a class="sourceLine" id="cb64-11" data-line-number="11">{init}</a></code></pre></div>
+<p>The generated Fortran module looks like:</p>
+<div class="sourceCode" id="cb65"><pre class="sourceCode fortran"><code class="sourceCode fortran"><a class="sourceLine" id="cb65-1" data-line-number="1"><span class="kw">{</span>fbegin<span class="kw">}</span></a>
+<a class="sourceLine" id="cb65-2" data-line-number="2"><span class="kw">module</span> <span class="kw">[</span>MODULE_NAME<span class="kw">]</span></a>
+<a class="sourceLine" id="cb65-3" data-line-number="3"> <span class="kw">use</span>, <span class="kw">intrinsic</span> <span class="dt">::</span> ISO_C_BINDING</a>
+<a class="sourceLine" id="cb65-4" data-line-number="4"> <span class="kw">{</span>fmodule<span class="kw">}</span></a>
+<a class="sourceLine" id="cb65-5" data-line-number="5"> <span class="kw">implicit</span> <span class="kw">none</span></a>
+<a class="sourceLine" id="cb65-6" data-line-number="6"> <span class="dt">private</span></a>
+<a class="sourceLine" id="cb65-7" data-line-number="7"> <span class="kw">{</span>fpublic<span class="kw">}</span></a>
+<a class="sourceLine" id="cb65-8" data-line-number="8"> <span class="co">! module generic interfaces</span></a>
+<a class="sourceLine" id="cb65-9" data-line-number="9"> <span class="kw">{</span>fparams<span class="kw">}</span></a>
+<a class="sourceLine" id="cb65-10" data-line-number="10"> <span class="kw">{</span>ftypes<span class="kw">}</span></a>
+<a class="sourceLine" id="cb65-11" data-line-number="11"><span class="kw">interface</span></a>
+<a class="sourceLine" id="cb65-12" data-line-number="12"> <span class="kw">{</span>finterfaces<span class="kw">}</span></a>
+<a class="sourceLine" id="cb65-13" data-line-number="13"><span class="kw">end interface</span></a>
+<a class="sourceLine" id="cb65-14" data-line-number="14"><span class="co">contains</span></a>
+<a class="sourceLine" id="cb65-15" data-line-number="15"> <span class="kw">{</span>fwrapper<span class="kw">}</span></a>
+<a class="sourceLine" id="cb65-16" data-line-number="16"><span class="kw">end module</span></a></code></pre></div>
 <h2 id="known-issues">Known Issues</h2>
 <p>A number of known limitations to the SWIG Fortran module are tracked at <a href="https://github.com/sethrj/swig/issues/59" class="uri">https://github.com/sethrj/swig/issues/59</a> .</p>
 </body>

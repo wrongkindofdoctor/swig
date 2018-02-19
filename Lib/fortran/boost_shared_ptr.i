@@ -77,6 +77,13 @@
   $1 = smartarg ? %as_mutable(smartarg->get()) : NULL;
 }
 
+// The string "SWIG_NO_NULL_DELETER_$owner" is replaced by the macro
+// SWIG_NO_NULL_DELETER_1 if a raw pointer is being emitted via %newobject
+//   (for a shared pointer this macro is empty);
+// or SWIG_NO_NULL_DELETER_0 if the raw pointer is simply a reference
+//   (in which case the macro evaluates to `, SWIG_null_deleter()`, which
+//   prevents the memory from being deallocated when the shared pointer is
+//   destroyed).
 %typemap(out, noblock=1, fragment="SWIG_null_deleter") CONST TYPE * {
   $result.ptr = $1 ? new SWIGSP__($1 SWIG_NO_NULL_DELETER_$owner) : NULL;
   $result.mem = SWIG_MOVE;
@@ -86,14 +93,14 @@
 // Original class by reference. Same as by pointer, but with null checks.
 //---------------------------------------------------------------------------//
 %typemap(in, noblock=1, fragment="SWIG_check_sp_nonnull") CONST TYPE& (SWIGSP__* smartarg) {
-  SWIG_check_sp_nonnull($input,
-                      "$1_ltype", "$fclassname", "$decl", return $null)
+  SWIG_check_sp_nonnull($input, "$1_ltype", "$fclassname", "$decl", return $null)
   smartarg = %static_cast($input->ptr, SWIGSP__*);
   $1 = %as_mutable(smartarg->get());
 }
 
+// Output value is never null, and since it's a reference we never own it.
 %typemap(out) CONST TYPE& {
-  $result.ptr = new SWIGSP__($1 SWIG_NO_NULL_DELETER_$owner);
+  $result.ptr = new SWIGSP__($1 SWIG_NO_NULL_DELETER_1);
   $result.mem = SWIG_MOVE;
 }
 
