@@ -1,3 +1,4 @@
+/* File : fortran.cxx */
 #include "swigmod.h"
 #include "cparse.h"
 #include <ctype.h>
@@ -12,9 +13,9 @@
   } while (0)
 
 namespace {
-//---------------------------------------------------------------------------//
-// GLOBAL DATA
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * GLOBAL DATA
+ * ------------------------------------------------------------------------- */
 
 const char usage[] = "\
 Fotran Options (available with -fortran)\n\
@@ -29,9 +30,9 @@ const int g_max_line_length = 128;
 
 const char fortran_end_statement[] = "\n";
 
-//---------------------------------------------------------------------------//
-// UTILITY FUNCTIONS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * UTILITY FUNCTIONS
+ * ------------------------------------------------------------------------- */
 
 /*!
  * \brief Whether a node is a constructor.
@@ -42,8 +43,7 @@ bool is_node_constructor(Node *n) {
   return (Cmp(Getattr(n, "nodeType"), "constructor") == 0 || Getattr(n, "handled_as_constructor"));
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Print a comma-joined line of items to the given output.
  */
 int print_wrapped_list(String *out, Iterator it, int line_length) {
@@ -61,8 +61,7 @@ int print_wrapped_list(String *out, Iterator it, int line_length) {
   return line_length;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Return a function wrapper for Fortran code.
  */
 Wrapper *NewFortranWrapper() {
@@ -71,8 +70,7 @@ Wrapper *NewFortranWrapper() {
   return w;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Whether an expression is a standard base-10 integer compatible with
  * fortran
  *
@@ -111,8 +109,7 @@ bool is_fortran_intexpr(String *s) {
   return true;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Check a parameter for invalid dimension names.
  */
 bool bad_fortran_dims(Node *n, const char *tmap_name) {
@@ -140,8 +137,7 @@ bool bad_fortran_dims(Node *n, const char *tmap_name) {
   return is_bad;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Determine whether to wrap an enum as a value.
  */
 bool is_native_enum(Node *n) {
@@ -168,8 +164,7 @@ bool is_native_enum(Node *n) {
   }
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Determine whether to wrap an enum as a value.
  */
 bool is_native_parameter(Node *n) {
@@ -187,8 +182,7 @@ bool is_native_parameter(Node *n) {
   }
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Determine whether to wrap a function/class as a c-bound struct.
  */
 bool is_bindc(Node *n) {
@@ -211,8 +205,7 @@ bool is_bindc(Node *n) {
   }
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Whether an SWIG type can be rendered as TYPE VAR.
  *
  * Some declarations (arrays, function pointers, member function pointers)
@@ -226,8 +219,7 @@ bool needs_typedef(String *s) {
   return result;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Get some name attached to the node.
  *
  * This is for user feedback only.
@@ -240,8 +232,7 @@ String *get_symname_or_name(Node *n) {
   return s;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Get/attach and return a typemap to the given node.
  *
  * If 'ext' is non-null, then after binding/searchinbg, a search will be made
@@ -306,8 +297,9 @@ String *get_typemap(const_String_or_char_ptr tmname, const_String_or_char_ptr ex
   return result;
 }
 
-//---------------------------------------------------------------------------//
-//! Attach and return a typemap to the given node.
+/* -------------------------------------------------------------------------
+ *! Attach and return a typemap to the given node.
+ */
 String *attach_typemap(const_String_or_char_ptr tmname, Node *n, int warning) {
   return get_typemap(tmname, NULL, n, warning, true);
 }
@@ -327,8 +319,7 @@ String *get_typemap(const_String_or_char_ptr tmname, const_String_or_char_ptr ex
   return get_typemap(tmname, ext, n, warning, false);
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Get a plain-text type like "int *", convert it to "p.int"
  *
  * This also sets the attribute in the node.
@@ -359,7 +350,7 @@ SwigType *parse_typemap(const_String_or_char_ptr tmname, const_String_or_char_pt
   return raw_tm;
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 String *add_explicit_scope(String *s) {
   if (!CPlusPlus) {
     return s;
@@ -372,7 +363,7 @@ String *add_explicit_scope(String *s) {
   return s;
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 }                                 // end anonymous namespace
 
 class FORTRAN : public Language {
@@ -456,8 +447,7 @@ private:
   bool is_basic_struct() const { return d_method_overloads == NULL; }
 };
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Main function for code generation.
  */
 void FORTRAN::main(int argc, char *argv[]) {
@@ -510,8 +500,7 @@ void FORTRAN::main(int argc, char *argv[]) {
   Swig_interface_feature_enable();
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Top-level code generation function.
  */
 int FORTRAN::top(Node *n) {
@@ -609,8 +598,7 @@ int FORTRAN::top(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Write C++ wrapper code
  */
 void FORTRAN::write_wrapper(String *filename) {
@@ -645,8 +633,7 @@ void FORTRAN::write_wrapper(String *filename) {
   Delete(out);
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Write Fortran implementation module
  */
 void FORTRAN::write_module(String *filename) {
@@ -720,8 +707,7 @@ void FORTRAN::write_module(String *filename) {
   Delete(out);
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Process a %module
  */
 int FORTRAN::moduleDirective(Node *n) {
@@ -765,8 +751,7 @@ int FORTRAN::moduleDirective(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Wrap basic functions.
  *
  * This is called from many different handlers, including:
@@ -929,8 +914,7 @@ int FORTRAN::functionWrapper(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Generate C/C++ wrapping code
  */
 void FORTRAN::cfuncWrapper(Node *n) {
@@ -1130,8 +1114,7 @@ void FORTRAN::cfuncWrapper(Node *n) {
   DelWrapper(cfunc);
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Generate Fortran interface code
  *
  * This is the Fortran equivalent of the cfuncWrapper's declaration.
@@ -1251,8 +1234,7 @@ int FORTRAN::imfuncWrapper(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Generate Fortran proxy code
  *
  * This is for the native Fortran interaction.
@@ -1515,8 +1497,7 @@ int FORTRAN::proxyfuncWrapper(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief KLUDGE: manually add assignment code to output file.
  *
  * I'd later like to do this by adding a child node to the class during
@@ -1631,8 +1612,7 @@ void FORTRAN::assignmentWrapper(Node *n) {
   DelWrapper(cfunc);
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Write documentation for the given node to the passed string.
  */
 void FORTRAN::write_docstring(Node *n, String *dest) {
@@ -1657,8 +1637,7 @@ void FORTRAN::write_docstring(Node *n, String *dest) {
   Delete(lines);
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Create a friendly parameter name
  */
 String *FORTRAN::makeParameterName(Node *n, Parm *p, int arg_num, bool setter) const {
@@ -1698,8 +1677,7 @@ String *FORTRAN::makeParameterName(Node *n, Parm *p, int arg_num, bool setter) c
   return name;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Process a class declaration.
  *
  * The superclass calls classHandler.
@@ -1712,8 +1690,7 @@ int FORTRAN::classDeclaration(Node *n) {
   return Language::classDeclaration(n);
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Process classes.
  */
 int FORTRAN::classHandler(Node *n) {
@@ -1821,8 +1798,7 @@ int FORTRAN::classHandler(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Extra stuff for constructors.
  */
 int FORTRAN::constructorHandler(Node *n) {
@@ -1856,8 +1832,7 @@ int FORTRAN::constructorHandler(Node *n) {
   return Language::constructorHandler(n);
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Handle extra destructor stuff.
  */
 int FORTRAN::destructorHandler(Node *n) {
@@ -1905,8 +1880,7 @@ int FORTRAN::destructorHandler(Node *n) {
   return Language::destructorHandler(n);
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Process member functions.
  */
 int FORTRAN::memberfunctionHandler(Node *n) {
@@ -1960,8 +1934,7 @@ int FORTRAN::memberfunctionHandler(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Process member variables.
  */
 int FORTRAN::membervariableHandler(Node *n) {
@@ -1995,8 +1968,7 @@ int FORTRAN::membervariableHandler(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Process static member functions.
  */
 int FORTRAN::globalvariableHandler(Node *n) {
@@ -2008,8 +1980,7 @@ int FORTRAN::globalvariableHandler(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Process static member functions.
  */
 int FORTRAN::staticmemberfunctionHandler(Node *n) {
@@ -2026,8 +1997,7 @@ int FORTRAN::staticmemberfunctionHandler(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Process static member variables.
  */
 int FORTRAN::staticmembervariableHandler(Node *n) {
@@ -2042,8 +2012,7 @@ int FORTRAN::staticmembervariableHandler(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Wrap an enum declaration
  */
 int FORTRAN::enumDeclaration(Node *n) {
@@ -2128,8 +2097,7 @@ int FORTRAN::enumDeclaration(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Process constants
  *
  * These include callbacks declared with
@@ -2303,8 +2271,7 @@ int FORTRAN::constantWrapper(Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Handle a forward declaration of a class.
  *
  * This is necessary for the case:
@@ -2331,9 +2298,9 @@ int FORTRAN::classforwardDeclaration(Node *n) {
   return Language::classforwardDeclaration(n);
 }
 
-//---------------------------------------------------------------------------//
-// HELPER FUNCTIONS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * HELPER FUNCTIONS
+ * ------------------------------------------------------------------------- */
 /*!
  * \brief Attach and return a typemap belonging to the current class.
  *
@@ -2357,8 +2324,7 @@ String *FORTRAN::attach_class_typemap(const_String_or_char_ptr tmname, int warni
   return result;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Substitute special '$fXXXXX' in typemaps.
  *
  * This is currently only used for '$fclassname'
@@ -2391,7 +2357,7 @@ bool FORTRAN::replace_fclassname(SwigType *intype, String *tm) {
   return substitution_performed;
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 
 void FORTRAN::replace_fspecial_impl(SwigType *basetype, String *tm, const char *classnamespecialvariable, bool is_enum) {
   String *replacementname = NULL;
@@ -2427,7 +2393,7 @@ void FORTRAN::replace_fspecial_impl(SwigType *basetype, String *tm, const char *
   Delete(alloc_string);
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 
 void FORTRAN::replaceSpecialVariables(String *method, String *tm, Parm *parm) {
   (void)method;
@@ -2435,8 +2401,7 @@ void FORTRAN::replaceSpecialVariables(String *method, String *tm, Parm *parm) {
   this->replace_fclassname(type, tm);
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Add lowercase symbol since fortran is case insensitive
  *
  * Return SWIG_NOWRAP if the name conflicts.
@@ -2463,8 +2428,7 @@ int FORTRAN::add_fsymbol(String *s, Node *n) {
   return SWIG_OK;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Make a unique fortran symbol name by appending numbers.
  */
 String *FORTRAN::make_unique_symname(Node *n) {
@@ -2508,8 +2472,7 @@ String *FORTRAN::make_unique_symname(Node *n) {
   return symname;
 }
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * Get the list of overloaded methods for the current 'generic' name.
  *
  * This only applies while a class is being wrapped to methods in that particular class.
@@ -2524,10 +2487,11 @@ List *FORTRAN::get_method_overloads(String *generic) {
   return overloads;
 }
 
-//---------------------------------------------------------------------------//
-// Expose the code to the SWIG main function.
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Expose the code to the SWIG main function.
+ * ------------------------------------------------------------------------- */
 
 extern "C" Language *swig_fortran(void) {
   return new FORTRAN();
 }
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

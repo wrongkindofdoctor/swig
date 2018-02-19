@@ -1,12 +1,4 @@
-//---------------------------------*-C++-*-----------------------------------//
-/*!
- * \file   spdemo/spdemo.cxx
- * \author Seth R Johnson
- * \date   Tue Dec 06 14:55:04 2016
- * \brief  spdemo class definitions.
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : spdemo.cxx */
 
 #include "spdemo.h"
 
@@ -73,6 +65,5 @@ void print_cr(const Foo &f) {
   cout << "Foo at " << &f << ": " << f.get() << endl;
 }
 
-//---------------------------------------------------------------------------//
-// end of spdemo/spdemo.cxx
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

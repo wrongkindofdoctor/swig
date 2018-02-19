@@ -1,4 +1,6 @@
-/*
+/* -------------------------------------------------------------------------
+ * forfragments.swg
+ * ------------------------------------------------------------------------- */
   Create a file with this name, 'forfragments.swg', in your working
   directory and add all the %fragments you want to take precedence
   over the default ones defined by SWIG.
@@ -17,3 +19,4 @@
     end function
     %}
 */
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

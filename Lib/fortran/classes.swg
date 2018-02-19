@@ -1,10 +1,10 @@
-//---------------------------------------------------------------------------//
-// FRAGMENTS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * classes.swg
+ * ------------------------------------------------------------------------- */
 %include <typemaps/fragments.swg>
-//---------------------------------------------------------------------------//
-// Memory state enumeration
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Memory state enumeration
+ * ------------------------------------------------------------------------- */
 #ifdef __cplusplus
 %fragment("SwigMemState", "header") %{
 enum SwigMemState {
@@ -38,9 +38,9 @@ typedef enum {
  end enum
 %}
 
-//---------------------------------------------------------------------------//
-// Wrapper struct that holds a C pointer and memory state
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Wrapper struct that holds a C pointer and memory state
+ * ------------------------------------------------------------------------- */
 
 #ifdef __cplusplus
 %fragment("SwigClassWrapper_decl", "header",
@@ -93,9 +93,9 @@ type :: SwigUnknownClass
 end type
 %}
 
-//---------------------------------------------------------------------------//
-// Runtime check for mutable argument
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Runtime check for mutable argument
+ * ------------------------------------------------------------------------- */
 
 // Runtime check for a class wrapper not being const.
 %fragment("SWIG_check_mutable", "runtime") %{
@@ -124,9 +124,9 @@ end type
     SWIG_check_mutable(SWIG_CLASS_WRAPPER, TYPENAME, FNAME, FUNCNAME, RETURNNULL);
 %}
 
-//---------------------------------------------------------------------------//
-// Assignment: C++ and C++11 implementation
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Assignment: C++ and C++11 implementation
+ * ------------------------------------------------------------------------- */
 
 #ifdef __cplusplus
 
@@ -371,9 +371,9 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
 #endif
 %}
 
-//---------------------------------------------------------------------------//
-// Assignment: C implementation
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Assignment: C implementation
+ * ------------------------------------------------------------------------- */
 #else
 
 %fragment("SWIG_assign_impl", "header",
@@ -396,9 +396,9 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
 
 #endif
 
-//---------------------------------------------------------------------------//
-// CLASS DEFINITION
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * CLASS DEFINITION
+ * ------------------------------------------------------------------------- */
 
 // Data owned by the base class instance
 %typemap(fdata, fragment="SwigClassWrapper_f") SWIGTYPE
@@ -413,12 +413,10 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
   $input%swigdata%mem = SWIG_NULL
 %}
 
-//---------------------------------------------------------------------------//
-// CLASS TYPEMAPS
-//---------------------------------------------------------------------------//
-// Classes accepted by value are passed as const reference.
-// They're copy-assigned when they're passed
-// Returning a class by value is copy-constructed as a new'd pointer
+/* -------------------------------------------------------------------------
+ * CLASS TYPEMAPS
+ * -------------------------------------------------------------------------
+ *  Returning a class by value is copy-constructed as a new'd pointer
 %typemap(ctype, out="SwigClassWrapper", null="SwigClassWrapper_uninitialized()", noblock=1, fragment="SwigClassWrapper")
     SWIGTYPE
 {const SwigClassWrapper *}
@@ -515,3 +513,4 @@ FORT_COPY_TYPEMAPS(const SWIGTYPE*,
   "type(C_PTR)"
 
 
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

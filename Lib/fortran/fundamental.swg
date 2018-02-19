@@ -1,5 +1,6 @@
-//---------------------------------------------------------------------------//
-// STANDARD TYPE DEFINITIONS
+/* -------------------------------------------------------------------------
+ * fundamental.swg
+ * ------------------------------------------------------------------------- */
 
 #ifdef __cplusplus
 namespace std
@@ -13,9 +14,9 @@ using std::size_t;
 using std::ptrdiff_t;
 #endif
 
-//---------------------------------------------------------------------------//
-// FRAGMENTS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * FRAGMENTS
+ * ------------------------------------------------------------------------- */
 /* Convert Fortran logical values to and from C-bound integers */
 %fragment("SWIG_logical_to_int_f", "fwrapper", noblock="1") %{
 function SWIG_logical_to_int(inp) &
@@ -45,9 +46,9 @@ function SWIG_int_to_logical(inp) &
 end function
 %}
 
-//---------------------------------------------------------------------------//
-// MACROS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * MACROS
+ * ------------------------------------------------------------------------- */
 %include <typemaps/swigmacros.swg>
 
 /*!
@@ -158,8 +159,7 @@ end function
   FORT_COPY_TYPEMAPS(CPPTYPE*, CPPTYPE const [], CPPTYPE const [ANY]);
 %enddef
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \def FORT_FUND_TYPEMAP
  * \brief Add a typemap for a fundamental built-in type.
  *
@@ -204,9 +204,9 @@ end function
     FTYPE ", dimension($1_dim2,$1_dim1,*)"
 %enddef
 
-//---------------------------------------------------------------------------//
-// VOID TYPES
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * VOID TYPES
+ * ------------------------------------------------------------------------- */
 
 %typemap(ctype, null="")  void
   "void"
@@ -224,9 +224,9 @@ end function
 %typemap(bindc) void
   ""
 
-//---------------------------------------------------------------------------//
-// OPAQUE POINTERS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * OPAQUE POINTERS
+ * ------------------------------------------------------------------------- */
 
 %typemap(ctype) void*
   "$1_ltype"
@@ -261,9 +261,9 @@ FORT_COPY_TYPEMAPS(const void*,
 %typemap(bindc, in="type(C_PTR), value") SWIGTYPE*
   "type(C_PTR)"
 
-//---------------------------------------------------------------------------//
-// FUNCTION POINTERS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * FUNCTION POINTERS
+ * ------------------------------------------------------------------------- */
 
 %typemap(ctype)  SWIGTYPE (*)(ANY)
   %{$1_ltype%}
@@ -286,9 +286,9 @@ FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY), SWIGTYPE (*const)(ANY));
 %typemap(bindc, in="type(C_FUNPTR), value") SWIGTYPE (*)(ANY)
   "type(C_FUNPTR)"
 
-//---------------------------------------------------------------------------//
-// FUNDAMENTAL ISO C TYPES
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * FUNDAMENTAL ISO C TYPES
+ * ------------------------------------------------------------------------- */
 
 FORT_FUND_TYPEMAP(bool       , "logical(C_BOOL)"     )
 FORT_FUND_TYPEMAP(signed char, "integer(C_SIGNED_CHAR)")
@@ -301,9 +301,9 @@ FORT_FUND_TYPEMAP(float      , "real(C_FLOAT)"       )
 FORT_FUND_TYPEMAP(double     , "real(C_DOUBLE)"      )
 FORT_FUND_TYPEMAP(char       , "character(C_CHAR)"   )
 
-//---------------------------------------------------------------------------//
-// UNSIGNED INTEGER TYPES
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * UNSIGNED INTEGER TYPES
+ * ------------------------------------------------------------------------- */
 /*
  * Since Fortran does not have unsigned types, we might want to validate that
  * the values being passed back and forth don't exceed the range of the signed
@@ -329,18 +329,9 @@ FORT_FUND_TYPEMAP(unsigned int      , "integer(C_INT)");
 FORT_FUND_TYPEMAP(unsigned long     , "integer(C_LONG)");
 FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)");
 
-//---------------------------------------------------------------------------//
-// LOGICAL (BOOLEAN) TYPE
-//
-// Due to differences in how Fortran and C treat logical values, it's not always
-// safe to treat C_BOOL and bool as compatible. Yay. So we pass integers
-// between the language and have the wrapper convert them. This also lets us
-// use the native fortran logical type instead of requiring users cast to
-// the special C_BOOL type.
-//
-// https://software.intel.com/en-us/forums/intel-fortran-compiler-for-linux-and-mac-os-x/topic/594856
-// http://www.fortran90.org/src/gotchas.html
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * LOGICAL (BOOLEAN) TYPE
+ * ------------------------------------------------------------------------- */
 %typemap(ctype, out="int") bool
   "const int*"
 %typemap(in) bool
@@ -371,11 +362,12 @@ FORT_FUND_TYPEMAP(unsigned long long, "integer(C_LONG_LONG)");
   bool&, bool*&,
   const bool*, const bool* const };
 
-//---------------------------------------------------------------------------//
-// TYPE CHECKING
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * TYPE CHECKING
+ * ------------------------------------------------------------------------- */
 
 // Type checking isn't used for Fortran but is required for unit tests
 %typemap(typecheck, precedence=0) SWIGTYPE
   ""
 
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

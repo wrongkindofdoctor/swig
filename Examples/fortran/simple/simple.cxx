@@ -1,6 +1,4 @@
-/** 
- * @file simple.cxx 
- * @brief simple test
+/* File : simple.cxx */
 */
 
 /** A global variable */
@@ -17,3 +15,4 @@ int gcd(int x, int y) {
   }
   return g;
 }
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

@@ -1,11 +1,4 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   thinvec/thinvec.i
- * \author Seth R Johnson
- * \date   Mon Jan 19 08:59:42 2015
- * \note   Copyright (c) 2015 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : thinvec.i */
 %{
 #include "ThinVec.h"
 %}
@@ -19,14 +12,10 @@
 // Ignore return of types we don't understand (to prevent a warning)
 %ignore ThinVec::data() const;
 
-//---------------------------------------------------------------------------//
-// Note: since we use %const_cast and %static_cast, which are SWIG-defined
-// macros, we must use {} rather than %{ %} for the typemap. To prevent those
-// enclosing braces from being inserted in the wrapper code, we add the
-// noblock=1 argument to the typemap.
-//
-// The typemap applies to input values with the name "INDICES", and it uses a
-// temporary variable (called tempvec) declared in the parentheses.
+/* -------------------------------------------------------------------------
+ * Note: since we use %const_cast and %static_cast, which are SWIG-defined
+
+ *  temporary variable (called tempvec) declared in the parentheses.
 %typemap(in, noblock=1) const ThinVec<int>& INDICES (ThinVec<int> tempvec)
 {
     // Original typemap: convert const ThinVec<int>* to thinvec reference
@@ -56,6 +45,5 @@
 %template(print_vec) print_vec<double>;
 %template(print_vec) print_vec<int>;
 
-//---------------------------------------------------------------------------//
-// end of swig-dev/thinvec/ThinVec.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

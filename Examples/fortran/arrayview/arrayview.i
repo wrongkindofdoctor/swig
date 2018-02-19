@@ -1,11 +1,4 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   arrayview/arrayview.i
- * \author Seth R Johnson
- * \date   Tue Dec 06 11:21:44 2016
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : arrayview.i */
 
 %module arrayview
 
@@ -32,6 +25,5 @@ TEMPLATE_ALGORITHMS(int)
 TEMPLATE_ALGORITHMS(float)
 TEMPLATE_ALGORITHMS(double)
 
-//---------------------------------------------------------------------------//
-// end of algorithms/algorithm.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

@@ -1,3 +1,4 @@
+/* File : except.i */
 %module except
 
 %include <std_except.i>
@@ -25,3 +26,4 @@ void do_it(int i) {
 }
 void do_it_again(int i) { do_it(i); }
 }
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

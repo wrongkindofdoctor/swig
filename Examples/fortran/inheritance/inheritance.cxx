@@ -1,3 +1,4 @@
+/* File : inheritance.cxx */
 #include "inheritance.h"
 #include <iostream>
 
@@ -59,3 +60,4 @@ DerivedB::~DerivedB() {
 float DerivedB::foo() const {
   return BaseClass::get_i() * _i2 * 2;
 }
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

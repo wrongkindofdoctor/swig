@@ -1,12 +1,4 @@
-//---------------------------------*-C++-*-----------------------------------//
-/*!
- * \file   barefunctions/bare.h
- * \author Seth R Johnson
- * \date   Fri Jan 16 21:19:07 2015
- * \brief  bare declaration
- * \note   Copyright (c) 2015 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : bare.h */
 
 #ifndef barefunctions_bare_hh
 #define barefunctions_bare_hh
@@ -14,9 +6,9 @@
 #include <cstddef>
 #include <utility>
 
-//---------------------------------------------------------------------------//
-// Bare functions
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Bare functions
+ * ------------------------------------------------------------------------- */
 
 void set_something(int x, double y);
 double get_something(int x);
@@ -44,9 +36,9 @@ inline double can_overload(double x) {
   return x;
 }
 
-//---------------------------------------------------------------------------//
-// Enums
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Enums
+ * ------------------------------------------------------------------------- */
 
 //! An enumeration declared using external C variables
 // (since it has complicated values that must be evaluated by the C compiler)
@@ -63,9 +55,9 @@ enum CmykEnum { CYAN = 0, MAGENTA, YELLOW, BLACK = -1 };
 void print_rgb(RgbEnum color);
 void print_cmyk(CmykEnum color);
 
-//---------------------------------------------------------------------------//
-// Global variables
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Global variables
+ * ------------------------------------------------------------------------- */
 
 //! An integer that is only known at link time
 extern const int linked_const_int;
@@ -87,9 +79,8 @@ namespace foo {
 extern int global_counter;
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 #endif                                 // barefunctions_bare_hh
 
-//---------------------------------------------------------------------------//
-// end of swig-dev/bare_function/bare.h
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

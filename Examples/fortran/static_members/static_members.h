@@ -1,3 +1,4 @@
+/* File : static_members.h */
 #include <iostream>
 
 class BaseClass {
@@ -9,3 +10,4 @@ public:
 private:
   static float j;
 };
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

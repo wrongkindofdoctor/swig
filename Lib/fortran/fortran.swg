@@ -1,15 +1,8 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   fortran/fortran.swg
- * \author Seth R Johnson
- * \date   Sat Dec 03 09:10:31 2016
- * \brief  Fortran typemap code
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * fortran.swg
+ * ------------------------------------------------------------------------- */
 
-//---------------------------------------------------------------------------//
-/*! LANGUAGE EXTENSIONS.
+/* -------------------------------------------------------------------------
    %fortranbegin : Insertion directive to add wrapper code at the very top of
    the Fortran proxy file.
 
@@ -55,8 +48,7 @@
 #define %nobindc    %feature("fortran:bindc", "0")
 #define %clearbindc %feature("fortran:bindc", "")
 
-//---------------------------------------------------------------------------//
-/*! CUSTOM TYPEMAP DESCRIPTIONS.
+/* -------------------------------------------------------------------------
  *
  * ctype      : type in C wrapper code (input parameter, default return value)
  * ctype:out  : *return* type (overrides ctype)
@@ -81,8 +73,7 @@
  * foutdecl   : declare any temporary variables used to convert output values
  */
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \def FORT_COPY_TYPEMAPS
  * \brief Assign our special typemaps to one or more types from an original.
  *
@@ -116,6 +107,5 @@
 %include "memfunptr.swg"
 #endif
 
-//---------------------------------------------------------------------------//
-// end of fortran/fortran.swg
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

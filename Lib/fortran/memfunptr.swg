@@ -1,10 +1,10 @@
-//---------------------------------------------------------------------------//
-// MEMBER FUNCTION POINTERS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * memfunptr.swg
+ * ------------------------------------------------------------------------- */
 
-//---------------------------------------------------------------------------//
-// BRUTE CAST
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * BRUTE CAST
+ * ------------------------------------------------------------------------- */
 
 // This fragment allows making an opaque datatype from C++ member function
 // pointers (which according to the standard CANNOT be converted to a pointer).
@@ -61,12 +61,9 @@ SWIGINTERN Target brute_cast(const Source& src) {
 using swig::brute_cast;
 %}
 
-//---------------------------------------------------------------------------//
-// MEMBER FUNCTION POINTERS
-//
-// We memcpy the member function pointer to an opaque data class using
-// brute_cast.
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * MEMBER FUNCTION POINTERS
+ * ------------------------------------------------------------------------- */
 
 // Add array wrapper to C++ code when used by Fortran fragment
 %fragment("SwigOpaqueMemFunPtr", "header", fragment="<cstring>") %{
@@ -97,12 +94,9 @@ type, public, bind(C) :: SwigOpaqueMemFunPtr
 end type
 %}
 
-//---------------------------------------------------------------------------//
-// TYPEMAPS
-//
-// We memcpy the member function pointer to an opaque data class using
-// brute_cast.
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * TYPEMAPS
+ * ------------------------------------------------------------------------- */
 
 %typemap(ctype, fragment="SwigOpaqueMemFunPtr",
          null="SwigOpaqueMemFunPtr_uninitialized()") SWIGTYPE (CLASS::*) %{
@@ -129,3 +123,4 @@ end type
 // Copy to immutable member function pointers
 FORT_COPY_TYPEMAPS(SWIGTYPE (CLASS::*),
                    SWIGTYPE (CLASS::* const));
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

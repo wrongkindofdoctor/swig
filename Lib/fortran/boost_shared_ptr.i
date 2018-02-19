@@ -1,10 +1,6 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   fortran/boost_shared_ptr.i
- * \author Seth R Johnson
- * \date   Tue Dec 06 15:44:22 2016
- */
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * boost_shared_ptr.i
+ * ------------------------------------------------------------------------- */
 
 %include <shared_ptr.i>
 
@@ -23,40 +19,37 @@
 %}
 
 %define SWIG_SHARED_PTR_TYPEMAPS(CONST, TYPE...)
-//---------------------------------------------------------------------------//
-// Macro shortcuts
+/* -------------------------------------------------------------------------
+ * Macro shortcuts
+ */
 #define SWIGSP__ SWIG_SHARED_PTR_QNAMESPACE::shared_ptr<CONST TYPE >
 #define ALL_TYPE__ CONST TYPE, CONST TYPE &, CONST TYPE *, CONST TYPE *&
 #define ALL_SWIGSP__ SWIGSP__, SWIGSP__ &, SWIGSP__ *, SWIGSP__ *&
 #define CONST_ALL_SWIGSP__ const SWIGSP__ &, const SWIGSP__ *, const SWIGSP__ *&
 
-//---------------------------------------------------------------------------//
-// Shared pointers *always* return either NULL or a newly allocated shared
-// pointer.
-//---------------------------------------------------------------------------//
-// %naturalvar causes these types to be wrapped as const references rather than
-// pointers when they're member variables. Not sure what this does in practice.
-//%naturalvar TYPE;
-//%naturalvar SWIGSP__;
+/* -------------------------------------------------------------------------
+ * Shared pointers *always* return either NULL or a newly allocated shared
+ * -------------------------------------------------------------------------
+ * %naturalvar SWIGSP__;
 
-//---------------------------------------------------------------------------//
-// Copy basic settings from non-SP type (i.e. Fortran will see it the same; we
-// override the in/out/ctype below)
+/* -------------------------------------------------------------------------
+ * Copy basic settings from non-SP type (i.e. Fortran will see it the same; we
+
+ *  override the in/out/ctype below)
 
 %typemap(ftype) ALL_SWIGSP__ "$typemap(ftype, " #TYPE ")"
 
-//---------------------------------------------------------------------------//
-// C types: we wrap the *shared pointer* as the value type. The 'in' type is
-// always passed to us as a pointer to a SwigClassWrapper, and the 'out' is
-// returned by value.
+/* -------------------------------------------------------------------------
+ * C types: we wrap the *shared pointer* as the value type. The 'in' type is
+
+ *  returned by value.
 %typemap(ctype, out="SwigClassWrapper", null="SwigClassWrapper_uninitialized()", noblock=1, fragment="SwigClassWrapper")
     ALL_SWIGSP__, CONST_ALL_SWIGSP__
 {const SwigClassWrapper *}
 
-//---------------------------------------------------------------------------//
-// Original class by value: access the 'ptr' member of the input, return a
-// SP-owned copy of the obtained value.
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Original class by value: access the 'ptr' member of the input, return a
+ * ------------------------------------------------------------------------- */
 %typemap(in, noblock=1, fragment="SWIG_check_sp_nonnull") CONST TYPE ($&1_type argp = 0) {
   SWIG_check_sp_nonnull($input, "$1_ltype", "$fclassname", "$decl", return $null)
   argp = $input->ptr ? %static_cast($input->ptr, SWIGSP__*)->get() : NULL;
@@ -67,11 +60,9 @@
  $result.mem = SWIG_MOVE;
 }
 
-//---------------------------------------------------------------------------//
-// Original class by pointer. Note that the deleter is determined by the owner
-// mem, but the shared pointer instance itself is in a "moving" mem
-// regardless.
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Original class by pointer. Note that the deleter is determined by the owner
+ * ------------------------------------------------------------------------- */
 %typemap(in, noblock=1) CONST TYPE * (SWIGSP__* smartarg) {
   smartarg = %static_cast($input->ptr, SWIGSP__*);
   $1 = smartarg ? %as_mutable(smartarg->get()) : NULL;
@@ -89,9 +80,9 @@
   $result.mem = SWIG_MOVE;
 }
 
-//---------------------------------------------------------------------------//
-// Original class by reference. Same as by pointer, but with null checks.
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Original class by reference. Same as by pointer, but with null checks.
+ * ------------------------------------------------------------------------- */
 %typemap(in, noblock=1, fragment="SWIG_check_sp_nonnull") CONST TYPE& (SWIGSP__* smartarg) {
   SWIG_check_sp_nonnull($input, "$1_ltype", "$fclassname", "$decl", return $null)
   smartarg = %static_cast($input->ptr, SWIGSP__*);
@@ -104,9 +95,9 @@
   $result.mem = SWIG_MOVE;
 }
 
-//---------------------------------------------------------------------------//
-// SP by value
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * SP by value
+ * ------------------------------------------------------------------------- */
 %typemap(in, noblock=1) SWIGSP__ {
   if ($input->ptr) $1 = *%static_cast($input->ptr, SWIGSP__*);
 }
@@ -116,9 +107,9 @@
   $result.mem = SWIG_MOVE;
 }
 
-//---------------------------------------------------------------------------//
-// SP by reference
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * SP by reference
+ * ------------------------------------------------------------------------- */
 %typemap(in, noblock=1) SWIGSP__& ($*1_ltype tempnull) {
   $1 = $input->ptr ? %static_cast($input->ptr, $1_ltype) : &tempnull;
 }
@@ -128,11 +119,9 @@
   $result.mem = SWIG_MOVE;
 }
 
-//---------------------------------------------------------------------------//
-// SP by pointer
-//
-// Make sure that the SP* is allocated.
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * SP by pointer
+ * ------------------------------------------------------------------------- */
 %typemap(in, noblock=1) SWIGSP__ * ($*1_ltype tempnull) {
   $1 = $input->ptr ? %static_cast($input->ptr, $1_ltype) : &tempnull;
 }
@@ -142,11 +131,10 @@
   if ($owner) delete $1;
 }
 
-//---------------------------------------------------------------------------//
-// Miscellaneous
-//---------------------------------------------------------------------------//
-// Various missing typemaps - If ever used (unlikely) ensure compilation error
-// inside the wrapper
+/* -------------------------------------------------------------------------
+ * Miscellaneous
+ * -------------------------------------------------------------------------
+ *  inside the wrapper
 %typemap(in) CONST TYPE[], CONST TYPE[ANY], CONST TYPE (CLASS::*) %{
 #error "typemaps for $1_type not available"
 %}
@@ -154,19 +142,21 @@
 #error "typemaps for $1_type not available"
 %}
 
-//---------------------------------------------------------------------------//
-// Replace call to "delete (Foo*) arg1;" with call to delete the *shared
-// pointer* (so decrement the reference count instead of forcing the object to
-// be destroyed and causing a double-delete)
+/* -------------------------------------------------------------------------
+ * Replace call to "delete (Foo*) arg1;" with call to delete the *shared
+
+ *  be destroyed and causing a double-delete)
 %feature("unref") TYPE
 %{ (void)$self; delete smart$self; %}
 
-//---------------------------------------------------------------------------//
-// Instantiate shared pointer
+/* -------------------------------------------------------------------------
+ * Instantiate shared pointer
+ */
 %template() SWIGSP__;
 
-//---------------------------------------------------------------------------//
-// Clean up macros
+/* -------------------------------------------------------------------------
+ * Clean up macros
+ */
 #undef SWIGSP__
 #undef ALL_TYPE__
 #undef ALL_SWIGSP__
@@ -174,6 +164,5 @@
 
 %enddef
 
-//---------------------------------------------------------------------------//
-// end of fortran/boost_shared_ptr.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

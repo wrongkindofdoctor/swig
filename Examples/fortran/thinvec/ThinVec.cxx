@@ -1,12 +1,4 @@
-//---------------------------------*-C++-*-----------------------------------//
-/*!
- * \file   thinvec/ThinVec.cxx
- * \author Seth R Johnson
- * \date   Fri Dec 02 15:55:20 2016
- * \brief  ThinVec class definitions.
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : ThinVec.cxx */
 
 #include "ThinVec.h"
 
@@ -15,9 +7,9 @@
 using std::cout;
 using std::endl;
 
-//---------------------------------------------------------------------------//
-// TEMPLATED METHODS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * TEMPLATED METHODS
+ * ------------------------------------------------------------------------- */
 template<typename T>
 void ThinVec<T>::assign(const_view_type arr) {
   cout << "assigning " << arr.second << " from " << arr.first << " to " << this << endl;
@@ -31,9 +23,9 @@ typename ThinVec<T>::view_type ThinVec<T>::view() {
   return view_type(&d_data[0], d_data.size());
 }
 
-//---------------------------------------------------------------------------//
-// FREE FUNCTIONS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * FREE FUNCTIONS
+ * ------------------------------------------------------------------------- */
 
 template<typename T>
 void print_vec(const ThinVec<T> &v) {
@@ -50,9 +42,9 @@ void print_offbyone(const ThinVec<int> &INDICES) {
   print_vec(INDICES);
 }
 
-//---------------------------------------------------------------------------//
-// EXPLICIT INSTANTIATION
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * EXPLICIT INSTANTIATION
+ * ------------------------------------------------------------------------- */
 
 template class ThinVec<double>;
 template class ThinVec<int>;
@@ -60,6 +52,5 @@ template class ThinVec<int>;
 template void print_vec<double>(const ThinVec<double> &);
 template void print_vec<int>(const ThinVec<int> &);
 
-//---------------------------------------------------------------------------//
-// end of thinvec/ThinVec.cxx
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

@@ -1,12 +1,4 @@
-//---------------------------------*-C++-*-----------------------------------//
-/*!
- * \file   simpleclass/SimpleClass.h
- * \author Seth R Johnson
- * \date   Thu Dec 01 15:07:23 2016
- * \brief  SimpleClass class declaration.
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : SimpleClass.h */
 
 #ifndef simpleclass_SimpleClass_hh
 #define simpleclass_SimpleClass_hh
@@ -95,9 +87,8 @@ void set_class_by_copy(SimpleClass c);
 
 void print_struct(const BasicStruct &s);
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 #endif                                 // simpleclass_SimpleClass_hh
 
-//---------------------------------------------------------------------------//
-// end of simple_class/SimpleClass.h
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

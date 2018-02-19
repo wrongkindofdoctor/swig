@@ -1,12 +1,4 @@
-//---------------------------------*-C++-*-----------------------------------//
-/*!
- * \file   bindc/bindc.cxx
- * \author Seth R Johnson
- * \date   Thu Feb 08 07:16:02 2018
- * \brief  bindc class definitions.
- * \note   Copyright (c) 2018 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : bindc.cxx */
 
 #include "bindc.h"
 
@@ -15,8 +7,7 @@
 using std::cout;
 using std::endl;
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief Print a point.
  */
 void wrapped_print_point(const Point *p) {
@@ -53,7 +44,7 @@ char* concat(const char* a, const char* b) {
   return result;
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 
 extern "C" {
 void make_point(Point *pt, const double xyz[3]) {
@@ -73,6 +64,5 @@ bool bound_negation(bool v) {
 }
 }
 
-//---------------------------------------------------------------------------//
-// end of bindc/bindc.cxx
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

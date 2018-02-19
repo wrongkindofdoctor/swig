@@ -1,15 +1,6 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   fortran/exception.i
- * \author Seth R Johnson
- * \date   Fri Apr 28 18:33:31 2017
- * \note   Copyright (c) 2017 Oak Ridge National Laboratory, UT-Battelle, LLC.
- *
- * This file is automatically included when the user loads <std_except.i>.
- * Since it's also loaded by constraints.i, it must be compatible with C as
- * well.
- */
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * exception.i
+ * ------------------------------------------------------------------------- */
 
 // Allow the user to change the name of the error flag on the fortran side
 #ifndef SWIG_FORTRAN_ERROR_INT
@@ -19,19 +10,16 @@
 #define SWIG_FORTRAN_ERROR_STR get_serr
 #endif
 
-//---------------------------------------------------------------------------//
-// Fortran variable declaration
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Fortran variable declaration
+ * ------------------------------------------------------------------------- */
 %insert("fparams") {
  integer(C_INT), bind(C), public :: SWIG_FORTRAN_ERROR_INT
 }
 
-//---------------------------------------------------------------------------//
-// Function declarations
-//
-// These are declared as fragments so that they will be included in imported
-// modules as well.
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Function declarations
+ * ------------------------------------------------------------------------- */
 #ifdef __cplusplus
 %fragment("SWIG_exception_decl", "runtime") %{
 extern "C" {
@@ -52,15 +40,9 @@ void SWIG_store_exception(const char* decl, int errcode, const char *msg);
 
 %fragment("SWIG_exception_decl");
 
-//---------------------------------------------------------------------------//
-// Runtime code
-//
-// This is always inserted into the wrapped file, even if imported. It
-// overrides the  default exception handler (defined in forruntime.swg).
-//
-// Note that SWIG_exception_impl is also used by SWIG_contract_assert, so the
-// *_impl* is the one that changes.
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Runtime code
+ * ------------------------------------------------------------------------- */
 %fragment("SWIG_exception_impl", "runtime") %{
 #undef SWIG_exception_impl
 #define SWIG_exception_impl(DECL, CODE, MSG, RETURNNULL) \
@@ -74,9 +56,9 @@ void SWIG_store_exception(const char* decl, int errcode, const char *msg);
 #define SWIG_exception(CODE, MSG) \
     SWIG_exception_impl("$decl", CODE, MSG, return $null)
 
-//---------------------------------------------------------------------------//
-// Variable definitions: used only if %included, not %imported
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Variable definitions: used only if %included, not %imported
+ * ------------------------------------------------------------------------- */
 #ifdef __cplusplus
 
 %fragment("<string>");
@@ -151,9 +133,9 @@ SWIGEXPORT void SWIG_check_unhandled_exception_impl(const char* decl) {
 }
 #endif
 
-//---------------------------------------------------------------------------//
-// Functional interface to SWIG error string
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Functional interface to SWIG error string
+ * ------------------------------------------------------------------------- */
 #ifdef __cplusplus
 %include <std_string.i>
 
@@ -172,6 +154,5 @@ const std::string& SWIG_FORTRAN_ERROR_STR() {
 }
 #endif
 
-//---------------------------------------------------------------------------//
-// end of fortran/exception.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

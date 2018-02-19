@@ -1,11 +1,4 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   simpleclass/simple_class.i
- * \author Seth R Johnson
- * \date   Thu Dec 01 15:07:35 2016
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : simple_class.i */
 %module(docstring="A simple example module") simple_class
 
 //%include "docstring.i"
@@ -86,6 +79,5 @@ SimpleClass(double a, double b)
 %template(action) SimpleClass::action<double>;
 %template(action) SimpleClass::action<int>;
 
-//---------------------------------------------------------------------------//
-// end of simple_class/simple.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

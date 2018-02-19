@@ -1,34 +1,27 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   mpi.i
- * \author Seth R Johnson
- * \date   Wed Feb 07 12:33:55 2018
- * \note   Copyright (c) 2018 Oak Ridge National Laboratory, UT-Battelle, LLC.
- *
- * MPI support for Fortran/C interoperability. Assumes a typedef "HAVE_MPI" is
- * defined in the target code -- add
+/* -------------------------------------------------------------------------
+ * mpi.i
+ * ------------------------------------------------------------------------- */
 
      %insert("runtime") %{
      #include "myconfig.h"
      %}
  * in your code to guarantee that HAVE_MPI is set correctly.
  */
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 %{
 #ifdef HAVE_MPI
 #include <mpi.h>
 #endif
 %}
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \brief MPI Fortran compatibility datatypes
  *
  * Use MPI/Fortran compatibility code to wrap C MPI types, but use ISO-C
  * compatibility layer to pass the Fortran integers (and convert back to native
  * MPI type in the wrapper result code).
  */
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 %apply int { MPI_Comm };
 
 %typemap(ftype) MPI_Comm
@@ -55,6 +48,5 @@
 %#endif
 }
 
-//---------------------------------------------------------------------------//
-// end of fortran/mpi.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

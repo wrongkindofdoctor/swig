@@ -1,12 +1,4 @@
-//---------------------------------*-C++-*-----------------------------------//
-/*!
- * \file   simpleclass/SimpleClass.cxx
- * \author Seth R Johnson
- * \date   Thu Dec 01 15:07:23 2016
- * \brief  SimpleClass class definitions.
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : SimpleClass.cxx */
 
 #include "SimpleClass.h"
 
@@ -14,14 +6,14 @@
 using std::cout;
 using std::endl;
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 namespace {
 int g_counter = 0;
 int g_next_id = 0;
 SimpleClass g_globalclass(0);
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 SimpleClass::SimpleClass() : d_id(g_next_id++), d_storage(0) {
   cout << "Constructing " << d_id << " at " << this << endl;
   ++g_counter;
@@ -66,18 +58,18 @@ SimpleClass::storage_type SimpleClass::get_multiplied(int multiple) const {
   return d_storage * multiple;
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 void print_value(const SimpleClass &c) {
   cout << "Simpleclass at " << &c << " has value " << c.get() << endl;
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 void dumb_copy(SimpleClass c) {
   cout << "Copied: ";
   print_value(c);
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 SimpleClass make_class(SimpleClass::storage_type val) {
   return SimpleClass(val);
 }
@@ -99,6 +91,5 @@ const SimpleClass &get_class() {
 void print_struct(const BasicStruct &s) {
   cout << "Struct " << &s << " has foo=" << s.foo << ", bar=" << s.bar << endl;
 }
-//---------------------------------------------------------------------------//
-// end of simple_class/SimpleClass.cxx
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

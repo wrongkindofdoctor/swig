@@ -1,11 +1,4 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   std_vector/stdvec.i
- * \author Seth R Johnson
- * \date   Mon Dec 05 09:05:31 2016
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : stdvec.i */
 
 %module stdvec
 
@@ -14,9 +7,9 @@
 #include "stdvec.h"
 %}
 
-//---------------------------------------------------------------------------//
-// EXTEND VECTOR TO HAVE VIEWS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * EXTEND VECTOR TO HAVE VIEWS
+ * ------------------------------------------------------------------------- */
 
 %include <typemaps.i>
 
@@ -43,9 +36,9 @@
 
 %enddef
 
-//---------------------------------------------------------------------------//
-// Instantiate the vector-double
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Instantiate the vector-double
+ * ------------------------------------------------------------------------- */
 
 %include <std_vector.i>
 
@@ -53,9 +46,9 @@ ADD_VIEW(double)
 
 %template(VecDbl) std::vector<double>;
 
-//---------------------------------------------------------------------------//
-// ARRAY VIEW EXAMPLE
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * ARRAY VIEW EXAMPLE
+ * ------------------------------------------------------------------------- */
 %include <forarray.swg>
 
 // Convert a reference-to-vector return value into a array view.
@@ -67,9 +60,9 @@ FORT_ARRAYPTR_TYPEMAP(double, std::vector<double>& NATIVE)
 
 %apply std::vector<double>& NATIVE { std::vector<double>& as_array_ptr };
 
-//---------------------------------------------------------------------------//
-// Parse and instantiate the templated functions
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * Parse and instantiate the templated functions
+ * ------------------------------------------------------------------------- */
 
 // Make the single "get_vec_ref" function return a native allocated fortran array
 // (This is enabled by the instantiation of std::vector.).
@@ -84,9 +77,10 @@ FORT_ARRAYPTR_TYPEMAP(double, std::vector<double>& NATIVE)
 %template(print_viewdbl) print_view<double>;
 %template(get_vecdbl) get_vec<double>;
 
-//---------------------------------------------------------------------------//
-// Example of creating an allocatable array in Fortran by returning a vector by
-// value in C++
+/* -------------------------------------------------------------------------
+ * Example of creating an allocatable array in Fortran by returning a vector by
+
+ *  value in C++
 
 %apply std::vector<double> NATIVE { std::vector<double> make_array };
 
@@ -94,6 +88,5 @@ FORT_ARRAYPTR_TYPEMAP(double, std::vector<double>& NATIVE)
 std::vector<double> make_array() { return {1,1,2,3,5}; }
 %}
 
-//---------------------------------------------------------------------------//
-// end of std_vector/stdvec.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

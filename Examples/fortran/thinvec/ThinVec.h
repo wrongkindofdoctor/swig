@@ -1,12 +1,4 @@
-//---------------------------------*-C++-*-----------------------------------//
-/*!
- * \file   thinvec/ThinVec.h
- * \author Seth R Johnson
- * \date   Mon Jan 19 08:59:42 2015
- * \brief  thinvec class declaration.
- * \note   Copyright (c) 2015 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : ThinVec.h */
 
 #ifndef thinvec_ThinVec_hh
 #define thinvec_ThinVec_hh
@@ -68,6 +60,5 @@ void print_offbyone(const ThinVec<int> &INDICES);
 
 #endif                                 // thinvec_ThinVec_hh
 
-//---------------------------------------------------------------------------//
-// end of swig-dev/thinvec/ThinVec.h
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

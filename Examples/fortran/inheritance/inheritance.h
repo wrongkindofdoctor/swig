@@ -1,3 +1,4 @@
+/* File : inheritance.h */
 #pragma once
 #include <vector>
 
@@ -46,3 +47,4 @@ public:
 private:
   int _i2;
 };
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

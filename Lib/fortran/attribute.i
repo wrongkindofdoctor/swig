@@ -1,16 +1,12 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   fortran/exception.i
- * \author Seth R Johnson
- * \date   Fri Nov 10 12:08:03 2017
- * \note   Copyright (c) 2017 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * attribute.i
+ *
+ * Fortran doesn't have a way of treating function calls as attributes; so we
+ * ignore all %attribute directives.
+ *
+ * Warning 507 is "WARN_LANG_NATIVE_UNIMPL"
+ * ------------------------------------------------------------------------- */
 
-// Fortran doesn't have a way of treating function calls as attributes; so we
-// ignore all %attribute directives.
-
-// Warning 507 is "WARN_LANG_NATIVE_UNIMPL"
 
 
 %define %attribute(Class, AttributeType, AttributeName, GetMethod, SetMethod...)
@@ -43,6 +39,5 @@
 %warn "507:%attribute directives are ignored by Fortran"
 %enddef
 
-//---------------------------------------------------------------------------//
-// end of fortran/exception.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

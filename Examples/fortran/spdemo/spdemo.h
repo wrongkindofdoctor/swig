@@ -1,12 +1,4 @@
-//---------------------------------*-C++-*-----------------------------------//
-/*!
- * \file   spdemo/spdemo.h
- * \author Seth R Johnson
- * \date   Tue Dec 06 14:55:04 2016
- * \brief  spdemo class declaration.
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : spdemo.h */
 
 #ifndef spdemo_spdemo_hh
 #define spdemo_spdemo_hh
@@ -50,9 +42,8 @@ void print_spc(std::shared_ptr<const Foo> f);
 void print_crspc(const std::shared_ptr<const Foo> &f);
 void print_cr(const Foo &f);
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 #endif                                 // spdemo_spdemo_hh
 
-//---------------------------------------------------------------------------//
-// end of spdemo/spdemo.h
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

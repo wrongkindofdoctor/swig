@@ -1,11 +1,4 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   except/downstream.i
- * \author Seth R Johnson
- * \date   Wed Nov 01 12:54:00 2017
- * \note   Copyright (c) 2017 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : downstream.i */
 %module downstream;
 
 %import "except.i"
@@ -17,6 +10,5 @@ void throw_error()
 }
 %}
 
-//---------------------------------------------------------------------------//
-// end of exceptions/downstream.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

@@ -1,22 +1,10 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   fortran/std_container.i
- * \author Seth R Johnson
- * \date   Sun Jan 28 11:38:34 2018
- * \note   Copyright (c) 2018 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
-// Native typemaps for contiguous arrays: translate directly to and from Fortran
-// arrays. Returns an allocatable array copy of a std::vector reference.
-//
-// To avoid wrapping std::vector but still instantiate the typemaps that
-// allow native wrapping, use %template() std::vector<double>
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * std_container.i
+ * ------------------------------------------------------------------------- */
 
 %include <view.i>
 
-//---------------------------------------------------------------------------//
-/*!
+/* -------------------------------------------------------------------------
  * \def %std_native_container
  *
  * Native typemaps for contiguous arrays: translate directly to and from Fortran
@@ -86,6 +74,5 @@ FORT_ARRAYPTR_TYPEMAP(VTYPE, const ARRTYPE& NATIVE)
 %enddef
 
 
-//---------------------------------------------------------------------------//
-// end of fortran/std_container.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

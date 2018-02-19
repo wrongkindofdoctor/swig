@@ -1,12 +1,4 @@
-//---------------------------------*-C++-*-----------------------------------//
-/*!
- * \file   bindc/bindc.h
- * \author Seth R Johnson
- * \date   Thu Feb 08 07:16:02 2018
- * \brief  bindc class declaration.
- * \note   Copyright (c) 2018 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : bindc.h */
 
 #ifndef bindc_bindc_hh
 #define bindc_bindc_hh
@@ -27,19 +19,18 @@ const char* get_existing_string(int i);
 char* concat(const char* a, const char* b);
 
 extern "C" {
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 
 // These functions are simply bound, not wrapped.
 void make_point(Point *pt, const double xyz[3]);
 void print_sphere(const Point *origin, const double *radius);
 bool bound_negation(bool v);
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 }
 
-//---------------------------------------------------------------------------//
+/* ------------------------------------------------------------------------- */
 #endif
 
-//---------------------------------------------------------------------------//
-// end of bindc/bindc.h
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

@@ -1,11 +1,4 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   spdemo/spdemo.i
- * \author Seth R Johnson
- * \date   Tue Dec 06 14:55:04 2016
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : spdemo.i */
 
 %module spdemo
 
@@ -17,6 +10,5 @@
 %shared_ptr(Foo);
 %include "spdemo.h"
 
-//---------------------------------------------------------------------------//
-// end of spdemo/spdemo.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

@@ -1,12 +1,4 @@
-//---------------------------------*-C++-*-----------------------------------//
-/*!
- * \file   std_string/stdstr.cxx
- * \author Seth R Johnson
- * \date   Mon Dec 05 18:32:13 2016
- * \brief  stdstr class definitions.
- * \note   Copyright (c) 2016 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* File : stdstr.cxx */
 
 #include "stdstr.h"
 
@@ -29,6 +21,5 @@ std::string get_reversed_native_string(const std::string &input) {
   return result;
 }
 
-//---------------------------------------------------------------------------//
-// end of std_string/stdstr.cxx
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

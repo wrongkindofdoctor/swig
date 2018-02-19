@@ -1,8 +1,11 @@
+/* -------------------------------------------------------------------------
+ * cstring.i
+ * ------------------------------------------------------------------------- */
 %include <forarray.swg>
 
-//---------------------------------------------------------------------------//
-// FRAGMENTS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * FRAGMENTS
+ * ------------------------------------------------------------------------- */
 /* Return fortran allocatable array from assumed-length character string. Put a
  * null character *after* the string for compatibility with const char*.
  */
@@ -53,9 +56,9 @@ subroutine SWIG_chararray_to_string(wrap, string)
 end subroutine
 %}
 
-//---------------------------------------------------------------------------//
-// TYPEMAPS
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * TYPEMAPS
+ * ------------------------------------------------------------------------- */
 
 // C wrapper type: pointer to templated array wrapper
 %typemap(ctype, noblock=1, out="SwigArrayWrapper", null="SwigArrayWrapper_uninitialized()", fragment="SwigArrayWrapper") const char* NATIVE {
@@ -100,3 +103,4 @@ end subroutine
   call SWIG_chararray_to_string($1, $result)
   if ($owner) call SWIG_free($1%data)
 %}
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */

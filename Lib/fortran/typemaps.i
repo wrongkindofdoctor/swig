@@ -1,23 +1,12 @@
-//---------------------------------*-SWIG-*----------------------------------//
-/*!
- * \file   fortran/typemaps.i
- * \author Seth R Johnson
- * \date   Tue May 09 14:50:28 2017
- * \note   Copyright (c) 2017 Oak Ridge National Laboratory, UT-Battelle, LLC.
- */
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * typemaps.i
+ * ------------------------------------------------------------------------- */
 
 %include <view.i>
 
-//---------------------------------------------------------------------------//
-// STRING VIEWS
-//
-// String views are treated almost exactly like array views, except the Fortran
-// wrapper code uses slightly different types. (To be strictly compatible with
-// Fortran-C interoperability, only arrays of length-1 chars can be passed back
-// and forth between C; we use a fragment in `forfragments.swg` to perform the
-// remapping.
-//---------------------------------------------------------------------------//
+/* -------------------------------------------------------------------------
+ * STRING VIEWS
+ * ------------------------------------------------------------------------- */
 
 %define %fortran_string_view(CTYPE)
   %fortran_view(CTYPE)
@@ -50,6 +39,5 @@
 
 %enddef
 
-//---------------------------------------------------------------------------//
-// end of fortran/typemaps.i
-//---------------------------------------------------------------------------//
+
+/* vim: set ts=2 sw=2 sts=2 tw=129 : */
