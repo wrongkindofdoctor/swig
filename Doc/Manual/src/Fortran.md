@@ -214,7 +214,7 @@ files; circles are executables; flat cylinders are generated on-disk files; and
 the final box is the executable. The arrow signifies "generates" or "is used
 by."
 
-<img src="fig/swig-fortran-data.png" alt="SWIG python data flow" height="504"
+<img src="fortran-data.png" alt="SWIG python data flow" height="504"
 width="352"/>
 
 We provide CMake modules and commands to simplify this process; again, see the
