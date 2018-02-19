@@ -16,13 +16,13 @@ RE_HEADER = re.compile(r'^<h(\d) id="([^"]+)">(.*)</h(\d)>$')
 RE_PRE    = re.compile(r'^<pre class="(\w+)">')
 RE_LINK   = re.compile(r'<a href="#([^"]+)">')
 
-NEW_HEADER = r'<H{lev:d}><a name="{link}">{title}</a></H{lev:d}>\n'
+NEW_HEADER = '<H{lev:d}><a name="{link}">{title}</a></H{lev:d}>\n'
 
 SELECTOR = {
-        'fortran': "target",
-        'swig':    "source",
-        'c++':     "source",
-        'c':       "source",
+        'fortran': "targetlang",
+        'swig':    "code",
+        'c++':     "code",
+        'c':       "code",
         'sh':      "shell",
         }
 
@@ -43,7 +43,6 @@ def swiggify(path):
                 if "</pre>" in line:
                     line += "</div>\n\n"
                     in_code = False
-                    break
                 else:
                     newf.write(line)
                     continue
@@ -60,9 +59,10 @@ def swiggify(path):
             match = RE_PRE.match(line)
             if match:
                 code = SELECTOR[match.group(1)]
-                newf.write('\n<div class="{}"><pre>{}'.format(
-                    code, line[match.end():]))
+                line = '\n<div class="{}"><pre>{}'.format(
+                    code, line[match.end():])
                 in_code = True
+                newf.write(line)
                 continue
 
             line = RE_LINK.sub(repl_link_match, line)
