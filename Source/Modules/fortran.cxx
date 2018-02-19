@@ -417,7 +417,7 @@ public:
   virtual int constantWrapper(Node *n);
   virtual int classforwardDeclaration(Node *n);
 
-  virtual String *makeParameterName(Node *n, Parm *p, int arg_num, bool is_setter = false) const;
+  virtual String *makeParameterName(Node *n, Parm *p, int arg_num, bool is_setter = false);
   virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm);
 
   FORTRAN() : d_overloads(NULL), d_method_overloads(NULL), d_enum_public(NULL) {}
@@ -1640,7 +1640,7 @@ void FORTRAN::write_docstring(Node *n, String *dest) {
 /* -------------------------------------------------------------------------
  * \brief Create a friendly parameter name
  */
-String *FORTRAN::makeParameterName(Node *n, Parm *p, int arg_num, bool setter) const {
+String *FORTRAN::makeParameterName(Node *n, Parm *p, int arg_num, bool setter) {
   String *name = Getattr(p, "name");
   if (name) {
     if (Strstr(name, "::"))
