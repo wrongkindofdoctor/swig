@@ -3,9 +3,11 @@ This document is formatted with [Github-flavored
 Markdown](https://github.github.com/gfm/)
 
 Run with:
-    pandoc --from=gfm+smart  -M title:"SWIG and Fortran" \
-    -M author:"Seth R Johnson" \
-    --toc --standalone -H style.css -o ../Fortran.html Fortran.md
+
+pandoc --from=gfm+smart --no-highlight \
+-M title:"SWIG and Fortran" -M author:"Seth R Johnson" \
+--toc --standalone -H style.css -o ../Fortran.html Fortran.md
+
 -->
 
 # Overview 
@@ -663,7 +665,7 @@ integer(C_INT), bind(C, name="global_counter_c") :: global_counter_c
 Global constant variables (whether declared in C++ headers with `const` or in
 a SWIG wrapper with `%constant`) of native types can be wrapped as Fortran
 parameters:
-```c++
+```swig
 %parameter approx_pi;
 const double approx_pi = 3.1416;
 ```
