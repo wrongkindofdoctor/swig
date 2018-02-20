@@ -1,20 +1,33 @@
 %module samename
 
-#ifdef SWIGFORTRAN
-%rename("samename_cls") "samename";
-#endif
+%rename("anothername_cls") "anothername";
 
 #if !(defined(SWIGCSHARP) || defined(SWIGJAVA) || defined(SWIGD))
+/* NOTE: this class has the same name as the module. */
 class samename {
  public:
-  void do_something(int sameName);
-  void do_something_else(int samename_cls);
+  void do_something() {
+    // ...
+  }
+};
+
+class anothername {
+ public:
+  void do_something(int samename);
+  void do_something_else(int anothername_cls);
 };
 #endif
 
 %{
 
 class samename {
+ public:
+  void do_something() {
+    // ...
+  }
+};
+
+class anothername {
  public:
   void do_something(int) {
     // ...
