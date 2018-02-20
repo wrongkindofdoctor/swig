@@ -115,7 +115,7 @@ SWIGCDATA cdata_##NAME(TYPE *ptr, int nelements);
 %cdata(void);
 
 %{
-#include "string.h"
+#include <string.h>
 %}
 
 /* Memory move function. Due to multi-argument typemaps this appears to be wrapped as

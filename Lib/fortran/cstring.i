@@ -66,7 +66,7 @@ end subroutine
 }
 
 // Copy the output string (if owned) or reference it
-%typemap(out, fragment="<stdlib.h>", fragment="<cstring>") const char* NATIVE %{
+%typemap(out, fragment="<stdlib.h>", fragment="<string.h>") const char* NATIVE %{
   $result.size = strlen($1);
   if ($owner) {
     $result.data = std::malloc($result.size);

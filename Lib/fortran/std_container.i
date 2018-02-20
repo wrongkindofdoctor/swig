@@ -58,7 +58,7 @@ FORT_ARRAYPTR_TYPEMAP(VTYPE, const ARRTYPE& NATIVE)
 %apply const ARRTYPE& NATIVE { ARRTYPE NATIVE };
 
 // Copy the string to a temporary buffer (not null-terminated)
-%typemap(out, fragment="<stdlib.h>", fragment="<cstring>", noblock=1) ARRTYPE NATIVE {
+%typemap(out, fragment="<stdlib.h>", fragment="<string.h>", noblock=1) ARRTYPE NATIVE {
   $result.size = $1.size();
   if ($result.size > 0) {
     $result.data = std::malloc($result.size * sizeof(VTYPE));

@@ -9,8 +9,8 @@
 // This fragment allows making an opaque datatype from C++ member function
 // pointers (which according to the standard CANNOT be converted to a pointer).
 // encountered. Its syntax is exactly like static_cast.
-// Note that the <cstring> fragment imports size_t into the global namespace.
-%fragment("swig::brute_cast", "runtime", fragment="<cstring>") %{
+// Note that the <string.h> fragment imports size_t into the global namespace.
+%fragment("swig::brute_cast", "runtime", fragment="<string.h>") %{
 template<typename Dst, typename Src>
 SWIGINTERN void SWIG_opaque_memcpy(Dst* dst, const Src* src) {
   const size_t MINSIZE
@@ -69,7 +69,7 @@ using swig::brute_cast;
  * ------------------------------------------------------------------------- */
 
 // Add array wrapper to C++ code when used by Fortran fragment
-%fragment("SwigOpaqueMemFunPtr", "header", fragment="<cstring>") %{
+%fragment("SwigOpaqueMemFunPtr", "header", fragment="<string.h>") %{
 struct SwigOpaqueMemFunPtr {
   enum { MEMPTR_SIZE = 32 };
   char data[MEMPTR_SIZE];

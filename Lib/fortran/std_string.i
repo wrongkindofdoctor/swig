@@ -41,7 +41,7 @@
 %feature("novaluewrapper") std::string;
 
 // Copy the string to a temporary buffer (not null-terminated)
-%typemap(out, fragment="<stdlib.h>", fragment="<cstring>") std::string NATIVE %{
+%typemap(out, fragment="<stdlib.h>", fragment="<string.h>") std::string NATIVE %{
   $result.size = $1.size();
   if ($result.size > 0) {
     $result.data = std::malloc($result.size);
