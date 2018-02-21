@@ -802,7 +802,7 @@ SwigType *SwigType_ltype(const SwigType *s) {
       }
       firstarray = 0;
     } else if (SwigType_isenum(element)) {
-      int anonymous_enum = SwigType_isanonenum(element);
+      int anonymous_enum = (Cmp(element, "enum ") == 0);
       if (notypeconv || !anonymous_enum) {
 	Append(result, element);
       } else {
