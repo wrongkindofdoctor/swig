@@ -17,10 +17,10 @@ SWIGINTERN void SWIG_opaque_memcpy(Dst* dst, const Src* src) {
     = (sizeof(dst) < sizeof(src) ? sizeof(dst) : sizeof(src));
   const size_t MAXSIZE
     = (sizeof(dst) > sizeof(src) ? sizeof(dst) : sizeof(src));
-  std::memcpy(dst, src, MINSIZE);
+  memcpy(dst, src, MINSIZE);
   if (MAXSIZE > MINSIZE)
   {
-    std::memset(static_cast<char*>(static_cast<void*>(dst)) + MINSIZE,
+    memset(static_cast<char*>(static_cast<void*>(dst)) + MINSIZE,
                 MAXSIZE - MINSIZE,
                 0);
   }
@@ -81,7 +81,7 @@ struct SwigOpaqueMemFunPtr {
 
 SWIGINTERN SwigOpaqueMemFunPtr SwigOpaqueMemFunPtr_uninitialized() {
   SwigOpaqueMemFunPtr result;
-  std::memset(result.data, sizeof(result.data), 0);
+  memset(result.data, sizeof(result.data), 0);
   return result;
 }
 %}

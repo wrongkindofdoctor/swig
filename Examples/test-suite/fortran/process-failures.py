@@ -33,10 +33,10 @@ class Results(object):
             print(failtxt + " += \\\n ", " \\\n  ".join(sorted(results[k])),
                   file=f)
 
-#cppresults = Results("Examples/test-suite/fortran/summary.txt")
-#print(cppresults)
-#with open("failing-tests.mk", 'w') as f:
-#    cppresults.dump(f)
+cppresults = Results("Examples/test-suite/fortran/summary.txt")
+print(cppresults)
+with open("failing-cpp-tests.mk", 'w') as f:
+    cppresults.dump(f)
 
 cresults = Results("Examples/test-suite/fortran/summary-c.txt")
 print(cresults)

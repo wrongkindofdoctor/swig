@@ -25,6 +25,7 @@ FAILING_CPP_TESTS += \
   nested_scope \
   nested_workaround \
   overload_arrays \
+  overload_complicated \
   overload_method \
   overload_return_type \
   overload_simple \
