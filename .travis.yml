@@ -29,10 +29,10 @@ install:
   - if test -n "$CPP17"; then CONFIGOPTS+=(--enable-cpp11-testing --without-maximum-compile-warnings "CXXFLAGS=-std=c++17 -Wall -Wextra" "CFLAGS=-std=c11 -Wall -Wextra") && export CSTD=c11 && export CPPSTD=c++17; fi
   - ls -la $(which $CC)
   - ls -la $(which $CXX)
-  - if test "$SWIGLANG" == "fortran"; then -ls -la $(which $FC); fi
+  - if test "$SWIGLANG" == "fortran"; then ls -la $(which $FC); fi
   - $CC --version
   - $CXX --version
-  - if test "$SWIGLANG" == "fortran"; then -ls -la $(which $FC); fi
+  - if test "$SWIGLANG" == "fortran"; then $FC --version; fi
 script:
   - echo 'Configuring...' && echo -en 'travis_fold:start:script.1\\r'
   - if test -n "$SWIGLANG"; then CONFIGOPTS+=(--without-alllang --with-$WITHLANG); fi
