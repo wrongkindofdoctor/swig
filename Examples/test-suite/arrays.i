@@ -83,7 +83,6 @@ cartPosition_t p;
 %ignore oned_hex;
 %ignore oned_enum;
 %ignore twod_enum;
-#endif
 
 %inline %{
 enum {TEN = 10};
@@ -106,4 +105,5 @@ void twod_unknown_int(int a[][10]);
 }
 #endif
 %}
+#endif
 

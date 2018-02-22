@@ -42,23 +42,31 @@ typedef struct {
     // Foo f // uncommenting will produce an error in Fortran since 'Foo' is a
              // class and not POD
 } SimpleStruct;
+%}
+
+%{
+static SimpleStruct  global_struct = {0};
+static SimpleStruct* global_struct_ptr = 0;
+%}
+
+%inline %{
 
 #ifdef __cplusplus
-void set_ref(const SimpleStruct& s);
-void get_ref_arg(SimpleStruct& s);
-SimpleStruct& get_ref();
-const SimpleStruct& get_cref();
+void set_ref(const SimpleStruct& s) {global_struct = s; }
+void get_ref_arg(SimpleStruct& s) { s = global_struct; }
+SimpleStruct& get_ref() { return global_struct; }
+const SimpleStruct& get_cref() { return global_struct; }
 
 extern "C" {
 #endif
 
-void set_val(SimpleStruct s);
-void set_ptr(const SimpleStruct* s);
-void get_ptr_arg(SimpleStruct* s);
-SimpleStruct get_val();
-SimpleStruct* get_ptr();
-const SimpleStruct* get_cptr();
-SimpleStruct** get_handle();
+void set_val(SimpleStruct s) { global_struct = s; }
+void set_ptr(const SimpleStruct* s) { global_struct = *s; }
+void get_ptr_arg(SimpleStruct* s) { *s = global_struct; }
+SimpleStruct get_val() { return global_struct; }
+SimpleStruct* get_ptr() { return &global_struct; }
+const SimpleStruct* get_cptr() { return &global_struct; }
+SimpleStruct** get_handle() { return &global_struct_ptr; }
 
 #ifdef __cplusplus
 }
