@@ -3,7 +3,7 @@
 %inline %{
 class BaseClass {
 public:
-    virtual ~BaseClass();
+    virtual ~BaseClass() { }
 
     virtual void g() = 0;
 };
