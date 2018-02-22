@@ -2049,7 +2049,6 @@ fortran: $(SRCDIR_SRCS)
 	$(TCLLDSHARED) $(CFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJ) $(TCL_DLNK) \
 			$(LIBS) -o $(LIBPREFIX)$(TARGET)$(TCL_SO) \
 		|| (echo "$(TARGET)|failed to link" >> $(FORTRAN_CSUMMARY) && exit 1)
-	echo "$(TARGET)|passed" >> $(FORTRAN_CSUMMARY)
 
 fortran_cpp: $(SRCDIR_SRCS)
 	$(SWIG) -fortran -c++ $(SWIGOPT) -o $(ICXXSRCS) $(INTERFACEPATH) \
@@ -2062,7 +2061,6 @@ fortran_cpp: $(SRCDIR_SRCS)
 	$(TCLCXXSHARED) $(CXXFLAGS) $(LDFLAGS) $(OBJS) $(IOBJS) $(FOBJ) $(TCL_DLNK) \
 			$(LIBS) $(CXX_DLLIBS) -o $(LIBPREFIX)$(TARGET)$(TCL_SO) \
 		|| (echo "$(TARGET)|failed to link" >> $(FORTRAN_SUMMARY) && exit 1)
-	echo "$(TARGET)|passed" >> $(FORTRAN_SUMMARY)
 
 fortran_run: $(SRCDIR_SRCS)
 	env LD_LIBRARY_PATH=$$PWD $(RUNTOOL) ./$(RUNME).exe $(RUNPIPE)
