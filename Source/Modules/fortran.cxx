@@ -438,7 +438,7 @@ private:
   void replace_fspecial_impl(SwigType *classnametype, String *tm, const char *classnamespecialvariable, bool is_enum);
 
   // Add lowercase symbol (fortran)
-  int add_fsymbol(String *s, Node *n);
+  int add_fsymbol(String *s, Node *n, int warning=WARN_FORTRAN_NAME_CONFLICT);
   // Make a unique symbolic name
   String *make_unique_symname(Node *n);
   // Get overloads of the given named method
@@ -711,44 +711,39 @@ void FORTRAN::write_module(String *filename) {
  * \brief Process a %module
  */
 int FORTRAN::moduleDirective(Node *n) {
-  Language::moduleDirective(n);
-
-  // Check for module name uniqueness. If this is the "real" module command
-  // then the symbol should be the first instance; but if the code mistakenly
-  // has multiple %module directives only the first should be considered.
-  String *modname = Getattr(n, "name");
-  bool added_symbol = add_fsymbol(modname, n);
-
+  String *modname = Swig_string_lower(Getattr(n, "name"));
+  int success = this->add_fsymbol(modname, n, WARN_NONE);
+  
   if (ImportMode) {
     // This %module directive is inside another module being %imported
     Printv(f_fmodule, " use ", modname, "\n", NULL);
-    return SWIG_OK;
-  }
-
-  if (!added_symbol) {
-    return SWIG_NOWRAP;
-  }
-
-  // Write documentation if given. Note that it's simply labeled "docstring"
-  // and in a daughter node; to unify the doc string processing we just set
-  // it as a feature attribute on the module.
-  Node *options = Getattr(n, "options");
-  if (options) {
-    String *docstring = Getattr(options, "docstring");
-    if (docstring) {
-      Setattr(n, "feature:docstring", docstring);
-      this->write_docstring(n, f_fmodule);
+    success = SWIG_OK;
+  } else if (success) {
+    // This is the first time the `%module` directive is seen. (Note that
+    // other `%module` directives may be present, but they're
+    // given the same name as the main module and should be ignored.
+    // Write documentation if given. Note that it's simply labeled "docstring"
+    // and in a daughter node; to unify the doc string processing we just set
+    // it as a feature attribute on the module.
+    Node *options = Getattr(n, "options");
+    if (options) {
+      String *docstring = Getattr(options, "docstring");
+      if (docstring) {
+        Setattr(n, "feature:docstring", docstring);
+        this->write_docstring(n, f_fmodule);
+      }
     }
+
+    Printv(f_fmodule,
+           "module ",
+           modname,
+           "\n"
+           " use, intrinsic :: ISO_C_BINDING\n",
+           NULL);
   }
 
-  Printv(f_fmodule,
-         "module ",
-         modname,
-         "\n"
-         " use, intrinsic :: ISO_C_BINDING\n",
-         NULL);
-
-  return SWIG_OK;
+  Delete(modname);
+  return success;
 }
 
 /* -------------------------------------------------------------------------
@@ -2406,18 +2401,20 @@ void FORTRAN::replaceSpecialVariables(String *method, String *tm, Parm *parm) {
  *
  * Return SWIG_NOWRAP if the name conflicts.
  */
-int FORTRAN::add_fsymbol(String *s, Node *n) {
+int FORTRAN::add_fsymbol(String *s, Node *n, int warn) {
   assert(s);
   const char scope[] = "fortran";
   String *lower = Swig_string_lower(s);
   Node *existing = this->symbolLookup(lower, scope);
 
   if (existing) {
-    String *n1 = get_symname_or_name(n);
-    String *n2 = get_symname_or_name(existing);
-    Swig_warning(WARN_FORTRAN_NAME_CONFLICT, input_file, line_number,
-                 "Ignoring '%s' due to Fortran name ('%s') conflict with '%s'\n",
-                 n1, lower, n2);
+    if (warn != WARN_NONE) {
+      String *n1 = get_symname_or_name(n);
+      String *n2 = get_symname_or_name(existing);
+      Swig_warning(warn, input_file, line_number,
+                   "Ignoring '%s' due to Fortran name ('%s') conflict with '%s'\n",
+                   n1, lower, n2);
+    }
     Delete(lower);
     return SWIG_NOWRAP;
   }
