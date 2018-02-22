@@ -31,6 +31,11 @@ matrix:
       dist: trusty
     - compiler: gcc
       os: linux
+      env: SWIGLANG=fortran
+      sudo: required
+      dist: trusty
+    - compiler: gcc
+      os: linux
       env: SWIGLANG=go
       sudo: required
       dist: trusty
@@ -239,6 +244,10 @@ matrix:
       dist: trusty
     - os: linux
       env: SWIGLANG=csharp SWIG_CC=gcc-5 SWIG_CXX=g++-5 CPP11=1
+      sudo: required
+      dist: trusty
+    - os: linux
+      env: SWIGLANG=fortran SWIG_CC=gcc-5 SWIG_CXX=g++-5 CPP11=1
       sudo: required
       dist: trusty
     - os: linux
