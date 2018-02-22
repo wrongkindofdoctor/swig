@@ -667,6 +667,7 @@ C_TEST_CASES += \
 	newobject2 \
 	overload_extend_c \
 	overload_extend2 \
+	pod_struct_c \
 	preproc \
 	preproc_constants_c \
 	preproc_defined \

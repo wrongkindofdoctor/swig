@@ -21,14 +21,16 @@
 
 typedef double (*BinaryOp)(double x, double y);
 
+#ifdef __cplusplus
 struct Foo;
+#endif
 
-struct OtherStruct {
+typedef struct {
     int j;
     int k;
-};
+} OtherStruct;
 
-struct SimpleStruct {
+typedef struct {
     int i;
     double d;
     char c;
@@ -37,10 +39,9 @@ struct SimpleStruct {
     const char* s;
     OtherStruct o;
     float p[3];
-    int argv[];
     // Foo f // uncommenting will produce an error in Fortran since 'Foo' is a
              // class and not POD
-};
+} SimpleStruct;
 
 #ifdef __cplusplus
 void set_ref(const SimpleStruct& s);
