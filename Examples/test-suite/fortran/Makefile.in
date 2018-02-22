@@ -20,7 +20,7 @@ include $(srcdir)/failing-c-tests.mk
 include $(srcdir)/../common.mk
 
 FORTRAN_CSUMMARY = "summary-c.txt"
-FORTRAN_SUMMARY = "summary.txt"
+FORTRAN_CXXSUMMARY = "summary-cxx.txt"
 
 .SUFFIXES: .cpptest .ctest .multicpptest
 
@@ -29,7 +29,7 @@ FORTRAN_SUMMARY = "summary.txt"
 	$(setup)
 	+$(swig_and_compile_cpp)
 	$(run_testcase)
-	echo "$(TARGET)|passed" >> $(FORTRAN_CPPSUMMARY)
+	echo "$(TARGET)|passed" >> $(FORTRAN_CXXSUMMARY)
 
 %.ctest:
 	$(setup)
@@ -41,7 +41,7 @@ FORTRAN_SUMMARY = "summary.txt"
 	$(setup)
 	+$(swig_and_compile_multi_cpp)
 	$(run_testcase)
-	echo "$(TARGET)|passed" >> $(FORTRAN_CPPSUMMARY)
+	echo "$(TARGET)|passed" >> $(FORTRAN_CXXSUMMARY)
 
 # Runs the testcase.
 run_testcase = \
