@@ -8,9 +8,9 @@ CSHARPCILINTERPRETER  = @CSHARPCILINTERPRETER@
 CSHARPCILINTERPRETER_FLAGS = @CSHARPCILINTERPRETER_FLAGS@
 CSHARPCONVERTPATH     = @abs_top_srcdir@/@CSHARPCONVERTPATH@
 
-srcdir         = @abs_srcdir@
-top_srcdir     = @abs_top_srcdir@
-top_builddir   = @abs_top_builddir@
+srcdir       = @srcdir@
+top_srcdir   = ../@top_srcdir@
+top_builddir = ../@top_builddir@
 
 CPP_TEST_CASES = \
 	complextest \
@@ -38,6 +38,7 @@ CPP11_TEST_CASES = \
 include $(srcdir)/../common.mk
 
 # Overridden variables here
+SRCDIR       = ../$(srcdir)/
 SWIGOPT += -namespace $*Namespace
 
 CSHARPFLAGSSPECIAL =
@@ -81,8 +82,7 @@ setup = \
 # DYLD_FALLBACK_LIBRARY_PATH is cleared for Mac OS X.
 run_testcase = \
 	if [ -f $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX) ]; then \
-	  cd $* && \
-	  $(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile \
+	  $(MAKE) -f $*/$(top_builddir)/$(EXAMPLES)/Makefile \
 	  CSHARPFLAGS='-nologo -debug+ $(CSHARPFLAGSSPECIAL) -out:$*_runme.exe' \
 	  CSHARPSRCS='`$(CSHARPCONVERTPATH) $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX)` `find $* -name "*.cs" -exec $(CSHARPCONVERTPATH) "{}" \+`' csharp_compile && \
 	  env LD_LIBRARY_PATH="$*:$$LD_LIBRARY_PATH" PATH="$*:$$PATH" SHLIB_PATH="$*:$$SHLIB_PATH" DYLD_FALLBACK_LIBRARY_PATH= $(RUNTOOL) $(CSHARPCILINTERPRETER) $(CSHARPCILINTERPRETER_FLAGS) ./$*_runme.exe; \
@@ -90,7 +90,7 @@ run_testcase = \
 	  cd $* && \
 	  $(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile \
 	  CSHARPFLAGS='-nologo -debug+ $(CSHARPFLAGSSPECIAL) -t:module -out:$*.netmodule' \
-	  CSHARPSRCS='`find . -name "*.cs" -exec $(CSHARPCONVERTPATH) "{}" \+`' csharp_compile; \
+	  CSHARPSRCS='`find . -name "*.cs" -exec ../$(CSHARPCONVERTPATH) "{}" \+`' csharp_compile; \
 	fi
 
 # Clean: remove testcase directories
