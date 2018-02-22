@@ -23,7 +23,7 @@
 // Prevent identifiers from having a leading underscore.
 // Since SWIG uses "__dummy_%d__" internally for %template()-instantiated
 // classes, ignore identifiers that also end with _.
-%namewarn(%warningmsg(SWIGWARN_LANG_IDENTIFIER, "Fortran identifiers may not begin with underscores or numerals; prepending 'f'"),
+%namewarn(%warningmsg(SWIGWARN_LANG_IDENTIFIER, "Fortran identifiers may not begin with underscores or numerals"),
           rename="f%s", regextarget=1) "^[_0-9]+.*[^_]+$";
 
 #define FORTRANKW(x) %keywordwarn("'" `x` "' is a Fortran keyword")  `x`
