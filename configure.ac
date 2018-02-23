@@ -2686,14 +2686,16 @@ AS_HELP_STRING([--with-fortran=path], [Set location of Fortran compiler]),
 
 if test x"${FORTRANBIN}" = xno; then
   AC_MSG_NOTICE([Disabling Fortran])
+  FORTRAN=
   FC=
 else
 
   if test "x$FORTRANBIN" = xyes; then
-    AC_CHECK_PROGS(FC, gfortran)
+    AC_CHECK_PROGS(FORTRAN, gfortran)
   else
-    FC="$FORTRAN"
+    FORTRAN="$FORTRAN"
   fi
+  FC="$FORTRAN"
 
   if test -n "$FC" ; then
       # This is where version or feature checking should go
@@ -2732,6 +2734,7 @@ else
     esac
   fi
 
+AC_SUBST(FORTRAN)
 AC_SUBST(FC)
 AC_SUBST(FFLAGS)
 AC_SUBST(FORTRANLIB)
