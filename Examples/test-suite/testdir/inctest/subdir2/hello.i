@@ -3,11 +3,12 @@
 
 %{
 typedef char * TypedefString;
+#include <string.h>
 %}
 
 
 %inline %{
-  
+
   struct B
   {
     int bb;
