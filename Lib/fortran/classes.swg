@@ -379,9 +379,12 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
 %fragment("SWIG_assign_impl", "header",
           fragment="SwigClassWrapper", fragment="<stddef.h>") %{
 SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other, size_t size) {
-    SWIG_exception_impl("SWIG_assign_impl", SWIG_RuntimeError,
-        "Assignment is not yet implemented in C",
-        assert(0));
+  (void)sizeof(self);
+  (void)sizeof(other);
+  (void)sizeof(size);
+  SWIG_exception_impl("SWIG_assign_impl", SWIG_RuntimeError,
+                      "Assignment is not yet implemented in C",
+                      assert(0));
 }
 %}
 
@@ -391,8 +394,6 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
 #define SWIG_assign(LEFTTYPE, LEFT, RIGHTTYPE, RIGHT, FLAGS) \
     SWIG_assign_impl(LEFT, RIGHT, sizeof(LEFTTYPE));
 %}
-
-%fragment("SWIG_assign");
 
 #endif
 
