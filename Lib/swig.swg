@@ -492,7 +492,7 @@ namespace std {
   }
 }
 #else
-%typemap(memberin) char * {
+%typemap(memberin,fragment="<string.h>") char * {
   free($1);
   if ($input) {
      $1 = ($1_type) malloc(strlen((const char *)$input)+1);
@@ -501,7 +501,7 @@ namespace std {
      $1 = 0;
   }
 }
-%typemap(memberin,warning=SWIGWARN_TYPEMAP_CHARLEAK_MSG) const char * {
+%typemap(memberin,warning=SWIGWARN_TYPEMAP_CHARLEAK_MSG,fragment="<string.h>") const char * {
   if ($input) {
      $1 = ($1_type) malloc(strlen((const char *)$input)+1);
      strcpy((char *)$1, (const char *)$input);
@@ -509,7 +509,7 @@ namespace std {
      $1 = 0;
   }
 }
-%typemap(globalin) char * {
+%typemap(globalin,fragment="<string.h>") char * {
   free($1);
   if ($input) {
      $1 = ($1_type) malloc(strlen((const char *)$input)+1);
@@ -518,7 +518,7 @@ namespace std {
      $1 = 0;
   }
 }
-%typemap(globalin,warning=SWIGWARN_TYPEMAP_CHARLEAK_MSG) const char * {
+%typemap(globalin,warning=SWIGWARN_TYPEMAP_CHARLEAK_MSG,fragment="<string.h>") const char * {
   if ($input) {
      $1 = ($1_type) malloc(strlen((const char *)$input)+1);
      strcpy((char *)$1, (const char *)$input);
