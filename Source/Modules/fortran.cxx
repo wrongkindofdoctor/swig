@@ -1557,7 +1557,8 @@ void FORTRAN::assignmentWrapper(Node *n) {
   // Determine construction flags. These are ignored if C++11 is being used
   // to compile the wrapper.
   String *flags = NewString("0");
-  if (GetFlag(n, "allocate:allocate:default_destructor")) {
+  if (GetFlag(n, "allocate:has_destructor")
+      || GetFlag(n, "allocate:default_destructor")) {
     Printv(flags, " | swig::IS_DESTR", NULL);
   }
   if (!Abstract && GetFlag(n, "allocate:copy_constructor")) {
