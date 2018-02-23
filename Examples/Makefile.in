@@ -2023,9 +2023,9 @@ go_clean:
 #####                      Fortran                          ######
 ##################################################################
 FC = @FC@
-FFLAGS = @FFLAGS@ -fPIC
-FORTRANCFLAGS = -fPIC -std=c89 -Wall -Wextra
-FORTRANCXXFLAGS = -fPIC -std=gnu++98 -Wall -Wextra
+FFLAGS = @FFLAGS@
+FORTRANCFLAGS =
+FORTRANCXXFLAGS =
 FORTRAN_RUNME = $(RUNME)
 FOBJ = $(INTERFACE:.i=_fort.@OBJEXT@)
 FORTRAN_SO = @FORTRAN_SO@
