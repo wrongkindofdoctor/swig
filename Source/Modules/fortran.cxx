@@ -386,6 +386,9 @@ private:
   String *f_finterfaces;                                 //!< Fortran interface declarations to SWIG functions
   String *f_fwrapper;                                    //!< Fortran subroutine wrapper functions
 
+  // Keep track of "No $fclassname replacement
+  Hash *d_warned_fclassname;
+
   // Module-wide procedure interfaces
   Hash *d_overloads;                                 //!< Overloaded subroutine -> overload names
 
@@ -420,7 +423,7 @@ public:
   virtual String *makeParameterName(Node *n, Parm *p, int arg_num, bool is_setter = false) const;
   virtual void replaceSpecialVariables(String *method, String *tm, Parm *parm);
 
-  FORTRAN() : d_overloads(NULL), d_method_overloads(NULL), d_enum_public(NULL) {}
+  FORTRAN() : d_warned_fclassname(NULL), d_overloads(NULL), d_method_overloads(NULL), d_enum_public(NULL) {}
 
 private:
   void cfuncWrapper(Node *n);
@@ -566,6 +569,7 @@ int FORTRAN::top(Node *n) {
   Swig_name_register("set", "set_%n%v");
   Swig_name_register("get", "get_%n%v");
 
+  d_warned_fclassname = NewHash();
   d_overloads = NewHash();
 
   // Declare scopes: fortran types and forward-declared types
@@ -2370,10 +2374,14 @@ void FORTRAN::replace_fspecial_impl(SwigType *basetype, String *tm, const char *
 
   if (!replacementname) {
     // No class/enum type or symname was found
-    Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF, input_file, line_number,
-                 "No '$fclassname' replacement (wrapped %s) found for %s\n",
-                 is_enum ? "enum" : "class",
-                 SwigType_str(basetype, 0));
+    if (!GetFlag(d_warned_fclassname, basetype)) {
+      // First time encountered with this particular class
+      Swig_warning(WARN_FORTRAN_TYPEMAP_FTYPE_UNDEF, input_file, line_number,
+                   "No %s '$fclassname' replacement found for %s\n",
+                   is_enum ? "enum" : "class",
+                   SwigType_str(basetype, 0));
+      SetFlag(d_warned_fclassname, basetype);
+    }
     // Replace with a placeholder class
     alloc_string = NewString(is_enum ? "SwigUnknownEnum" : "SwigUnknownClass");
     // Emit the fragment that defines the class (forfragments.swg)
