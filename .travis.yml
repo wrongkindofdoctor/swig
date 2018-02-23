@@ -16,7 +16,7 @@ before_install:
   - uname -a
   - if test "$TRAVIS_OS_NAME" = "linux"; then lscpu && cat /proc/cpuinfo | grep "model name" && cat /proc/meminfo | grep MemTotal; fi
   - if test "$TRAVIS_OS_NAME" = "osx"; then sysctl -a | grep brand_string; fi
-  - if test "$SWIGLANG" == "fortran"; then sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-6 50; fi
+  - if test "$SWIGLANG" = "fortran"; then sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-6 50; fi
     # Travis overrides CC environment with compiler predefined values
   - if test -n "$SWIG_CC"; then export CC="$SWIG_CC"; fi
   - if test -n "$SWIG_CXX"; then export CXX="$SWIG_CXX"; fi
@@ -51,8 +51,8 @@ script:
   - if test -n "$SWIGLANG"; then cxxflags=$($TRAVIS_BUILD_DIR/Tools/testflags.py --language $SWIGLANG --cxxflags --std=$CPPSTD --compiler=$CC) && echo $cxxflags; fi
   - if test -n "$SWIGLANG"; then make -s check-$SWIGLANG-version; fi
   - if test -n "$SWIGLANG"; then make check-$SWIGLANG-enabled; fi
-  - if test -n "$SWIGLANG"; then make $SWIGJOBS check-$SWIGLANG-examples CFLAGS="$cflags" CXXFLAGS="$cxxflags"; fi
-  - if test -n "$SWIGLANG"; then make $SWIGJOBS check-$SWIGLANG-test-suite CFLAGS="$cflags" CXXFLAGS="$cxxflags"; fi
+  - if test -n "$SWIGLANG"; then make -n 1 check-$SWIGLANG-examples CFLAGS="$cflags" CXXFLAGS="$cxxflags"; fi
+  - if test -n "$SWIGLANG"; then make -n 1  check-$SWIGLANG-test-suite CFLAGS="$cflags" CXXFLAGS="$cxxflags"; fi
   - echo 'Cleaning...' && echo -en 'travis_fold:start:script.3\\r'
   - make check-maintainer-clean && ../../configure $CONFIGOPTS
   - echo -en 'travis_fold:end:script.3\\r'
