@@ -56,7 +56,10 @@ run_testcase = \
 	fi
 
 %.clean:
-	@rm -rf $*.o $*.a
+	@rm -rf $*.o $*.a $*.f90 
+
+clean:
+	$(MAKE) -f $(top_builddir)/$(EXAMPLES)/Makefile SRCDIR='$(SRCDIR)' fortran_clean
 
 cvsignore:
 	@echo Makefile
