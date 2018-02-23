@@ -44,7 +44,7 @@ def get_cxxflags(language, std, compiler):
         "csharp": ["-Werror"],
              "d": ["-Werror"],
        "fortran": ["-Werror"],
-            "go": ["-Werror",,
+            "go": ["-Werror"],
          "guile": ["-Werror"],
           "java": ["-Werror"],
     "javascript": ["-Werror", "-Wno-error=unused-function"], # Until overload_rename is fixed for node
