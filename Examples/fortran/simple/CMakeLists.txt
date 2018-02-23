@@ -10,7 +10,7 @@ INCLUDE_DIRECTORIES(${CMAKE_PROJECT_SOURCE_DIR})
 
 # Generate SWIG module
 MAKE_SWIG(MODULE simple
-  EXTRASRC simple.cxx)
+  EXTRASRC simple.c)
 
 # Create test executable
 add_executable(simple_test.exe runme.f90)
