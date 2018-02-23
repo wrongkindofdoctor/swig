@@ -1555,10 +1555,9 @@ void FORTRAN::assignmentWrapper(Node *n) {
          NULL);
 
   // Determine construction flags. These are ignored if C++11 is being used
-  // to compile the wrapper.
+  // to compile the wrapper. If 'default_destructor' is not set, the class probably has a private or protected destructor.
   String *flags = NewString("0");
-  if (GetFlag(n, "allocate:has_destructor")
-      || GetFlag(n, "allocate:default_destructor")) {
+  if (GetFlag(n, "allocate:default_destructor")) {
     Printv(flags, " | swig::IS_DESTR", NULL);
   }
   if (!Abstract && GetFlag(n, "allocate:copy_constructor")) {
