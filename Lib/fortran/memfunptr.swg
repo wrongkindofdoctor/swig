@@ -70,6 +70,10 @@ using swig::brute_cast;
 
 // Add array wrapper to C++ code when used by Fortran fragment
 %fragment("SwigOpaqueMemFunPtr", "header", fragment="<string.h>") %{
+#if __cplusplus >= 201103L
+namespace detail { class UndefinedClass; }
+#endif
+
 struct SwigOpaqueMemFunPtr {
   enum { MEMPTR_SIZE = 32 };
   char data[MEMPTR_SIZE];
