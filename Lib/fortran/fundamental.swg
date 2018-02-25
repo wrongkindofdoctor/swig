@@ -265,7 +265,7 @@ FORT_COPY_TYPEMAPS(const void*,
                    SWIGTYPE* const *, SWIGTYPE* const [], SWIGTYPE* const [ANY]);
 
 // Generic pointers are treated as C pointers when binding
-%typemap(bindc, in="type(C_PTR), value") SWIGTYPE*
+%typemap(bindc, in="type(C_PTR), value") SWIGTYPE*, const SWIGTYPE*
   "type(C_PTR)"
 
 /* -------------------------------------------------------------------------
@@ -287,11 +287,11 @@ FORT_COPY_TYPEMAPS(const void*,
 %typemap(fout)   SWIGTYPE (*)(ANY)
   "$result = $1"
 
-%typemap(bindc, in="type(C_FUNPTR), value") SWIGTYPE (*)(ANY)
-  "type(C_FUNPTR)"
-
-// Copy to immutable function pointers
 FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY), SWIGTYPE (*const)(ANY));
+
+// Function pointers can be bound directly
+%typemap(bindc, in="type(C_FUNPTR), value") SWIGTYPE (*)(ANY), SWIGTYPE (*const)(ANY)
+  "type(C_FUNPTR)"
 
 /* -------------------------------------------------------------------------
  * FUNDAMENTAL ISO C TYPES
