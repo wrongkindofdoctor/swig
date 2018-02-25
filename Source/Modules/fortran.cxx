@@ -2021,9 +2021,6 @@ int FORTRAN::staticmembervariableHandler(Node *n) {
  * \brief Wrap an enum declaration
  */
 int FORTRAN::enumDeclaration(Node *n) {
-  if (ImportMode)
-    return SWIG_OK;
-
   String *access = Getattr(n, "access");
   if (access && Strcmp(access, "public") != 0) {
     // Not a public enum
@@ -2055,6 +2052,10 @@ int FORTRAN::enumDeclaration(Node *n) {
   // Make sure the enum name isn't a duplicate
   if (enum_name && (add_fsymbol(enum_name, n) == SWIG_NOWRAP))
     return SWIG_NOWRAP;
+
+  // Don't generate wrappers if we're in import mode, but make sure the symbol renaming above is still performed
+  if (ImportMode)
+    return SWIG_OK;
 
   // Determine whether to add enum as a native fortran enumeration. If false,
   // the values are all wrapped as constants.
