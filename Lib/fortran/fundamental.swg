@@ -84,6 +84,13 @@ end function
   %typemap(fout) CPPTYPE
     "$result = $1"
 
+  // Treat rvalue references as values
+  %apply CPPTYPE { CPPTYPE&& };
+  %typemap(in) CPPTYPE&& (CPPTYPE temp)
+    "temp = *$input; $1 = &temp;"
+  %typemap(out) CPPTYPE&&
+    "$result = *$1;"
+
   // Mutable references are passed by pointers as arguments, but they're
   // *returned* as actual pointers (becoming Fortran pointers). Again we face
   // problems when these typemaps are "applied" to a different type. Ideally we
