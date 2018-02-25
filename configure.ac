@@ -2680,41 +2680,29 @@ AC_SUBST(GOVERSIONOPTION)
 #----------------------------------------------------------------
 # Look for Fortran
 #----------------------------------------------------------------
-AC_ARG_WITH(fortran, AS_HELP_STRING([--without-fortran], [Disable Fortran])
-AS_HELP_STRING([--with-fortran=path], [Set location of Fortran compiler]),
-[FORTRANBIN="$withval"], [FORTRANBIN="$alllang_default"])
 
-if test x"${FORTRANBIN}" = xno; then
+AC_ARG_WITH(fortran,
+  AS_HELP_STRING([--without-fortran], [Disable Fortran])
+  AS_HELP_STRING([--with-fortran=path], [Set location of Fortran compiler])
+  , [FORTRAN="$withval"], [FORTRAN="$alllang_default"])
+
+
+if test x"${FORTRAN}" = xno; then
   AC_MSG_NOTICE([Disabling Fortran])
-  FORTRAN=
   FC=
 else
 
-  if test "x$FORTRANBIN" = xyes; then
-    AC_CHECK_PROGS(FORTRAN, gfortran)
+  if test "x$FORTRAN" = xyes; then
+    AC_PROG_FC
   else
-    FORTRAN="$FORTRAN"
-  fi
-  FC="$FORTRAN"
-
-  if test -n "$FC" ; then
-      # This is where version or feature checking should go
-      AC_MSG_NOTICE([No version or capablity checks being performed for Fortran compiler])
+    FC=$FORTRAN
   fi
 
-  if test -n "$FORTRANLIB"; then
-    FORTRANLIB="$FORTRANLIB"
-  elif test "$GCC" = yes; then
-    FORTRANLIB="-lgfortran"
-  else
-    # NOTE: if using clang + GCC fortran, you will need to set this to
-    # -L/absolute/path/to/gcclibs -lgfortran
-    FORTRANLIB=""
-  fi
+  AC_FC_LIBRARY_LDFLAGS dnl fortran library flags
 
   if test -n "$FFLAGS"; then
     FFLAGS="$FFLAGS"
-  elif test "$GCC" = yes; then
+  elif test "x$GCC" = xyes; then
     FFLAGS="-std=f2003 -Wall -Wextra -Wimplicit-procedure -Wimplicit-interface -Wno-compare-reals -ffree-line-length-none"
   else
     FFLAGS="-std=f2003"
@@ -2737,7 +2725,7 @@ else
 AC_SUBST(FORTRAN)
 AC_SUBST(FC)
 AC_SUBST(FFLAGS)
-AC_SUBST(FORTRANLIB)
+AC_SUBST(FCLIBS)
 AC_SUBST(FORTRANLDSHARED)
 AC_SUBST(FORTRANCXXSHARED)
 
