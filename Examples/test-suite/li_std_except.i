@@ -14,11 +14,12 @@
 
 
 %inline %{
+  #include <stdexcept>
   struct E1 : public std::exception
   {
   };
 
-  struct E2 
+  struct E2
   {
   };
 
