@@ -379,7 +379,8 @@ SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other
 #else
 
 %fragment("SWIG_assign_impl", "header",
-          fragment="SwigClassWrapper", fragment="<stdlib.h>") %{
+          fragment="SwigClassWrapper", fragment="<stdlib.h>",
+          fragment="<string.h>") %{
 SWIGINTERN void SWIG_assign_impl(SwigClassWrapper* self, SwigClassWrapper* other, size_t size) {
   void* pself  = self->ptr;
   void* pother = other->ptr;
