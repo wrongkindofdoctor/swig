@@ -11,6 +11,7 @@
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wdeprecated" // dynamic exception specifications are deprecated in C++11
 #endif
+#include <string.h>
 %}
 
 %include <std_string.i>

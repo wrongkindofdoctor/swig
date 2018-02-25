@@ -24,6 +24,7 @@ struct ExtendMe {
 
 %{
 #include <map>
+#include <string.h>
 std::map<ExtendMe*, char *> ExtendMeStringMap;
 void SETTER(ExtendMe, thing)(ExtendMe *self, const char *val) {
   char *old_val = ExtendMeStringMap[self];
