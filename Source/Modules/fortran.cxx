@@ -1682,9 +1682,15 @@ String *FORTRAN::makeParameterName(Node *n, Parm *p, int arg_num, bool setter)  
  * The superclass calls classHandler.
  */
 int FORTRAN::classDeclaration(Node *n) {
-  if (is_bindc(n)) {
-    // Prevent default constructors, destructors, etc.
-    SetFlag(n, "feature:nodefault");
+  if (!GetFlag(n, "feature:onlychildren")) {
+    if (ImportMode) {
+      // Add the class to the symbol table since it's not being wrapped
+      add_fsymbol(Getattr(n, "sym:name"), n);
+    }
+    if (is_bindc(n)) {
+      // Prevent default constructors, destructors, etc.
+      SetFlag(n, "feature:nodefault");
+    }
   }
   return Language::classDeclaration(n);
 }
