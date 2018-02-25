@@ -1,4 +1,25 @@
 
+# C++11 tests: wrapper error
+FAILING_CPP_TESTS += \
+  cpp11_lambda_functions \
+  cpp11_rvalue_reference2 \
+  cpp11_rvalue_reference3 \
+  cpp11_template_explicit
+
+# C++11 tests: link error
+FAILING_CPP_TESTS += \
+  cpp11_default_delete
+
+# C++11 tests: fortran error
+FAILING_CPP_TESTS += \
+  cpp11_strongly_typed_enumerations
+
+# Private 'operator new' causes build error since it's not detected by the type
+# traits
+ifneq (,$(HAVE_CXX11_COMPILER))
+FAILING_CPP_TESTS += private_assign
+endif
+
 # failed to compile fortran
 FAILING_CPP_TESTS += \
   abstract_signature \
