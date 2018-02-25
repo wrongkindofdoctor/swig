@@ -14,6 +14,18 @@
   // Bound structs act just like fundamental types
   FORT_FUND_TYPEMAP(CTYPE, "type($fclassname)")
 
+  %fragment("SWIG_null_struct"{CTYPE}, "header",
+            fragment="<stdlib.h>") {
+CTYPE SWIG_null_struct_ ## CTYPE() {
+  CTYPE result;
+  memset(&result, sizeof(CTYPE), 0);
+  return result;
+}
+  }
+
+  %typemap(ctype, out="CTYPE", null={SWIG_null_struct_ ## CTYPE()}, fragment="SWIG_null_struct"{CTYPE}) CTYPE
+    "const CTYPE*"
+
   // Interface code has to "import' the class type.
   %typemap(imtype, import="$fclassname") CTYPE, const CTYPE, const CTYPE&
     "type($fclassname)"
