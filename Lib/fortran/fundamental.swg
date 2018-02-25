@@ -280,11 +280,11 @@ FORT_COPY_TYPEMAPS(const void*,
 %typemap(fout)   SWIGTYPE (*)(ANY)
   "$result = $1"
 
-// Copy to immutable function pointers
-FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY), SWIGTYPE (*const)(ANY));
-
 %typemap(bindc, in="type(C_FUNPTR), value") SWIGTYPE (*)(ANY)
   "type(C_FUNPTR)"
+
+// Copy to immutable function pointers
+FORT_COPY_TYPEMAPS(SWIGTYPE (*)(ANY), SWIGTYPE (*const)(ANY));
 
 /* -------------------------------------------------------------------------
  * FUNDAMENTAL ISO C TYPES
