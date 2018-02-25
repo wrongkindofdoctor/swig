@@ -15,6 +15,7 @@
 
 %inline %{
   #include <stdexcept>
+  #include <typeinfo>
   struct E1 : public std::exception
   {
   };
