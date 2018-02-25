@@ -45,7 +45,7 @@ typedef struct {
 %}
 
 %{
-static SimpleStruct  global_struct = {0};
+static SimpleStruct global_struct = {0,0,0,0,0,0,{0,0},{0,0,0}};
 static SimpleStruct* global_struct_ptr = 0;
 %}
 
