@@ -2,21 +2,21 @@ language: cpp
 matrix:
   include:
     - os: linux
-      env: SWIGLANG=fortran SWIG_CC=gcc-6 SWIG_CXX=g++-6 SWIG_FC=gfortran-6 CPP11=1
+      env: SWIGLANG=fortran SWIG_CC=gcc-5 SWIG_CXX=g++-5 SWIG_FC=gfortran-5 CPP11=1
       sudo: required
       dist: trusty
 
 addons:
   apt:
     sources: ubuntu-toolchain-r-test
-    packages: gfortran-6
+    packages: gfortran-5
 
 before_install:
   - date -u
   - uname -a
   - if test "$TRAVIS_OS_NAME" = "linux"; then lscpu && cat /proc/cpuinfo | grep "model name" && cat /proc/meminfo | grep MemTotal; fi
   - if test "$TRAVIS_OS_NAME" = "osx"; then sysctl -a | grep brand_string; fi
-  - if test "$SWIGLANG" = "fortran"; then sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-6 50; fi
+  - if test "$SWIGLANG" = "fortran"; then sudo update-alternatives --install /usr/bin/gfortran gfortran /usr/bin/gfortran-5 50; fi
     # Travis overrides CC environment with compiler predefined values
   - if test -n "$SWIG_CC"; then export CC="$SWIG_CC"; fi
   - if test -n "$SWIG_CXX"; then export CXX="$SWIG_CXX"; fi
