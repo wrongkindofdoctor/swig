@@ -40,9 +40,7 @@ include $(srcdir)/../common.mk
 # Runs the testcase.
 run_testcase = \
 	if [ -f $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX) ]; then \
-	echo "$(COMPILETOOL) $(FC) $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX) -c"; \
 	$(COMPILETOOL) $(FC) $(SCRIPTDIR)/$(SCRIPTPREFIX)$*$(SCRIPTSUFFIX) -c; \
-	echo "$(COMPILETOOL) $(FC) -o $*_runme.exe $(SCRIPTPREFIX)$*_runme.@OBJEXT@ $(LIBPREFIX)$*$(FORTRAN_SO)"; \
 	$(COMPILETOOL) $(FC) -o $*_runme.exe $(SCRIPTPREFIX)$*_runme.@OBJEXT@ $(LIBPREFIX)$*$(FORTRAN_SO); \
 	env LD_LIBRARY_PATH=.:$$LD_LIBRARY_PATH $(RUNTOOL) ./$*_runme.exe; \
 	fi
