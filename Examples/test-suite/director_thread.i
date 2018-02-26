@@ -11,7 +11,6 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <process.h>
-#include <stdio.h>
 #else
 #include <pthread.h>
 #include <signal.h>
@@ -19,9 +18,10 @@
 #endif
 
 #include <assert.h>
+#include <stdio.h>
 #include "swig_examples_lock.h"
 
-class Foo;  
+class Foo;
 extern "C" {
 #ifdef _WIN32
   static unsigned int __stdcall working(void* t);
@@ -58,10 +58,10 @@ extern "C" {
   class Foo {
   public:
     int val;
-    
+
     Foo() : val(0) {
     }
-    
+
     virtual ~Foo()  {
     }
 
@@ -70,7 +70,7 @@ extern "C" {
     %#ifdef _WIN32
       WaitForSingleObject(thread_handle, INFINITE);
       CloseHandle(thread_handle);
-    %#else  
+    %#else
       pthread_join(thread, NULL);
     %#endif
     }
@@ -92,7 +92,7 @@ extern "C" {
 %#endif
       MilliSecondSleep(500);
     }
-    
+
     virtual void do_foo() {
       val += 1;
     }
