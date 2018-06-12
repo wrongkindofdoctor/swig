@@ -54,7 +54,6 @@
  *              equivalent of ctype:out)
  * imtype:in  : Fortran dummy argument type for "BIND" interface (must be
  *              Fortran equivalent of ctype)
- * imtype:import : Import this fortran type into the interface declaration
  * ftype      : Fortran proxy type
  * fin        : Fortran proxy code used to translate a Fortran argument to a
  *              C argument ($input -> $1)
@@ -80,7 +79,7 @@
 %include "fundamental.swg"
 %include "classes.swg"
 %include "enums.swg"
-%include "forstring.swg"
+%include "forstrings.swg"
 %include "bindc.swg"
 
 #ifdef __cplusplus

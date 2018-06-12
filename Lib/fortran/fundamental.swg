@@ -335,14 +335,14 @@ FORT_APPLY_TYPEMAPS(FUNDTYPE, UFUNDTYPE)
  * A 'void**' looks like a FUNDTYPE* where FUNDTYPE is 'void*' (aka C_PTR)
  * ------------------------------------------------------------------------- */
 
-%apply void* { SWIGTYPE**};
+%apply void* { SWIGTYPE** };
 %typemap(ftype, in="type(C_PTR), target, intent(inout)") SWIGTYPE**
   "type(C_PTR), pointer"
 %typemap(fin) SWIGTYPE** = FUNDTYPE*;
 %typemap(fout) SWIGTYPE** = FUNDTYPE*;
 %apply SWIGTYPE** { SWIGTYPE*&, SWIGTYPE *const* };
 
-%apply const void* { const SWIGTYPE**};
+%apply const void* { const SWIGTYPE** };
 %typemap(ftype, in="type(C_PTR), target, intent(in)") const SWIGTYPE**
   "type(C_PTR), pointer"
 %typemap(fin) const SWIGTYPE** = const FUNDTYPE*;
