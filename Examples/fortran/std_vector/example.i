@@ -8,88 +8,66 @@
 %}
 
 /* -------------------------------------------------------------------------
- * EXTEND VECTOR TO HAVE VIEWS
- * ------------------------------------------------------------------------- */
-
-%include <typemaps.i>
-
-%define ADD_VIEW(TYPE)
-
-// Instantiate view typemap
-%fortran_view(double)
-
-// Replace ULL type with fortran standard integer
-%apply int { std::vector<TYPE>::size_type };
-
-// Extend vector
-%extend std::vector<TYPE> {
-  void fill(std::pair<const TYPE*, std::size_t> view) {
-    $self->assign(view.first, view.first + view.second);
-  }
-
-  std::pair<TYPE*, std::size_t> view() {
-    if ($self->empty())
-      return std::pair<TYPE*, std::size_t>(NULL, 0);
-    return std::make_pair(&((*$self)[0]), $self->size());
-  }
-} // end extend
-
-%enddef
-
-/* -------------------------------------------------------------------------
- * Instantiate the vector-double
+ * Instantiate the vector-int
  * ------------------------------------------------------------------------- */
 
 %include <std_vector.i>
 
-ADD_VIEW(double)
+// Replace ULL type with fortran standard integer
+// (needed BEFORE instantiating VecInt)
+%apply int { std::vector<int>::size_type };
 
-%template(VecDbl) std::vector<double>;
-
-/* -------------------------------------------------------------------------
- * ARRAY VIEW EXAMPLE
- * ------------------------------------------------------------------------- */
-%include <forarray.swg>
-
-// Convert a reference-to-vector return value into a array view.
-FORT_ARRAYPTR_TYPEMAP(double, std::vector<double>& NATIVE)
-%typemap(out) std::vector<double>& NATIVE %{
-  $result.data = $1->empty() ? NULL : $1->data();
-  $result.size = $1->size();
-%}
-
-%apply std::vector<double>& NATIVE { std::vector<double>& as_array_ptr };
+%template(VecInt) std::vector<int>;
 
 /* -------------------------------------------------------------------------
- * Parse and instantiate the templated functions
+ * Parse and instantiate the templated vector functions
  * ------------------------------------------------------------------------- */
-
-// Make the single "get_vec_ref" function return a native allocated fortran array
-// (This is enabled by the instantiation of std::vector.).
-// Note that the signature as written only causes the *out* typemaps to apply --
-// the input typemaps still correspond to the std::vector class.
-%apply const std::vector<double>& NATIVE { const std::vector<double>& get_vec<double> };
 
 %include "example.h"
 
-%template(make_viewdbl) make_view<double>;
-%template(make_const_viewdbl) make_const_view<double>;
-%template(print_viewdbl) print_view<double>;
-%template(get_vecdbl) get_vec<double>;
+// Instead of returning an array pointer from "as_const_reference", treat it
+// as a generic class (return a const reference to VecInt)
+%apply const SWIGTYPE& { const std::vector<int>& as_const_reference<int>,
+                         const std::vector<int>& inp};
+
+%template(as_reference) as_reference<int>;
+%template(as_const_reference) as_const_reference<int>;
+%template(as_array) as_array<int>;
+%template(as_array_ptr) as_array_ptr<int>;
+%template(print_vec) print_vec<int>;
+
+%inline %{
+std::vector<int>* raw_ptr(std::vector<int>* inp)
+{ return inp; }
+
+const std::vector<int>* const_raw_ptr(const std::vector<int>* inp)
+{ return inp; }
+
+std::vector<int> from_value(std::vector<int> inp)
+{ return inp; }
+
+%}
+
+/* -------------------------------------------------------------------------
+ * Add a special copy-free "view" method that looks directly at a
+ * Fortran-owned piece of data
+ */
+
+%include <typemaps.i>
+
+%apply (SWIGTYPE *DATA, size_t SIZE) { (const int* data, std::size_t view) }
+
+%template(print_view) print_view<int>;
 
 /* -------------------------------------------------------------------------
  * Example of creating an allocatable array in Fortran by returning a vector by
  * value in C++
  */
 
-%apply std::vector<double> NATIVE { std::vector<double> make_array };
-
 %inline %{
-std::vector<double> make_array() {
+std::vector<int> make_array() {
   static const int vals[] = {1,1,2,3,5,8};
-  return std::vector<double>(vals, vals + 6);
+  return std::vector<int>(vals, vals + 6);
 }
 %}
-
-
 
