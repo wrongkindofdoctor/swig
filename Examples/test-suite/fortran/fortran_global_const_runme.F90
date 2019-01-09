@@ -14,8 +14,8 @@ subroutine test_constants
   use ISO_C_BINDING
   implicit none
   ! The following will fail to build if they're not defined as PARAMETERS in the module file
-  integer(C_INT), dimension(4), parameter :: compiletime_ints &
-    = [ fortranconst_int_global, constant_int_global, MACRO_INT, MACRO_HEX_INT ]
+  integer(C_INT), dimension(2), parameter :: compiletime_ints &
+    = [ fortranconst_int_global, MACRO_HEX_INT ]
   real(C_FLOAT), dimension(1), parameter :: compiletime_floats &
     = [ fortranconst_float_global ]
   
@@ -27,7 +27,7 @@ subroutine test_constants
   if (any(compiletime_floats /= 1.23)) stop 1
 
   allocate(runtime_ints(3), source= &
-    [nofortranconst_int_global, DEFAULT_MACRO_HEX_INT, &
+    [nofortranconst_int_global, MACRO_INT, &
     get_extern_const_int()])
   allocate(runtime_floats(2), source= &
     [constant_float_global, nofortranconst_float_global])
