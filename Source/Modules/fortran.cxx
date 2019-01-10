@@ -234,7 +234,7 @@ String *get_symname_or_name(Node *n) {
 /* -------------------------------------------------------------------------
  * \brief Construct any necessary 'import' identifier.
  *
- * When the `imtype` is an actual `type(XXX)`, it's necessary to import the identifier XXX from the module definition scope. This function examines the
+ * When the `imtype` is an actual `type(Foo)`, it's necessary to import the identifier Foo from the module definition scope. This function examines the
  * evaluated `imtype` (could be `imtype:in`, probably has $fclassname replaced)
  */
 String *make_import_string(String *imtype) {
@@ -1873,7 +1873,7 @@ int FORTRAN::classHandler(Node *n) {
   if (d_constructors && (Len(d_constructors) > 0)) {
     Printf(f_ftypes, " interface %s\n", symname);
     for (Iterator it = First(d_constructors); it.item; it = Next(it)) {
-      Printf(f_ftypes, "  procedure %s\n", it.item);
+      Printf(f_ftypes, "  module procedure %s\n", it.item);
     }
     Printf(f_ftypes, " end interface\n");
     Setattr(n, "fortran:constructors", d_constructors);

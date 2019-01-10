@@ -265,11 +265,11 @@ translation layer between C++ and Fortran and to eliminate potential pitfalls
 of interoperability.
 
 We anticipate that future extensions of Fortran/C interoperability will
-increase the capability of the SWIG wrapper interface. (For example, the
+increase the capability of the SWIG wrapper interface. For example, the
 Fortran [ISO technical specification
 TS29113](https://www.ibm.com/support/knowledgecenter/SSAT4T_15.1.3/com.ibm.xlf1513.lelinux.doc/language_ref/ts29113.html)
-will greatly extend the types of arrays and pointers that can be passed between
-C and Fortran.)
+will greatly expand the types of arrays and pointers that can be passed between
+C and Fortran.
 
 However, many features of C and C++ are outside the scope of Fortran's
 interoperability features.  Even some features that *are* interoperable,such as
@@ -966,7 +966,7 @@ writing a small exception handler.
   try {
     // Attempt the wrapped function call
     $action
-  } catch (std::exception& e) {
+  } catch (const std::exception& e) {
     SWIG_exception(SWIG_RuntimeError, e.what() );
   } catch (...) {
     SWIG_exception(SWIG_UnknownError, "An unknown exception occurred");
@@ -1270,6 +1270,24 @@ transparent wrappers between Fortran arrays and other C++ data types. Similar
 code is used in the `ForTrilinos` library to treat `Teuchos::ArrayView`
 return values as Fortran array pointers.
 
+## Integer types
+
+One other note to be made about Fortran interoperability concerns the mismatch
+between default Fortran integers and C++'s `size_type`, which is often used as
+a function argument. The differing `KIND` of the integers requires that users awkwardly
+cast values when passing into function calls:
+```fortran
+call my_vector%resize(INT(n,C_LONG))
+```
+This nuisance can be simply avoided by replacing occurrences of C's size type
+with the native Fortran integer type:
+```swig
+%apply int { std::size_t }
+```
+Note of course that if the native integer type is 32-bit and the long type is
+64-bit, this will prevent any input larger than `0x7fffffff` from being passed
+as an argument.
+
 ## MPI compatibility
 
 When wrapping a C++ library that includes MPI support, and the Fortran
@@ -1537,7 +1555,7 @@ memory.
 Ideally, as was done in [Rouson's implementation of Fortran shared pointers](https://dx.doi.org/10.1109/MCSE.2012.33), we
 could rely on the `FINAL` operator defined by Fortran 2003 to release the
 temporary's memory. Unfortunately, only the very latest compilers (as of 2018,
-14 years after the standard was ratified) have full support for the `FINAL` 
+14 years after the standard was ratified) have full support for the `FINAL` keyword.
 
 Our solution to this limitation is to have the `Foo` proxy class store not only
 a pointer to the C data but also a state enumeration `self%swigdata%mem` that
