@@ -1723,8 +1723,8 @@ int FORTRAN::classHandler(Node *n) {
       basename = Getattr(b, "sym:name");
     } else {
       // Another base class exists
-      Swig_warning(WARN_FORTRAN_MULTIPLE_INHERITANCE, Getfile(b), Getline(b),
-                   "Multiple inheritance is not supported in Fortran. Ignoring base class %s for %s",
+      Swig_warning(WARN_FORTRAN_MULTIPLE_INHERITANCE, Getfile(n), Getline(n),
+                   "Multiple inheritance is not supported in Fortran. Ignoring base class %s for %s\n",
                    Getattr(b, "sym:name"),
                    Getattr(n, "sym:name"));
     }
