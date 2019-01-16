@@ -6,9 +6,10 @@
 #define ASSERT_OR_PRINT_NODE(COND, NODE) \
   do { \
     if (!(COND)) { \
-      Printf(stdout, "Assertion '" #COND "' failed for node:\n"); \
+      Printf(stdout, "********************************\n"); \
       Swig_print_node(NODE); \
-      assert(0); \
+      Printf(stdout, "Assertion '" #COND "' failed for node at %s:%d\n", Getfile(n), Getline(n)); \
+      assert(COND); \
     } \
   } while (0)
 
@@ -144,8 +145,9 @@ bool is_native_enum(Node *n) {
   if (!enum_feature) {
     // Determine from enum values
     for (Node *c = firstChild(n); c; c = nextSibling(c)) {
-      if (Getattr(c, "error") || GetFlag(c, "feature:ignore"))
-        continue;
+      if (Getattr(c, "error") || GetFlag(c, "feature:ignore")) {
+        return false;
+      }
 
       String *enum_value = Getattr(c, "enumvalue");
       if (enum_value && !is_fortran_intexpr(enum_value)) {
@@ -185,6 +187,8 @@ bool is_native_parameter(Node *n) {
  * 
  * This returns NULL if the typestr doesn't have a simple KIND, otherwise
  * returns a newly allocated String with the suffix.
+ *
+ * TODO: consider making this a typedef
  */
 String *make_specifier_suffix(String *bindc_typestr) {
   String *suffix = NULL;
@@ -301,6 +305,8 @@ String *make_import_string(String *imtype) {
  */
 bool is_valid_identifier(String *name) {
   const char *c = Char(name);
+  if (*c == '\0')
+    return false;
   if (*c == '_')
     return false;
   if (*c >= '0' && *c <= '9')
@@ -985,6 +991,7 @@ int FORTRAN::functionWrapper(Node *n) {
     Append(overloads, Copy(fname));
   } else {
     //
+    ASSERT_OR_PRINT_NODE(Len(fsymname) > 0, n);
     Printv(f_fpublic, " public :: ", fsymname, "\n", NULL);
   }
 
@@ -1831,8 +1838,18 @@ int FORTRAN::classHandler(Node *n) {
     return SWIG_NOWRAP;
   }
 
+<<<<<<< HEAD
   // Make the class publicly accessible
+  ASSERT_OR_PRINT_NODE(Len(symname) > 0, n);
   Printv(f_fpublic, " public :: ", symname, "\n", NULL);
+||||||| parent of 8147ecbe0... Print C++ enum/class names in comments
+  ASSERT_OR_PRINT_NODE(!f_class, n);
+  f_class = NewStringEmpty();
+=======
+  ASSERT_OR_PRINT_NODE(!f_class, n);
+  ASSERT_OR_PRINT_NODE(Getattr(n, "kind") && Getattr(n, "classtype"), n);
+  f_class = NewStringf(" ! %s %s\n", Getattr(n, "kind"), Getattr(n, "classtype"));
+>>>>>>> 8147ecbe0... Print C++ enum/class names in comments
 
   // Write documentation
   this->write_docstring(n, f_ftypes);
@@ -2038,6 +2055,7 @@ int FORTRAN::membervariableHandler(Node *n) {
     }
     this->replace_fclassname(datatype, bindc_typestr);
 
+    ASSERT_OR_PRINT_NODE(Len(fsymname) > 0, n);
     Printv(f_ftypes, "  ", bindc_typestr, ", public :: ", fsymname, "\n", NULL);
     Delete(fsymname);
   } else {
@@ -2143,48 +2161,62 @@ int FORTRAN::enumDeclaration(Node *n) {
   if (ImportMode)
     return SWIG_OK;
 
+  if (String *name = Getattr(n, "name")) {
+    Printv(f_fdecl, " ! ", NULL);
+    if (String *storage = Getattr(n, "storage")) {
+      Printv(f_fdecl, storage, " ", NULL);
+    }
+    Printv(f_fdecl, Getattr(n, "enumkey"), " ", name, "\n", NULL);
+  }
+
   // Determine whether to add enum as a native fortran enumeration. If false,
-  // the values are all wrapped as constants.
-  if (is_native_enum(n)) {
+  // the values are all wrapped as constants. Only create the list if values are defined.
+  if (is_native_enum(n) && firstChild(n)) {
     // Create enumerator statement and initialize list of enum values
     d_enum_public = NewList();
     Printv(f_fparams, " enum, bind(c)\n", NULL);
-  }
 
-  if (enum_name) {
-    // Print a placeholder enum value so we can use 'kind(ENUM)'
-    Swig_save("enumDeclaration", n, "sym:name", "value", "type", NULL);
-
-    // Type may not be set if this enum is actually a typedef
-    if (!Getattr(n, "type")) {
-      String *type = NewStringf("enum %s", enum_name);
-      Setattr(n, "type", type);
-      Delete(type);
-    }
-
-    // Create placeholder for the enumeration type
-    Setattr(n, "sym:name", enum_name);
-    Setattr(n, "value", "-1");
-    constantWrapper(n);
-
-    Swig_restore(n);
-    Delete(enum_name);
+    // Mark that the enum is available for use as a type
+    SetFlag(n, "fortran:declared");
   }
 
   // Emit enum items
   Language::enumDeclaration(n);
 
   if (d_enum_public) {
+    ASSERT_OR_PRINT_NODE(Len(d_enum_public) > 0, n);
     // End enumeration
     Printv(f_fparams, " end enum\n", NULL);
+
+    if (enum_name) {
+      ASSERT_OR_PRINT_NODE(Len(enum_name) > 0, n);
+      // Create "kind=" value for the enumeration type
+      Printv(f_fpublic, " public :: ", enum_name, "\n", NULL);
+
+      Printv(f_fparams, " integer, parameter :: ",  enum_name,
+             " = kind(", First(d_enum_public).item, ")\n", NULL);
+    }
 
     // Make the enum class *and* its values public
     Printv(f_fpublic, " public :: ", NULL);
     print_wrapped_list(f_fpublic, First(d_enum_public), 11);
     Putc('\n', f_fpublic);
+
+    // Clean up
     Delete(d_enum_public);
     d_enum_public = NULL;
+  } else if (enum_name) {
+    // Create "kind=" value for the enumeration type
+    Printv(f_fpublic, " public :: ", enum_name, "\n", NULL);
+    Printv(f_fparams, " integer, parameter :: ",  enum_name,
+           " = C_INT\n", NULL);
+
+    // Mark that the enum is available for use as a type
+    SetFlag(n, "fortran:declared");
   }
+
+  // Clean up
+  Delete(enum_name);
 
   return SWIG_OK;
 }
@@ -2224,48 +2256,41 @@ int FORTRAN::constantWrapper(Node *n) {
     String *t = Getattr(parentNode(n), "enumtype");
     Setattr(n, "type", t);
 
-    if (d_enum_public) {
-      // We are wrapping an enumeration in Fortran. Get the enum value OR
-      // the automatically generated value (PREV + 1). Since the
-      // name of PREV typically needs updating (since we just created a
-      // unique symname), we update the next enum value if appropriate.
-      if (!value) {
+    if (!value) {
+      if (d_enum_public) {
+        // We are wrapping an enumeration in Fortran. Get the enum value if
+        // present; if not, Fortran enums take the same value as C enums.
         value = Getattr(n, "enumvalue");
-      }
-      if (!value) {
-        value = Getattr(n, "enumvalueex");
-      }
-
-      // This is the ONLY place where we can fix the next enum's automatic
-      // value if this one has its name changed.
-      Node *next = nextSibling(n);
-      if (next && !Getattr(next, "enumvalue")) {
-        String *updated_ex = NewStringf("%s + 1", symname);
-        Setattr(next, "enumvalueex", updated_ex);
+      } else {
+        // Wrapping as a constant
+        value = Getattr(n, "value");
       }
     }
   } else if (Strcmp(nodetype, "enum") == 0) {
     // Symbolic name is already unique
+    ASSERT_OR_PRINT_NODE(!value, n);
+    // But we're wrapping the enumeration type as a fictional value
+    value = Getattr(n, "value");
   } else {
     // Not an enum or enumitem
     if (!is_valid_identifier(symname))
     {
       Swig_warning(WARN_LANG_IDENTIFIER, input_file, line_number,
                    "Ignoring constant due to invalid Fortran identifier: "
-                   "please %%rename '%s' '\n",
+                   "please %%rename '%s'\n",
                    symname);
       return SWIG_NOWRAP;
     }
     
     if (add_fsymbol(symname, n) == SWIG_NOWRAP)
       return SWIG_NOWRAP;
+
+    if (!value) {
+      value = Getattr(n, "value");
+    }
   }
 
-  if (!value) {
-    // For constants, the given value. For enums etc., the C++ identifier.
-    value = Getattr(n, "value");
-  }
-  ASSERT_OR_PRINT_NODE(value, n);
+  ASSERT_OR_PRINT_NODE(value || d_enum_public, n);
 
   // Get Fortran data type
   String *bindc_typestr = attach_typemap("bindc", n, WARN_NONE);
@@ -2282,11 +2307,16 @@ int FORTRAN::constantWrapper(Node *n) {
   }
 
   if (d_enum_public) {
+    ASSERT_OR_PRINT_NODE(Len(symname) > 0, n);
     // We're wrapping a native enumerator: add to the list of enums being
     // built
     Append(d_enum_public, symname);
     // Print the enum to the list
-    Printv(f_fparams, "  enumerator :: ", symname, " = ", value, "\n", NULL);
+    Printv(f_fparams, "  enumerator :: ", symname, NULL);
+    if (value) {
+      Printv(f_fparams, " = ", value, NULL);
+    }
+    Printv(f_fparams, "\n", NULL);
   } else if (is_native_parameter(n)) {
     String *suffix = make_specifier_suffix(bindc_typestr);
     if (suffix) {
@@ -2418,7 +2448,8 @@ String *FORTRAN::attach_class_typemap(const_String_or_char_ptr tmname, int warni
 bool FORTRAN::replace_fclassname(SwigType *intype, String *tm) {
   assert(intype);
   bool substitution_performed = false;
-  SwigType *basetype = SwigType_base(intype);
+  SwigType *resolvedtype = SwigType_typedef_resolve_all(intype);
+  SwigType *basetype = SwigType_base(resolvedtype);
 
   if (Strstr(tm, "$fclassname")) {
     String *repl = get_fclassname(basetype, false);
@@ -2444,6 +2475,7 @@ bool FORTRAN::replace_fclassname(SwigType *intype, String *tm) {
            tm);
 #endif
 
+  Delete(resolvedtype);
   Delete(basetype);
 
   return substitution_performed;
@@ -2466,7 +2498,6 @@ String *FORTRAN::get_fclassname(SwigType *basetype, bool is_enum) {
       // Missing enum with forward declaration
       replacementname = NULL;
     }
-
     if (is_enum && !GetFlag(n, "fortran:declared")) {
       // Enum is defined, but it might not have been instantiated yet
       replacementname = NULL;
@@ -2502,6 +2533,7 @@ String *FORTRAN::get_fclassname(SwigType *basetype, bool is_enum) {
       Setattr(d_mangled_type, basetype, replacementname);
     }
   }
+
   return replacementname;
 }
 

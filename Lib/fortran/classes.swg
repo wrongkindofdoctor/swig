@@ -12,7 +12,7 @@
 #ifdef __cplusplus
 %fragment("SwigMemState", "header") %{
 enum SwigMemState {
-    SWIG_NULL = 0,
+    SWIG_NULL,
     SWIG_OWN,
     SWIG_MOVE,
     SWIG_REF,
@@ -22,7 +22,7 @@ enum SwigMemState {
 #else
 %fragment("SwigMemState", "header") %{
 typedef enum {
-    SWIG_NULL = 0,
+    SWIG_NULL,
     SWIG_OWN,
     SWIG_MOVE,
     SWIG_REF,
@@ -33,13 +33,13 @@ typedef enum {
 
 %fragment("SwigMemState_f", "fpublic") %{
  enum, bind(c)
-  enumerator :: SwigMemState = -1
-  enumerator :: SWIG_NULL = 0
+  enumerator :: SWIG_NULL
   enumerator :: SWIG_OWN
   enumerator :: SWIG_MOVE
   enumerator :: SWIG_REF
   enumerator :: SWIG_CREF
  end enum
+ integer, parameter :: SwigMemState = kind(SWIG_NULL)
 %}
 
 /* -------------------------------------------------------------------------
@@ -75,7 +75,7 @@ SWIGINTERN SwigClassWrapper SwigClassWrapper_uninitialized() {
 %}
 
 // Fortran declaration of the class wrapper above. Note that we declare the
-// enum as a C_INT instead of `integer(kind(SwigMemState))` to avoid a warning
+// enum as a C_INT instead of `integer(SwigMemState)` to avoid a warning
 // in GCC. The types will still be interoperable.
 %fragment("SwigClassWrapper_f", "fpublic",
           fragment="SwigMemState_f", noblock=1) %{

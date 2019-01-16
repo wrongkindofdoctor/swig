@@ -54,11 +54,10 @@ FAILING_CPP_TESTS += \
   director_default \
   director_detect \
   director_overload2 \
-  enum_scope_template \
-  enum_thorough \
   extend_default \
   fvirtual \
   inherit_target_language \
+  kind \
   li_attribute \
   li_attribute_template \
   li_std_map \
