@@ -3,9 +3,7 @@
  * ------------------------------------------------------------------------- */
 
 %fragment("SwigUnknownEnum_f", "fpublic", noblock=1) {
-enum, bind(c)
-  enumerator :: SwigUnknownEnum = -1
-end enum
+integer, parameter :: SwigUnknownEnum = C_INT
 }
 
 /* -------------------------------------------------------------------------
