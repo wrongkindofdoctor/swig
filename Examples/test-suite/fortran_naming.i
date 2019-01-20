@@ -44,6 +44,8 @@ enum _MyEnum {
     _MYVAL = 1,
 };
 
+#define _123 123
+
 extern "C" {
 struct MyStruct {
     float _x;
@@ -68,9 +70,18 @@ enum f_MyEnum {
 
 // Even though the Fortran identifier must be renamed, the function it's
 // bound to cannot.
-extern "C" int _cboundfunc(const int* _x) { return *_x + 1; }
+extern "C" int _0cboundfunc(const int* _x) { return *_x + 1; }
 
 %}
+
+// This name is too long
+%constant int sixty_four_characters_is_way_too_long_for_fortran_or_punch_cards = 64;
+// This name shows that you can't simply truncate
+%constant int sixty_four_characters_is_way_too_long_for_fortran_or_punch_cardss = 65;
+
+// This name is the maximum length but starts with an underscore
+%constant int _leading_underscore_with_sixty_four_characters_is_just_darn_long = 64;
+%constant int _leading_underscore_with_sixty_three_characters_might_be_tricky = 63;
 
 // This class is poorly named, but the symname is OK.
 %inline %{
