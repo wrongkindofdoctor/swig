@@ -4,10 +4,6 @@
 
 %fortran_struct(MyStruct);
 
-// Since SWIG can't globally rename data types after parsing the input, we have to rename up front.
-%rename(FooClass) _Foo;
-%rename(MyEnum) _MyEnum;
-
 // Without *this* line, the f_a accessors on Bar will override the _a accessors
 // on _Foo, causing Fortran to fail because the argument names of the two
 // setters ('arg' and 'f_a') are different.
@@ -40,12 +36,6 @@ class Bar : public _Foo {
     int f_a;
 };
 
-// Define enum and function
-enum _MyEnum {
-    _MYVAL = 1,
-};
-int get_enum_value(_MyEnum e) { return static_cast<int>(e); }
-
 struct HasEnum {
   enum _Underscores {
       _AREBAD = 1,
@@ -68,17 +58,28 @@ struct MyStruct {
 
 float get_mystruct_y(const MyStruct* ms) { return ms->_y; }
 }
-
-int get_enum_value(_MyEnum e);
 %}
 
-%warnfilter(SWIGWARN_FORTRAN_NAME_CONFLICT) f_MyEnum;
+// Forward-declare enum for SWIG: this is *not* valid C++.
+enum _MyEnum;
+// Declare the function as well
+//int get_enum_value(_MyEnum e);
+
+%inline %{
+// Define enum and function
+enum _MyEnum {
+    _MYVAL = 1,
+};
+int get_enum_value(_MyEnum e) { return static_cast<int>(e); }
+%}
+
+%warnfilter(SWIGWARN_FORTRAN_NAME_CONFLICT) MyEnum_;
 
 // NOTE: these will be ignored because the previous enum will be renamed.
 // This behavior is consistent with the other SWIG target languages.
 %inline %{
-enum f_MyEnum {
-    f_MYVAL = 2
+enum MyEnum_ {
+    MYVAL_ = 2
 };
 
 // Even though the Fortran identifier must be renamed, the function it's
@@ -127,3 +128,27 @@ enum Foo;
 %}
 
 struct DelayedStruct { int i; };
+
+// Test with namespaces, and duplicates
+
+%inline %{
+namespace ns {
+// Forward-declare and operate on pointer
+class _Foo;
+class _Unused;
+} // end namespace ns
+
+namespace ns {
+_Foo* identity_ptr(_Foo* f) { return f; }
+
+// Define the class
+class _Foo {
+};
+
+// Define enum and function
+enum _MyEnum {
+    _MYVAL = 3,
+};
+int get_enum_value(_MyEnum e) { return static_cast<int>(e); }
+} // end namespace ns
+%}

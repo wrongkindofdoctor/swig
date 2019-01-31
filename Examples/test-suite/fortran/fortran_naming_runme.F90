@@ -7,12 +7,12 @@ program fortran_naming_runme
   use ISO_C_BINDING
   implicit none
   integer(C_INT) :: test_int
-  type(FooClass) :: myfoo
+  type(Foo_) :: myfoo
   type(MyStruct) :: struct
   type(SWIGTYPE_OpaqueStruct) :: opaque
   type(SWIGTYPE_DeclaredStruct) :: declared
 
-  myfoo = FooClass()
+  myfoo = Foo_()
   call myfoo%release()
 
   ! NOTE: the 'C' function that's bound is actually named _cboundfunc, so this
@@ -24,8 +24,8 @@ program fortran_naming_runme
   struct%m_y = 4
   ASSERT(get_mystruct_y(struct) == 4) 
 
-  ! The first enum _MYVAL should have priority over the later one
-  ASSERT(f_MYVAL == 1) 
+  ! The first enum _MYVAL should have priority over the later ones
+  ASSERT(MYVAL_ == 1) 
 
   opaque = make_opaque(123)
   ASSERT(get_opaque_value(opaque) == 123)

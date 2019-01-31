@@ -110,12 +110,11 @@ that do not apply to C and C++:
 - Names are **case insensitive**
 
 The Fortran SWIG module implements three mitigation techniques for naming. 
-First, it automatically prepends the letter "f" to identifiers that start with
-a leading underscore, with the exception of data types (which must be renamed
-manually). Second, it replaces the tails of long identifiers with a hashed
-value of the removed characters. Finally, it keeps a separate symbol table of
-publicly accessible Fortran identifiers (after their transformations, and after
-transforming them to lower case), and it will warn and rename duplicate
+First, it automatically moves leading underscores (and any following integers)
+to the end of the name. Second, it replaces the tails of long identifiers with
+a hashed value of the removed characters. Finally, it keeps a separate symbol
+table of publicly accessible Fortran identifiers (after their transformations,
+and after transforming them to lower case), and it will warn and rename duplicate
 symbols.
 
 Fortran 2003 has no analog of C++ namespaces, which are ignored by SWIG.
