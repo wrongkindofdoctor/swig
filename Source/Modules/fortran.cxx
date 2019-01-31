@@ -2161,7 +2161,13 @@ int FORTRAN::enumDeclaration(Node *n) {
     // Save the alias name
     Setattr(n, "fortran:name", enum_name);
   } else {
-    enum_name = make_fname(Getattr(n, "sym:name"));
+    if (!is_valid_identifier(symname)) {
+      Swig_error(input_file, line_number,
+                 "The symname '%s' is not a valid Fortran identifier. You must %%rename this enum.\n",
+                 symname);
+      return SWIG_NOWRAP;
+    }
+    enum_name = Copy(symname);
   }
 
   // Make sure the enum name isn't a duplicate
@@ -2377,7 +2383,9 @@ int FORTRAN::constantWrapper(Node *n) {
 
     // Add bound variable to interfaces
     Printv(f_fdecl, " ", bindc_typestr, ", protected, public, &\n",
-           "   bind(C, name=\"", wname, "\") :: ", symname, "\n",
+           "   bind(C, name=\"", wname, "\") :: ",
+           (Len(wname) > 60 ? "&\n    " : ""),
+           symname, "\n",
            NULL);
 
     Swig_restore(n);

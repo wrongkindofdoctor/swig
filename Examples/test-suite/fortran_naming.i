@@ -4,9 +4,9 @@
 
 %fortran_struct(MyStruct);
 
-// Without this line, SWIG should raise an error rather than propagating the
-// invalid name into the Fortran code.
+// Since SWIG can't globally rename data types after parsing the input, we have to rename up front.
 %rename(FooClass) _Foo;
+%rename(MyEnum) _MyEnum;
 
 // Without *this* line, the f_a accessors on Bar will override the _a accessors
 // on _Foo, causing Fortran to fail because the argument names of the two
@@ -40,9 +40,20 @@ class Bar : public _Foo {
     int f_a;
 };
 
+// Define enum and function
 enum _MyEnum {
     _MYVAL = 1,
 };
+int get_enum_value(_MyEnum e) { return static_cast<int>(e); }
+
+struct HasEnum {
+  enum _Underscores {
+      _AREBAD = 1,
+  };
+};
+
+HasEnum::_Underscores get_embedded_enum_value(HasEnum::_Underscores e) { return e; }
+
 
 #define _123 123
 
@@ -57,6 +68,8 @@ struct MyStruct {
 
 float get_mystruct_y(const MyStruct* ms) { return ms->_y; }
 }
+
+int get_enum_value(_MyEnum e);
 %}
 
 %warnfilter(SWIGWARN_FORTRAN_NAME_CONFLICT) f_MyEnum;

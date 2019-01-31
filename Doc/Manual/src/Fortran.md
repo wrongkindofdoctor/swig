@@ -105,19 +105,22 @@ C and C++ have different rules for identifiers (i.e. variable names, function
 names, class names) than Fortran. The following restrictions apply to Fortran
 that do not apply to C and C++:
 
-- Names are **case insensitive**
 - Names may not begin with an underscore
 - Names may be no longer than 63 characters
+- Names are **case insensitive**
 
-SWIG automatically renames identifiers that start with a leading underscore. It
-keeps a symbol table of publicly accessible Fortran identifiers (as their
-lower-cased, renamed versions) and warns about and ignores duplicate names.
+The Fortran SWIG module implements three mitigation techniques for naming. 
+First, it automatically prepends the letter "f" to identifiers that start with
+a leading underscore, with the exception of data types (which must be renamed
+manually). Second, it replaces the tails of long identifiers with a hashed
+value of the removed characters. Finally, it keeps a separate symbol table of
+publicly accessible Fortran identifiers (after their transformations, and after
+transforming them to lower case), and it will warn and rename duplicate
+symbols.
 
-There is also no "namespace" concept in Fortran 2003 aside from defining
-procedures and types in separate modules. (Fortran 2008 supports submodules, but
-these are more akin to private namespaces inside a translation unit in C++.)
+Fortran 2003 has no analog of C++ namespaces, which are ignored by SWIG.
 Keep in mind that the flexible `%rename` directive can be used to adjust the
-symbolic names created in SWIG.
+generated wrapper names.
 
 ## Running SWIG
 
