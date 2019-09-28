@@ -26,4 +26,11 @@ class A_Intermediate : public A {
   A_Intermediate(){}
   ~A_Intermediate(){}
 };
+
+// Declare an opaque type
+class Opaque;
+Opaque* get_opaque_null_a() { return NULL; }
+
+bool is_null_opaque(const Opaque* obj) { return (obj == NULL); }
+
 #endif

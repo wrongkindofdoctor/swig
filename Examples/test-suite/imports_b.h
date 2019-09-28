@@ -29,3 +29,7 @@ struct C : A
   
 };
 
+// Declare the same opaque typename as in imports_a
+class Opaque;
+Opaque* get_opaque_null_b() { return NULL; }
+
