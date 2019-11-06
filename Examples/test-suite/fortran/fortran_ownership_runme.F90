@@ -9,6 +9,7 @@ program fortran_ownership_runme
   integer, parameter :: swig_cmem_rvalue_bit = 1
 
   call test_standard
+  call test_dynamic
   call test_shared
 
 contains
@@ -101,6 +102,22 @@ subroutine test_standard
   call c%release()
   ASSERT(foo_counter == 0)
 
+end subroutine
+
+! Test a standard C++ object that's not marked as a shared pointer
+subroutine test_dynamic
+  use fortran_ownership
+  implicit none
+  class(Foo), allocatable :: dynamic
+
+  ASSERT(foo_counter == 0)
+  allocate(dynamic, source=Foo(1))
+  ASSERT(foo_counter == 1)
+  ASSERT(btest(dynamic%swigdata%cmemflags, swig_cmem_own_bit))
+  ASSERT(.not. btest(dynamic%swigdata%cmemflags, swig_cmem_rvalue_bit))
+
+  call dynamic%release()
+  deallocate(dynamic)
 end subroutine
 
 ! Test a shared pointer (e.g. TeuchosRCP<MultiVector>)
